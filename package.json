@@ -9,14 +9,12 @@
     "lint": "eslint"
   },
   "dependencies": {
-    "@base-ui/react": "^1.4.0",
     "@chakra-ui/icons": "^2.2.4",
-    "@chakra-ui/react": "^3.34.0",
+    "@chakra-ui/react": "^2.10.9",
     "@emotion/react": "^11.14.0",
     "@emotion/styled": "^11.14.1",
     "@mui/icons-material": "^9.0.0",
     "@mui/material": "^9.0.0",
-    "@types/react-syntax-highlighter": "^15.5.13",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "framer-motion": "^12.38.0",
@@ -41,6 +39,7 @@
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
+    "@types/react-syntax-highlighter": "^15.5.13",
     "eslint": "^9",
     "eslint-config-next": "16.2.3",
     "tailwindcss": "^4",
