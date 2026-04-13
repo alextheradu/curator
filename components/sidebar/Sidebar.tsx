@@ -11,7 +11,7 @@ export function Sidebar() {
   const {
     conversations, activeConversationId, sidebarOpen,
     newConversation, setActiveConversation, deleteConversation,
-    setSidebarOpen, setSettingsOpen,
+    setSettingsOpen,
   } = useChatStore();
 
   return (
