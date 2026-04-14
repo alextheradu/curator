@@ -1,6 +1,7 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 import { generateChatTitle } from "./utils";
+import type { Citation } from "./db/schema";
 
 export type Role = "user" | "assistant" | "system";
 
@@ -9,7 +10,7 @@ export interface Message {
   role: Role;
   content: string;
   timestamp: Date;
-  citations?: string[];
+  citations?: Citation[];
 }
 
 export interface Conversation {
@@ -29,20 +30,20 @@ interface ChatStore {
   sidebarOpen: boolean;
   settingsOpen: boolean;
   temperature: number;
-  apiKeyOverride: string;
 
   newConversation: () => string;
   setActiveConversation: (id: string) => void;
   addMessage: (conversationId: string, message: Omit<Message, "id" | "timestamp">) => string;
   updateStreamingContent: (content: string) => void;
-  finalizeStreamingMessage: (conversationId: string) => void;
+  finalizeStreamingMessage: (conversationId: string, citations?: Citation[]) => void;
+  resetStreamingState: () => void;
   clearConversation: (conversationId: string) => void;
   deleteConversation: (conversationId: string) => void;
   setSeasonYear: (conversationId: string, year: number) => void;
   setSidebarOpen: (open: boolean) => void;
   setSettingsOpen: (open: boolean) => void;
   setTemperature: (temp: number) => void;
-  setApiKeyOverride: (key: string) => void;
+  loadConversationsFromDB: (convs: Conversation[]) => void;
   activeConversation: () => Conversation | null;
 }
 
@@ -56,16 +57,14 @@ export const useChatStore = create<ChatStore>()(
       sidebarOpen: true,
       settingsOpen: false,
       temperature: 0.2,
-      apiKeyOverride: "",
 
       newConversation: () => {
         const id = crypto.randomUUID();
-        const conversation: Conversation = {
-          id, title: "New Chat", messages: [],
-          createdAt: new Date(), updatedAt: new Date(), seasonYear: 2025,
-        };
         set((s) => ({
-          conversations: [conversation, ...s.conversations],
+          conversations: [
+            { id, title: "New Chat", messages: [], createdAt: new Date(), updatedAt: new Date(), seasonYear: 2026 },
+            ...s.conversations,
+          ],
           activeConversationId: id,
           streamingContent: "",
           isStreaming: false,
@@ -78,78 +77,66 @@ export const useChatStore = create<ChatStore>()(
 
       addMessage: (conversationId, message) => {
         const id = crypto.randomUUID();
-        const fullMessage: Message = { ...message, id, timestamp: new Date() };
+        const full: Message = { ...message, id, timestamp: new Date() };
         set((s) => ({
           conversations: s.conversations.map((c) => {
             if (c.id !== conversationId) return c;
-            const messages = [...c.messages, fullMessage];
-            const title =
-              c.title === "New Chat" && message.role === "user"
-                ? generateChatTitle(message.content)
-                : c.title;
-            return { ...c, messages, title, updatedAt: new Date() };
+            const msgs = [...c.messages, full];
+            const title = c.title === "New Chat" && message.role === "user"
+              ? generateChatTitle(message.content) : c.title;
+            return { ...c, messages: msgs, title, updatedAt: new Date() };
           }),
         }));
         return id;
       },
 
-      updateStreamingContent: (content) =>
-        set({ streamingContent: content, isStreaming: true }),
+      updateStreamingContent: (content) => set({ streamingContent: content, isStreaming: true }),
 
-      finalizeStreamingMessage: (conversationId) => {
+      finalizeStreamingMessage: (conversationId, citations) => {
         const { streamingContent } = get();
-        if (!streamingContent) return;
-        const message: Message = {
-          id: crypto.randomUUID(),
-          role: "assistant",
-          content: streamingContent,
-          timestamp: new Date(),
+        if (!streamingContent) { set({ streamingContent: "", isStreaming: false }); return; }
+        const msg: Message = {
+          id: crypto.randomUUID(), role: "assistant",
+          content: streamingContent, timestamp: new Date(),
+          ...(citations?.length && { citations }),
         };
         set((s) => ({
-          streamingContent: "",
-          isStreaming: false,
+          streamingContent: "", isStreaming: false,
           conversations: s.conversations.map((c) =>
             c.id === conversationId
-              ? { ...c, messages: [...c.messages, message], updatedAt: new Date() }
+              ? { ...c, messages: [...c.messages, msg], updatedAt: new Date() }
               : c
           ),
         }));
       },
 
-      clearConversation: (conversationId) =>
-        set((s) => ({
-          conversations: s.conversations.map((c) =>
-            c.id === conversationId
-              ? { ...c, messages: [], title: "New Chat", updatedAt: new Date() }
-              : c
-          ),
-          streamingContent: "",
-          isStreaming: false,
-        })),
+      resetStreamingState: () => set({ streamingContent: "", isStreaming: false }),
 
-      deleteConversation: (conversationId) =>
-        set((s) => {
-          const remaining = s.conversations.filter((c) => c.id !== conversationId);
-          return {
-            conversations: remaining,
-            activeConversationId:
-              s.activeConversationId === conversationId
-                ? (remaining[0]?.id ?? null)
-                : s.activeConversationId,
-          };
-        }),
+      clearConversation: (id) => set((s) => ({
+        conversations: s.conversations.map((c) =>
+          c.id === id ? { ...c, messages: [], title: "New Chat", updatedAt: new Date() } : c
+        ),
+        streamingContent: "", isStreaming: false,
+      })),
 
-      setSeasonYear: (conversationId, year) =>
-        set((s) => ({
-          conversations: s.conversations.map((c) =>
-            c.id === conversationId ? { ...c, seasonYear: year } : c
-          ),
-        })),
+      deleteConversation: (id) => set((s) => {
+        const remaining = s.conversations.filter((c) => c.id !== id);
+        return {
+          conversations: remaining,
+          activeConversationId: s.activeConversationId === id
+            ? (remaining[0]?.id ?? null) : s.activeConversationId,
+        };
+      }),
+
+      setSeasonYear: (id, year) => set((s) => ({
+        conversations: s.conversations.map((c) => c.id === id ? { ...c, seasonYear: year } : c),
+      })),
 
       setSidebarOpen: (open) => set({ sidebarOpen: open }),
       setSettingsOpen: (open) => set({ settingsOpen: open }),
       setTemperature: (temp) => set({ temperature: temp }),
-      setApiKeyOverride: (key) => set({ apiKeyOverride: key }),
+
+      loadConversationsFromDB: (convs) => set({ conversations: convs }),
 
       activeConversation: () => {
         const { conversations, activeConversationId } = get();
@@ -162,7 +149,6 @@ export const useChatStore = create<ChatStore>()(
         conversations: s.conversations,
         activeConversationId: s.activeConversationId,
         temperature: s.temperature,
-        apiKeyOverride: s.apiKeyOverride,
         sidebarOpen: s.sidebarOpen,
       }),
     }
