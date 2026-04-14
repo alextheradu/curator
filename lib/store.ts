@@ -20,6 +20,7 @@ export interface Conversation {
   createdAt: Date;
   updatedAt: Date;
   seasonYear: number;
+  isPublic: boolean;
 }
 
 interface ChatStore {
@@ -44,8 +45,18 @@ interface ChatStore {
   setSidebarOpen: (open: boolean) => void;
   setSettingsOpen: (open: boolean) => void;
   setTemperature: (temp: number) => void;
-  loadConversationsFromDB: (convs: Conversation[]) => void;
+  replaceConversations: (convs: Conversation[]) => void;
+  upsertConversation: (conversation: Conversation) => void;
+  updateConversation: (conversationId: string, patch: Partial<Omit<Conversation, "id" | "messages">>) => void;
+  setConversationMessages: (conversationId: string, messages: Message[]) => void;
+  clearAllConversations: () => void;
   activeConversation: () => Conversation | null;
+}
+
+function sortConversations(conversations: Conversation[]) {
+  return [...conversations].sort(
+    (a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime()
+  );
 }
 
 export const useChatStore = create<ChatStore>()(
@@ -62,10 +73,18 @@ export const useChatStore = create<ChatStore>()(
       newConversation: () => {
         const id = crypto.randomUUID();
         set((s) => ({
-          conversations: [
-            { id, title: "New Chat", messages: [], createdAt: new Date(), updatedAt: new Date(), seasonYear: 2026 },
+          conversations: sortConversations([
+            {
+              id,
+              title: "New Chat",
+              messages: [],
+              createdAt: new Date(),
+              updatedAt: new Date(),
+              seasonYear: 2026,
+              isPublic: false,
+            },
             ...s.conversations,
-          ],
+          ]),
           activeConversationId: id,
           streamingContent: "",
           isStreaming: false,
@@ -80,13 +99,15 @@ export const useChatStore = create<ChatStore>()(
         const id = crypto.randomUUID();
         const full: Message = { ...message, id, timestamp: new Date() };
         set((s) => ({
-          conversations: s.conversations.map((c) => {
-            if (c.id !== conversationId) return c;
-            const msgs = [...c.messages, full];
-            const title = c.title === "New Chat" && message.role === "user"
-              ? generateChatTitle(message.content) : c.title;
-            return { ...c, messages: msgs, title, updatedAt: new Date() };
-          }),
+          conversations: sortConversations(
+            s.conversations.map((c) => {
+              if (c.id !== conversationId) return c;
+              const msgs = [...c.messages, full];
+              const title = c.title === "New Chat" && message.role === "user"
+                ? generateChatTitle(message.content) : c.title;
+              return { ...c, messages: msgs, title, updatedAt: new Date() };
+            })
+          ),
         }));
         return id;
       },
@@ -105,10 +126,12 @@ export const useChatStore = create<ChatStore>()(
         };
         set((s) => ({
           streamingContent: "", isStreaming: false,
-          conversations: s.conversations.map((c) =>
-            c.id === conversationId
-              ? { ...c, messages: [...c.messages, msg], updatedAt: new Date() }
-              : c
+          conversations: sortConversations(
+            s.conversations.map((c) =>
+              c.id === conversationId
+                ? { ...c, messages: [...c.messages, msg], updatedAt: new Date() }
+                : c
+            )
           ),
         }));
       },
@@ -116,8 +139,10 @@ export const useChatStore = create<ChatStore>()(
       resetStreamingState: () => set({ streamingContent: "", isStreaming: false }),
 
       clearConversation: (id) => set((s) => ({
-        conversations: s.conversations.map((c) =>
-          c.id === id ? { ...c, messages: [], title: "New Chat", updatedAt: new Date() } : c
+        conversations: sortConversations(
+          s.conversations.map((c) =>
+            c.id === id ? { ...c, messages: [], title: "New Chat", updatedAt: new Date() } : c
+          )
         ),
         streamingContent: "", isStreaming: false,
       })),
@@ -139,7 +164,65 @@ export const useChatStore = create<ChatStore>()(
       setSettingsOpen: (open) => set({ settingsOpen: open }),
       setTemperature: (temp) => set({ temperature: temp }),
 
-      loadConversationsFromDB: (convs) => set({ conversations: convs }),
+      replaceConversations: (convs) => set((s) => {
+        const existingMessages = new Map(s.conversations.map((conversation) => [conversation.id, conversation.messages]));
+        const merged = sortConversations(
+          convs.map((conversation) => ({
+            ...conversation,
+            messages: existingMessages.get(conversation.id) ?? conversation.messages,
+          }))
+        );
+
+        return {
+          conversations: merged,
+          activeConversationId:
+            s.activeConversationId && merged.some((conversation) => conversation.id === s.activeConversationId)
+              ? s.activeConversationId
+              : (merged[0]?.id ?? null),
+        };
+      }),
+
+      upsertConversation: (conversation) => set((s) => {
+        const existing = s.conversations.find((item) => item.id === conversation.id);
+        const mergedConversation = {
+          ...conversation,
+          messages: conversation.messages.length > 0
+            ? conversation.messages
+            : (existing?.messages ?? []),
+        };
+        const remaining = s.conversations.filter((item) => item.id !== conversation.id);
+
+        return {
+          conversations: sortConversations([mergedConversation, ...remaining]),
+        };
+      }),
+
+      updateConversation: (conversationId, patch) => set((s) => ({
+        conversations: sortConversations(
+          s.conversations.map((conversation) =>
+            conversation.id === conversationId
+              ? { ...conversation, ...patch }
+              : conversation
+          )
+        ),
+      })),
+
+      setConversationMessages: (conversationId, messages) => set((s) => ({
+        conversations: sortConversations(
+          s.conversations.map((conversation) =>
+            conversation.id === conversationId
+              ? { ...conversation, messages }
+              : conversation
+          )
+        ),
+      })),
+
+      clearAllConversations: () => set({
+        conversations: [],
+        activeConversationId: null,
+        streamingContent: "",
+        isStreaming: false,
+      }),
 
       activeConversation: () => {
         const { conversations, activeConversationId } = get();

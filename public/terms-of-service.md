@@ -23,10 +23,11 @@ You agree not to:
 - Upload content you do not have rights to (document uploads are admin-only)
 - Impersonate FIRST, its partners, or any event officials
 - Attempt to circumvent authentication or rate limiting
+- Publish or share chat links containing private, confidential, or sensitive information unless you are authorized to disclose that information
 
 ## 5. User Accounts
 
-You may use the Service as a guest for a limited number of messages. Creating an account via Google OAuth is required for continued use and to persist conversation history. You are responsible for maintaining the security of your account.
+You may use the Service as a guest for a limited number of messages. Creating an account via Google OAuth is required for continued use, to persist conversation history, and to use public chat sharing. If you choose to make a chat public, anyone with that link may view the conversation until you disable sharing or delete the chat. You are responsible for maintaining the security of your account and for any content you choose to share publicly.
 
 ## 6. Intellectual Property
 

@@ -1,5 +1,5 @@
 import {
-  pgTable, text, timestamp, integer, jsonb, uuid,
+  pgTable, text, timestamp, integer, jsonb, uuid, boolean,
 } from "drizzle-orm/pg-core";
 
 export const users = pgTable("users", {
@@ -42,6 +42,7 @@ export const conversations = pgTable("conversations", {
   userId: text("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
   title: text("title").notNull().default("New Chat"),
   seasonYear: integer("season_year").notNull().default(2026),
+  isPublic: boolean("is_public").notNull().default(false),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });

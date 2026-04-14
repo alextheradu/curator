@@ -67,21 +67,28 @@ function emailToHue(email: string): number {
   return Math.abs(hash) % 360;
 }
 
-export function AppSidebar() {
+interface AppSidebarProps {
+  onCreateConversation: () => void | Promise<void>;
+  onOpenConversation: (id: string) => void | Promise<void>;
+  onDeleteConversation: (id: string) => void | Promise<void>;
+  onDeleteAllConversations: () => void | Promise<void>;
+}
+
+export function AppSidebar({
+  onCreateConversation,
+  onOpenConversation,
+  onDeleteConversation,
+  onDeleteAllConversations,
+}: AppSidebarProps) {
   const { data: session } = useSession();
   const { resolvedTheme, setTheme } = useTheme();
   const { toggleSidebar, setOpenMobile } = useSidebar();
   const {
     conversations,
     activeConversationId,
-    newConversation,
-    setActiveConversation,
-    deleteConversation,
-    clearConversation: clearAllConversations,
   } = useChatStore();
 
   const [showDeleteAllDialog, setShowDeleteAllDialog] = useState(false);
-  const [deleteTargetId, setDeleteTargetId] = useState<string | null>(null);
 
   const adminEmails = (process.env.NEXT_PUBLIC_ADMIN_EMAILS ?? "").split(",").map((e) => e.trim());
   const isAdmin = adminEmails.includes(session?.user?.email ?? "");
@@ -90,12 +97,11 @@ export function AppSidebar() {
 
   const handleDeleteAll = () => {
     setShowDeleteAllDialog(false);
-    conversations.forEach((c) => deleteConversation(c.id));
-    newConversation();
+    void onDeleteAllConversations();
   };
 
   const handleDeleteOne = (id: string) => {
-    deleteConversation(id);
+    void onDeleteConversation(id);
   };
 
   const groups: { label: string; items: Conversation[] }[] = [
@@ -117,7 +123,10 @@ export function AppSidebar() {
                 <SidebarMenuButton
                   className="size-8 !px-0 items-center justify-center group-data-[collapsible=icon]:group-hover/logo:opacity-0"
                   tooltip="Curator"
-                  onClick={() => { setOpenMobile(false); newConversation(); }}
+                  onClick={() => {
+                    setOpenMobile(false);
+                    void onCreateConversation();
+                  }}
                 >
                   <MessageSquareIcon className="size-4 text-sidebar-foreground/50" />
                 </SidebarMenuButton>
@@ -145,7 +154,10 @@ export function AppSidebar() {
                 <SidebarMenuItem>
                   <SidebarMenuButton
                     className="h-8 rounded-lg border border-sidebar-border text-[13px] text-sidebar-foreground/70 transition-colors duration-150 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground"
-                    onClick={() => { setOpenMobile(false); newConversation(); }}
+                    onClick={() => {
+                      setOpenMobile(false);
+                      void onCreateConversation();
+                    }}
                     tooltip="New Chat"
                   >
                     <PenSquareIcon className="size-4" />
@@ -196,7 +208,10 @@ export function AppSidebar() {
                             <ConversationItem
                               conversation={conv}
                               isActive={conv.id === activeConversationId}
-                              onClick={() => { setActiveConversation(conv.id); setOpenMobile(false); }}
+                              onClick={() => {
+                                setOpenMobile(false);
+                                void onOpenConversation(conv.id);
+                              }}
                               onDelete={() => handleDeleteOne(conv.id)}
                             />
                           </SidebarMenuItem>
