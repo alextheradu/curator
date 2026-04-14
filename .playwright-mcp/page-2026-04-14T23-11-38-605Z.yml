@@ -1,0 +1,42 @@
+- generic [active] [ref=e1]:
+  - generic [ref=e3]:
+    - generic [ref=e6]:
+      - list [ref=e8]:
+        - listitem [ref=e9]:
+          - generic [ref=e10]:
+            - button [ref=e11]:
+              - img [ref=e12]
+            - button "Open sidebar":
+              - img
+          - button "Toggle Sidebar" [ref=e15]:
+            - img
+            - generic [ref=e16]: Toggle Sidebar
+      - generic [ref=e17]:
+        - list [ref=e20]:
+          - listitem [ref=e21]:
+            - button "New chat" [ref=e22]:
+              - img [ref=e23]
+              - generic [ref=e26]: New chat
+        - generic [ref=e29]: Your conversations will appear here.
+      - list [ref=e31]:
+        - listitem [ref=e32]:
+          - button "Sign in with Google" [ref=e33]:
+            - generic [ref=e34]: Sign in with Google
+      - button "Toggle Sidebar" [ref=e35]
+    - main [ref=e36]:
+      - generic [ref=e38]:
+        - generic [ref=e39]:
+          - generic [ref=e40]: What can I help with?
+          - generic [ref=e41]: Ask about FRC rules, strategy, programming, or game documentation.
+        - generic [ref=e42]:
+          - button "What are the key robot rules for the 2026 season?" [ref=e44] [cursor=pointer]
+          - button "Explain this year's scoring system in plain English." [ref=e46] [cursor=pointer]
+          - button "Show me a Java command-based subsystem example." [ref=e48] [cursor=pointer]
+          - button "Compare swerve and tank drive for a defensive robot." [ref=e50] [cursor=pointer]
+      - generic [ref=e53]:
+        - textbox "Ask anything..." [disabled] [ref=e54]
+        - generic [ref=e55]:
+          - paragraph [ref=e56]: Enter to send · Shift+Enter for newline
+          - button "Send" [disabled] [ref=e57]:
+            - img [ref=e58]
+  - region "Notifications alt+T"

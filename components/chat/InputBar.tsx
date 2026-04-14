@@ -23,8 +23,10 @@ export function InputBar({ onSend, onStop, disabled, isStreaming }: Props) {
     textarea.style.height = `${Math.min(textarea.scrollHeight, 200)}px`;
   }, [value]);
 
-  // Auto-focus on mount
+  // Auto-focus on mount — desktop only (mobile would pop the keyboard immediately)
   useEffect(() => {
+    const isTouchDevice = window.matchMedia("(hover: none) and (pointer: coarse)").matches;
+    if (isTouchDevice) return;
     const timer = setTimeout(() => {
       textareaRef.current?.focus();
     }, 100);
@@ -67,13 +69,13 @@ export function InputBar({ onSend, onStop, disabled, isStreaming }: Props) {
         placeholder="Ask anything..."
         disabled={disabled}
         rows={1}
-        className="min-h-24 w-full resize-none bg-transparent px-4 pt-3.5 pb-1.5 text-[13px] leading-relaxed placeholder:text-muted-foreground/35 focus:outline-none"
+        className="min-h-14 w-full resize-none bg-transparent px-4 pt-3.5 pb-1.5 text-[13px] leading-relaxed placeholder:text-muted-foreground/35 focus:outline-none sm:min-h-24"
         style={{ maxHeight: "200px" }}
       />
 
       <div className="flex items-center justify-between px-3 pb-3">
-        {/* Left: hint */}
-        <p className="text-[11px] text-muted-foreground/50 select-none">
+        {/* Left: hint — hidden on mobile */}
+        <p className="hidden text-[11px] text-muted-foreground/50 select-none sm:block">
           Enter to send · Shift+Enter for newline
         </p>
 

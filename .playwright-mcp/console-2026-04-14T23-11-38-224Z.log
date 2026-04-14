@@ -1,0 +1,261 @@
+[     279ms] [INFO] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold @ http://localhost:3001/_next/static/chunks/node_modules_next_dist_115brz8._.js:2431
+[     328ms] [LOG] [HMR] connected @ http://localhost:3001/_next/static/chunks/node_modules_next_dist_115brz8._.js:2431
+[     502ms] [ERROR] Encountered a script tag while rendering React component. Scripts inside React components are never executed when rendering on the client. Consider using template tag instead (https://developer.mozilla.org/en-US/docs/Web/HTML/Element/template). @ http://localhost:3001/_next/static/chunks/node_modules_next_dist_115brz8._.js:3272
+[     524ms] Error: Hydration failed because the server rendered HTML didn't match the client. As a result this tree will be regenerated on the client. This can happen if a SSR-ed Client Component used:
+
+- A server/client branch `if (typeof window !== 'undefined')`.
+- Variable input such as `Date.now()` or `Math.random()` which changes each time it's called.
+- Date formatting in a user's locale which doesn't match the server.
+- External changing data without sending a snapshot of it along with the HTML.
+- Invalid HTML tag nesting.
+
+It can also happen if the client has a browser extension installed which messes with the HTML before React loaded.
+
+https://react.dev/link/hydration-mismatch
+
+  ...
+    <HomePage>
+      <SidebarProvider defaultOpen={true}>
+        ...
+          <div className="flex h-svh...">
+            <AppSidebar>
+            <ChatWindow>
+              <SidebarInset className="min-h-svh ...">
+                <main data-slot="sidebar-inset" className="relative f...">
+                  <TosModal>
+                  <AuthModal>
+                  <SettingsModal>
+                  <DocumentViewerModal>
+                  <div ref={{current:null}} className="relative f...">
+                    <AnimatePresence mode="popLayout">
+                      <PresenceChild isPresent={true} initial={undefined} custom={undefined} presenceAffectsLayout={true} ...>
+                        <PopChild pop={true} isPresent={true} anchorX="left" anchorY="top" root={undefined}>
+                          <PopChildMeasure isPresent={true} childRef={{current:null}} sizeRef={{...}} pop={true}>
+                            <motion.div initial={{opacity:0}} animate={{opacity:1}} className="mx-auto fl..." ...>
+                              <div
++                               className="mx-auto flex w-full max-w-3xl flex-1 flex-col gap-6 px-4 pb-40 pt-8 md:px-6"
+-                               className="mx-auto flex w-full max-w-3xl flex-1 flex-col justify-center gap-8 px-4 pb-..."
++                               style={{opacity:0}}
+-                               style={{}}
+                                ref={function useMotionRef.useCallback}
+                              >
+                                <MessageBubble message={{role:"user", ...}} ...>
+                                  <div
++                                   className="group/message w-full animate-[fade-up_0.25s_cubic-bezier(0.22,1,0.36,1)]"
+-                                   className="flex flex-col items-center gap-3 px-4"
++                                   data-role="user"
+-                                   data-role={null}
+                                  >
+                                    <div
++                                     className="flex flex-col items-end gap-2"
+-                                     className="text-center text-2xl font-semibold tracking-tight text-foreground md:..."
+-                                     style={{opacity:"0",transform:"translateY..."}}
+                                    >
++                                     <div
++                                       className="w-fit max-w-[min(80%,56ch)] overflow-hidden break-words rounded-2xl..."
++                                     >
+-                                     What can I help with?
+                                ...
+                  ...
+
+    at throwOnHydrationMismatch (http://localhost:3001/_next/static/chunks/node_modules_next_dist_compiled_react-dom_058-ah~._.js:3318:56)
+    at beginWork (http://localhost:3001/_next/static/chunks/node_modules_next_dist_compiled_react-dom_058-ah~._.js:6758:918)
+    at runWithFiberInDEV (http://localhost:3001/_next/static/chunks/node_modules_next_dist_compiled_react-dom_058-ah~._.js:965:74)
+    at performUnitOfWork (http://localhost:3001/_next/static/chunks/node_modules_next_dist_compiled_react-dom_058-ah~._.js:9555:97)
+    at workLoopConcurrentByScheduler (http://localhost:3001/_next/static/chunks/node_modules_next_dist_compiled_react-dom_058-ah~._.js:9551:58)
+    at renderRootConcurrent (http://localhost:3001/_next/static/chunks/node_modules_next_dist_compiled_react-dom_058-ah~._.js:9534:71)
+    at performWorkOnRoot (http://localhost:3001/_next/static/chunks/node_modules_next_dist_compiled_react-dom_058-ah~._.js:9061:150)
+    at performWorkOnRootViaSchedulerTask (http://localhost:3001/_next/static/chunks/node_modules_next_dist_compiled_react-dom_058-ah~._.js:10255:9)
+    at MessagePort.performWorkUntilDeadline (http://localhost:3001/_next/static/chunks/node_modules_next_dist_compiled_0rpq4pf._.js:2647:64)
+[     661ms] [LOG] [Fast Refresh] rebuilding @ http://localhost:3001/_next/static/chunks/node_modules_next_dist_115brz8._.js:2431
+[     906ms] [LOG] [Fast Refresh] done in 345ms @ http://localhost:3001/_next/static/chunks/node_modules_next_dist_115brz8._.js:2431
+[   24213ms] [LOG] [Fast Refresh] rebuilding @ http://localhost:3001/_next/static/chunks/node_modules_next_dist_115brz8._.js:2431
+[   24369ms] [LOG] [Fast Refresh] done in 230ms @ http://localhost:3001/_next/static/chunks/node_modules_next_dist_115brz8._.js:2431
+[   76216ms] [LOG] [Fast Refresh] rebuilding @ http://localhost:3001/_next/static/chunks/node_modules_next_dist_115brz8._.js:2431
+[   76244ms] [LOG] [Fast Refresh] done in 87ms @ http://localhost:3001/_next/static/chunks/node_modules_next_dist_115brz8._.js:2431
+[   82878ms] [LOG] [Fast Refresh] rebuilding @ http://localhost:3001/_next/static/chunks/node_modules_next_dist_115brz8._.js:2431
+[   83083ms] [LOG] [Fast Refresh] done in 278ms @ http://localhost:3001/_next/static/chunks/node_modules_next_dist_115brz8._.js:2431
+[   86801ms] [LOG] [Fast Refresh] rebuilding @ http://localhost:3001/_next/static/chunks/node_modules_next_dist_115brz8._.js:2431
+[   86829ms] [LOG] [Fast Refresh] done in 12ms @ http://localhost:3001/_next/static/chunks/node_modules_next_dist_115brz8._.js:2431
+[   90202ms] [LOG] [Fast Refresh] rebuilding @ http://localhost:3001/_next/static/chunks/node_modules_next_dist_115brz8._.js:2431
+[   90230ms] [LOG] [Fast Refresh] done in 40ms @ http://localhost:3001/_next/static/chunks/node_modules_next_dist_115brz8._.js:2431
+[   90335ms] [LOG] [Fast Refresh] rebuilding @ http://localhost:3001/_next/static/chunks/node_modules_next_dist_115brz8._.js:2431
+[   90364ms] [LOG] [Fast Refresh] done in 20ms @ http://localhost:3001/_next/static/chunks/node_modules_next_dist_115brz8._.js:2431
+[   94976ms] [LOG] [Fast Refresh] rebuilding @ http://localhost:3001/_next/static/chunks/node_modules_next_dist_115brz8._.js:2431
+[   95004ms] [LOG] [Fast Refresh] done in 48ms @ http://localhost:3001/_next/static/chunks/node_modules_next_dist_115brz8._.js:2431
+[   99947ms] [LOG] [Fast Refresh] rebuilding @ http://localhost:3001/_next/static/chunks/node_modules_next_dist_115brz8._.js:2431
+[   99987ms] [LOG] [Fast Refresh] done in 45ms @ http://localhost:3001/_next/static/chunks/node_modules_next_dist_115brz8._.js:2431
+[  104068ms] [LOG] [Fast Refresh] rebuilding @ http://localhost:3001/_next/static/chunks/node_modules_next_dist_115brz8._.js:2431
+[  104243ms] [LOG] [Fast Refresh] done in 246ms @ http://localhost:3001/_next/static/chunks/node_modules_next_dist_115brz8._.js:2431
+[  107179ms] [LOG] [Fast Refresh] rebuilding @ http://localhost:3001/_next/static/chunks/node_modules_next_dist_115brz8._.js:2431
+[  107206ms] [LOG] [Fast Refresh] done in 47ms @ http://localhost:3001/_next/static/chunks/node_modules_next_dist_115brz8._.js:2431
+[  111461ms] [LOG] [Fast Refresh] rebuilding @ http://localhost:3001/_next/static/chunks/node_modules_next_dist_115brz8._.js:2431
+[  111489ms] [LOG] [Fast Refresh] done in 40ms @ http://localhost:3001/_next/static/chunks/node_modules_next_dist_115brz8._.js:2431
+[  111494ms] [LOG] [Fast Refresh] rebuilding @ http://localhost:3001/_next/static/chunks/node_modules_next_dist_115brz8._.js:2431
+[  111531ms] [LOG] [Fast Refresh] done in 5ms @ http://localhost:3001/_next/static/chunks/node_modules_next_dist_115brz8._.js:2431
+[  115524ms] [LOG] [Fast Refresh] rebuilding @ http://localhost:3001/_next/static/chunks/node_modules_next_dist_115brz8._.js:2431
+[  115552ms] [LOG] [Fast Refresh] done in 63ms @ http://localhost:3001/_next/static/chunks/node_modules_next_dist_115brz8._.js:2431
+[  124865ms] [LOG] [Fast Refresh] rebuilding @ http://localhost:3001/_next/static/chunks/node_modules_next_dist_115brz8._.js:2431
+[  124910ms] [LOG] [Fast Refresh] done in 117ms @ http://localhost:3001/_next/static/chunks/node_modules_next_dist_115brz8._.js:2431
+[  130348ms] [LOG] [Fast Refresh] rebuilding @ http://localhost:3001/_next/static/chunks/node_modules_next_dist_115brz8._.js:2431
+[  130480ms] [LOG] [Fast Refresh] done in 218ms @ http://localhost:3001/_next/static/chunks/node_modules_next_dist_115brz8._.js:2431
+[  130581ms] [LOG] [Fast Refresh] rebuilding @ http://localhost:3001/_next/static/chunks/node_modules_next_dist_115brz8._.js:2431
+[  130591ms] [LOG] [Fast Refresh] done in 110ms @ http://localhost:3001/_next/static/chunks/node_modules_next_dist_115brz8._.js:2431
+[  130717ms] [LOG] [Fast Refresh] rebuilding @ http://localhost:3001/_next/static/chunks/node_modules_next_dist_115brz8._.js:2431
+[  130750ms] [ERROR] Failed to load resource: the server responded with a status of 404 (Not Found) @ http://localhost:3001/c/33582f8d-63c2-499d-8a24-1a08dd2eebcf?_rsc=lquux:0
+[  130762ms] [ERROR] Failed to load resource: the server responded with a status of 404 (Not Found) @ http://localhost:3001/c/33582f8d-63c2-499d-8a24-1a08dd2eebcf?_rsc=lquux:0
+[  130803ms] [ERROR] Failed to load resource: the server responded with a status of 404 (Not Found) @ http://localhost:3001/c/33582f8d-63c2-499d-8a24-1a08dd2eebcf:0
+[  130835ms] [INFO] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold @ http://localhost:3001/_next/static/chunks/node_modules_next_dist_115brz8._.js:2431
+[  130845ms] [LOG] [HMR] connected @ http://localhost:3001/_next/static/chunks/node_modules_next_dist_115brz8._.js:2431
+[  133569ms] [LOG] [Fast Refresh] rebuilding @ http://localhost:3001/_next/static/chunks/node_modules_next_dist_115brz8._.js:2431
+[  133607ms] [ERROR] Failed to load resource: the server responded with a status of 404 (Not Found) @ http://localhost:3001/c/33582f8d-63c2-499d-8a24-1a08dd2eebcf?_rsc=1nkcf:0
+[  133644ms] [LOG] [Fast Refresh] done in 75ms @ http://localhost:3001/_next/static/chunks/node_modules_next_dist_115brz8._.js:2431
+[  133745ms] [LOG] [Fast Refresh] rebuilding @ http://localhost:3001/_next/static/chunks/node_modules_next_dist_115brz8._.js:2431
+[  134246ms] [LOG] [Fast Refresh] done in 602ms @ http://localhost:3001/_next/static/chunks/node_modules_next_dist_115brz8._.js:2431
+[  134571ms] [INFO] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold @ http://localhost:3001/_next/static/chunks/node_modules_next_dist_115brz8._.js:2431
+[  134581ms] [LOG] [HMR] connected @ http://localhost:3001/_next/static/chunks/node_modules_next_dist_115brz8._.js:2431
+[  137813ms] [WARNING] The resource http://localhost:3001/_next/static/media/70bc3e132a0a741e-s.p.1409xf.ylxg8g.woff2 was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally. @ http://localhost:3001/c/33582f8d-63c2-499d-8a24-1a08dd2eebcf:0
+[  160207ms] [LOG] [Fast Refresh] rebuilding @ http://localhost:3001/_next/static/chunks/node_modules_next_dist_115brz8._.js:2431
+[  160627ms] [ERROR] ./components/chat/ChatApp.tsx:10:1
+Module not found: Can't resolve '@/components/chat/ChatWindow'
+   8 | import { SidebarProvider } from "@/components/ui/sidebar";
+   9 | import { AppSidebar } from "@/components/sidebar/Sidebar";
+> 10 | import { ChatWindow } from "@/components/chat/ChatWindow";
+     | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  11 | import {
+  12 |   createConversation,
+  13 |   deleteConversation as deleteConversationRequest,
+
+Import map: aliased to relative './components/chat/ChatWindow' inside of [project]/
+
+Import trace:
+  Server Component:
+    ./components/chat/ChatApp.tsx
+    ./app/page.tsx
+
+https://nextjs.org/docs/messages/module-not-found @ http://localhost:3001/_next/static/chunks/node_modules_next_dist_115brz8._.js:3272
+[  160627ms] [ERROR] Failed to load resource: the server responded with a status of 500 (Internal Server Error) @ http://localhost:3001/c/33582f8d-63c2-499d-8a24-1a08dd2eebcf?_rsc=yzgud:0
+[  160662ms] [ERROR] Failed to load resource: the server responded with a status of 500 (Internal Server Error) @ http://localhost:3001/c/33582f8d-63c2-499d-8a24-1a08dd2eebcf?_rsc=yzgud:0
+[  160677ms] [ERROR] Failed to load resource: the server responded with a status of 500 (Internal Server Error) @ http://localhost:3001/c/33582f8d-63c2-499d-8a24-1a08dd2eebcf:0
+[  160724ms] [INFO] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold @ http://localhost:3001/_next/static/chunks/node_modules_react-dom_0bruynb._.js:15305
+[  160754ms] Error: ./components/chat/ChatApp.tsx:10:1
+Module not found: Can't resolve '@/components/chat/ChatWindow'
+   8 | import { SidebarProvider } from "@/components/ui/sidebar";
+   9 | import { AppSidebar } from "@/components/sidebar/Sidebar";
+> 10 | import { ChatWindow } from "@/components/chat/ChatWindow";
+     | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  11 | import {
+  12 |   createConversation,
+  13 |   deleteConversation as deleteConversationRequest,
+
+Import map: aliased to relative './components/chat/ChatWindow' inside of [project]/
+
+
+Import trace:
+  Server Component:
+    ./components/chat/ChatApp.tsx
+    ./app/page.tsx
+
+https://nextjs.org/docs/messages/module-not-found
+
+
+    at <unknown> (Error: ./components/chat/ChatApp.tsx:10:1)
+    at <unknown> (https://nextjs.org/docs/messages/module-not-found)
+    at Object.getCompilationErrors (file:///srv/md0/robotics/curator/node_modules/next/dist/server/dev/hot-reloader-turbopack.js:1186:59)
+    at DevBundlerService.getCompilationError (file:///srv/md0/robotics/curator/node_modules/next/dist/server/lib/dev-bundler-service.js:44:55)
+    at DevServer.getCompilationError (file:///srv/md0/robotics/curator/node_modules/next/dist/server/dev/next-dev-server.js:719:42)
+    at DevServer.findPageComponents (file:///srv/md0/robotics/curator/node_modules/next/dist/server/dev/next-dev-server.js:689:43)
+    at async DevServer.renderErrorToResponseImpl (file:///srv/md0/robotics/curator/node_modules/next/dist/server/base-server.js:1745:26)
+[  160754ms] [LOG] [HMR] connected @ http://localhost:3001/_next/static/chunks/node_modules_next_dist_0u_w_5s._.js:1226
+[  160756ms] [ERROR] ./components/chat/ChatApp.tsx:10:1
+Module not found: Can't resolve '@/components/chat/ChatWindow'
+   8 | import { SidebarProvider } from "@/components/ui/sidebar";
+   9 | import { AppSidebar } from "@/components/sidebar/Sidebar";
+> 10 | import { ChatWindow } from "@/components/chat/ChatWindow";
+     | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  11 | import {
+  12 |   createConversation,
+  13 |   deleteConversation as deleteConversationRequest,
+
+Import map: aliased to relative './components/chat/ChatWindow' inside of [project]/
+
+Import trace:
+  Server Component:
+    ./components/chat/ChatApp.tsx
+    ./app/page.tsx
+
+https://nextjs.org/docs/messages/module-not-found @ http://localhost:3001/_next/static/chunks/node_modules_next_dist_0u_w_5s._.js:1945
+[  160756ms] [ERROR] ./components/chat/ChatApp.tsx:10:1
+Module not found: Can't resolve '@/components/chat/ChatWindow'
+   8 | import { SidebarProvider } from "@/components/ui/sidebar";
+   9 | import { AppSidebar } from "@/components/sidebar/Sidebar";
+> 10 | import { ChatWindow } from "@/components/chat/ChatWindow";
+     | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  11 | import {
+  12 |   createConversation,
+  13 |   deleteConversation as deleteConversationRequest,
+
+Import map: aliased to relative './components/chat/ChatWindow' inside of [project]/
+
+Import trace:
+  Server Component:
+    ./components/chat/ChatApp.tsx
+    ./app/c/[id]/page.tsx
+
+https://nextjs.org/docs/messages/module-not-found @ http://localhost:3001/_next/static/chunks/node_modules_next_dist_0u_w_5s._.js:1945
+[  160808ms] [ERROR] ./components/chat/ChatApp.tsx:10:1
+Module not found: Can't resolve '@/components/chat/ChatWindow'
+   8 | import { SidebarProvider } from "@/components/ui/sidebar";
+   9 | import { AppSidebar } from "@/components/sidebar/Sidebar";
+> 10 | import { ChatWindow } from "@/components/chat/ChatWindow";
+     | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  11 | import {
+  12 |   createConversation,
+  13 |   deleteConversation as deleteConversationRequest,
+
+Import map: aliased to relative './components/chat/ChatWindow' inside of [project]/
+
+Import trace:
+  Server Component:
+    ./components/chat/ChatApp.tsx
+    ./app/page.tsx
+
+https://nextjs.org/docs/messages/module-not-found @ http://localhost:3001/_next/static/chunks/node_modules_next_dist_0u_w_5s._.js:1945
+[  160860ms] [LOG] [Fast Refresh] rebuilding @ http://localhost:3001/_next/static/chunks/node_modules_next_dist_0u_w_5s._.js:1226
+[  179414ms] [ERROR] ./components/chat/ChatApp.tsx:10:1
+Module not found: Can't resolve '@/components/chat/ChatWindow'
+   8 | import { SidebarProvider } from "@/components/ui/sidebar";
+   9 | import { AppSidebar } from "@/components/sidebar/Sidebar";
+> 10 | import { ChatWindow } from "@/components/chat/ChatWindow";
+     | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  11 | import {
+  12 |   createConversation,
+  13 |   deleteConversation as deleteConversationRequest,
+
+Import map: aliased to relative './components/chat/ChatWindow' inside of [project]/
+
+Import trace:
+  Server Component:
+    ./components/chat/ChatApp.tsx
+    ./app/page.tsx
+
+https://nextjs.org/docs/messages/module-not-found @ http://localhost:3001/_next/static/chunks/node_modules_next_dist_0u_w_5s._.js:1945
+[  179465ms] [LOG] [Fast Refresh] rebuilding @ http://localhost:3001/_next/static/chunks/node_modules_next_dist_0u_w_5s._.js:1226
+[  231100ms] [LOG] [Fast Refresh] rebuilding @ http://localhost:3001/_next/static/chunks/node_modules_next_dist_0u_w_5s._.js:1226
+[  231280ms] [LOG] [Fast Refresh] done in 183ms @ http://localhost:3001/_next/static/chunks/node_modules_next_dist_0u_w_5s._.js:1226
+[  231691ms] [INFO] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold @ http://localhost:3001/_next/static/chunks/node_modules_next_dist_115brz8._.js:2431
+[  231706ms] [LOG] [HMR] connected @ http://localhost:3001/_next/static/chunks/node_modules_next_dist_115brz8._.js:2431
+[  257533ms] [LOG] [Fast Refresh] rebuilding @ http://localhost:3001/_next/static/chunks/node_modules_next_dist_115brz8._.js:2431
+[  257601ms] [LOG] [Fast Refresh] done in 138ms @ http://localhost:3001/_next/static/chunks/node_modules_next_dist_115brz8._.js:2431
+[  261846ms] [LOG] [Fast Refresh] rebuilding @ http://localhost:3001/_next/static/chunks/node_modules_next_dist_115brz8._.js:2431
+[  261873ms] [LOG] [Fast Refresh] done in 34ms @ http://localhost:3001/_next/static/chunks/node_modules_next_dist_115brz8._.js:2431
+[  265313ms] [LOG] [Fast Refresh] rebuilding @ http://localhost:3001/_next/static/chunks/node_modules_next_dist_115brz8._.js:2431
+[  265339ms] [LOG] [Fast Refresh] done in 38ms @ http://localhost:3001/_next/static/chunks/node_modules_next_dist_115brz8._.js:2431
+[  276779ms] [LOG] [Fast Refresh] rebuilding @ http://localhost:3001/_next/static/chunks/node_modules_next_dist_115brz8._.js:2431
+[  276900ms] [LOG] [Fast Refresh] done in 195ms @ http://localhost:3001/_next/static/chunks/node_modules_next_dist_115brz8._.js:2431
+[  297605ms] [LOG] [Fast Refresh] rebuilding @ http://localhost:3001/_next/static/chunks/node_modules_next_dist_115brz8._.js:2431
+[  297683ms] [LOG] [Fast Refresh] done in 153ms @ http://localhost:3001/_next/static/chunks/node_modules_next_dist_115brz8._.js:2431
+[  299346ms] [LOG] [Fast Refresh] rebuilding @ http://localhost:3001/_next/static/chunks/node_modules_next_dist_115brz8._.js:2431
+[  299371ms] [LOG] [Fast Refresh] done in 29ms @ http://localhost:3001/_next/static/chunks/node_modules_next_dist_115brz8._.js:2431
+[  308878ms] [LOG] [Fast Refresh] rebuilding @ http://localhost:3001/_next/static/chunks/node_modules_next_dist_115brz8._.js:2431
+[  308905ms] [LOG] [Fast Refresh] done in 102ms @ http://localhost:3001/_next/static/chunks/node_modules_next_dist_115brz8._.js:2431

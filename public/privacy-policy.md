@@ -17,10 +17,12 @@ This Privacy Policy explains how Curator ("the Service", "we", "us") collects, u
 ### 2b. Authenticated users (Google sign-in)
 - **From Google OAuth:** your name, email address, and profile picture URL
 - **Conversation history:** all messages you send and receive, stored in our database so they persist across devices
+- **Sharing preferences:** whether a conversation has been marked public by you
 - **Account metadata:** account creation date, last active date
 
 ### 2c. All users
 - **Chat messages:** message content is sent to OpenRouter (our LLM provider) for processing. See OpenRouter's privacy policy at openrouter.ai/privacy.
+- **Public shared chats:** if an authenticated user chooses to make a chat public, that conversation becomes accessible to anyone with the chat URL until the owner turns sharing off or deletes the chat.
 - **Search queries:** if web search is triggered, your query is sent to LangSearch. See LangSearch's privacy policy for details.
 - **Server logs:** standard web server request logs (IP address, timestamp, user agent) retained for up to 30 days.
 
@@ -28,6 +30,7 @@ This Privacy Policy explains how Curator ("the Service", "we", "us") collects, u
 
 - To provide and improve the Service
 - To authenticate you and persist your conversation history
+- To honor your choice to publish or unpublish shared chat links
 - To enforce the guest message limit and Terms of Service acceptance
 - To generate AI responses grounded in FRC documentation
 
@@ -45,6 +48,7 @@ We do **not** sell your data, use it for advertising, or share it with third par
 ## 5. Data Storage
 
 - User data and conversation history are stored in a self-hosted PostgreSQL database.
+- Public/private sharing status for authenticated conversations is stored alongside the conversation record in PostgreSQL.
 - PDF documents are stored in a self-hosted MinIO instance.
 - Vector embeddings are stored in a self-hosted Qdrant instance.
 - No user data is stored on third-party cloud storage.
@@ -53,6 +57,7 @@ We do **not** sell your data, use it for advertising, or share it with third par
 
 - **Guest data:** stored only in your browser's `localStorage`. Cleared when you clear your browser data.
 - **Authenticated user data:** retained for as long as your account exists. You may delete your account and all associated data at any time from the Settings page.
+- **Public shared chats:** remain publicly accessible until you make the chat private again or delete it.
 - **Server logs:** retained for 30 days, then deleted.
 
 ## 7. Cookies
@@ -73,6 +78,7 @@ The Service is intended for FRC team members, mentors, and coaches. We do not kn
 You have the right to:
 - Access the data we hold about you
 - Delete your account and all associated data
+- Make a shared chat private again or delete it to remove public access
 - Export your conversation history
 
 These actions are available from the Settings page once logged in.

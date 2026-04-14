@@ -15,14 +15,14 @@ interface Props {
 
 export function EmptyState({ onPromptSelect }: Props) {
   return (
-    <div className="mx-auto flex w-full max-w-3xl flex-1 flex-col justify-center gap-8 px-4 pb-40 pt-16">
+    <div className="mx-auto flex w-full max-w-3xl flex-1 flex-col justify-center gap-6 px-4 pb-32 pt-8 sm:gap-8 sm:pb-40 sm:pt-16">
       {/* Greeting */}
       <div className="flex flex-col items-center gap-3 px-4">
         <motion.div
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.35, duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
-          className="text-center text-2xl font-semibold tracking-tight text-foreground md:text-3xl"
+          className="text-center text-xl font-semibold tracking-tight text-foreground sm:text-2xl md:text-3xl"
         >
           What can I help with?
         </motion.div>
