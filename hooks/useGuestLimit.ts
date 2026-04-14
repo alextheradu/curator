@@ -1,24 +1,31 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useCallback } from "react";
 
 const TOS_KEY = "curator_tos_accepted";
 const GUEST_COUNT_KEY = "curator_guest_count";
 const GUEST_LIMIT = 1;
 
-export function useGuestLimit(isAuthenticated: boolean) {
-  const [tosAccepted, setTosAccepted] = useState(false);
-  const [guestCount, setGuestCount] = useState(0);
-  const [showTosModal, setShowTosModal] = useState(false);
-  const [showAuthModal, setShowAuthModal] = useState(false);
+function initializeTosState(): boolean {
+  if (typeof window === "undefined") return false;
+  return localStorage.getItem(TOS_KEY) === "true";
+}
 
-  useEffect(() => {
-    const accepted = localStorage.getItem(TOS_KEY) === "true";
-    const count = parseInt(localStorage.getItem(GUEST_COUNT_KEY) ?? "0", 10);
-    setTosAccepted(accepted);
-    setGuestCount(count);
-    if (!accepted) setShowTosModal(true);
-  }, []);
+function initializeGuestCount(): number {
+  if (typeof window === "undefined") return 0;
+  return parseInt(localStorage.getItem(GUEST_COUNT_KEY) ?? "0", 10);
+}
+
+function initializeShowTosModal(): boolean {
+  if (typeof window === "undefined") return false;
+  return localStorage.getItem(TOS_KEY) !== "true";
+}
+
+export function useGuestLimit(isAuthenticated: boolean) {
+  const [tosAccepted, setTosAccepted] = useState(initializeTosState);
+  const [guestCount, setGuestCount] = useState(initializeGuestCount);
+  const [showTosModal, setShowTosModal] = useState(initializeShowTosModal);
+  const [showAuthModal, setShowAuthModal] = useState(false);
 
   const acceptTos = useCallback(() => {
     localStorage.setItem(TOS_KEY, "true");
