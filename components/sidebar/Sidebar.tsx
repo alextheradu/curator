@@ -1,102 +1,120 @@
 "use client";
 
-import { motion, AnimatePresence } from "framer-motion";
-import { Plus, Settings, ChevronLeft, ChevronRight, Bot } from "lucide-react";
+import { useSession, signIn, signOut } from "next-auth/react";
+import { AnimatePresence } from "framer-motion";
+import { Bot, LogIn, LogOut, Plus, Settings2, Shield } from "lucide-react";
+import {
+  Sidebar, SidebarContent, SidebarFooter, SidebarGroup, SidebarGroupContent,
+  SidebarGroupLabel, SidebarHeader, SidebarMenu, SidebarMenuItem, SidebarRail, SidebarTrigger,
+} from "@/components/ui/sidebar";
 import { Button } from "@/components/ui/button";
 import { ConversationItem } from "./ConversationItem";
-import { ThemeToggle } from "@/components/ui/ThemeToggle";
 import { useChatStore } from "@/lib/store";
 
-export function Sidebar() {
-  const {
-    conversations, activeConversationId, sidebarOpen,
-    newConversation, setActiveConversation, deleteConversation,
-    setSettingsOpen,
-  } = useChatStore();
+export function AppSidebar() {
+  const { data: session } = useSession();
+  const { conversations, activeConversationId, newConversation, setActiveConversation, deleteConversation, setSettingsOpen } = useChatStore();
+
+  const adminEmails = (process.env.NEXT_PUBLIC_ADMIN_EMAILS ?? "").split(",").map((e) => e.trim());
+  const isAdmin = adminEmails.includes(session?.user?.email ?? "");
 
   return (
-    <motion.aside
-      initial={false}
-      animate={{ width: sidebarOpen ? 260 : 0, opacity: sidebarOpen ? 1 : 0 }}
-      transition={{ type: "spring", stiffness: 300, damping: 30 }}
-      className="relative flex-shrink-0 overflow-hidden"
-    >
-      <div className="circuit-bg h-full w-[260px] flex flex-col bg-surface-elevated border-r border-surface-border">
-        {/* Branding */}
-        <div className="flex items-center gap-3 px-4 py-4 border-b border-surface-border">
-          <div className="relative flex items-center justify-center w-8 h-8 rounded-lg bg-frc-blue/20 border border-frc-blue/30">
-            <Bot size={16} className="text-frc-blue" />
-            <span className="absolute -top-0.5 -right-0.5 w-2 h-2 rounded-full bg-success animate-pulse" />
+    <Sidebar variant="inset" className="border-[#2e2e2e] bg-[#1a1a1a]">
+      <SidebarHeader className="border-b border-[#2e2e2e] px-4 py-4">
+        <div className="mb-4 flex items-center gap-3">
+          <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#ED1C24]">
+            <Bot size={18} className="text-white" />
           </div>
           <div>
-            <h1 className="text-sm font-bold text-text-primary tracking-wide">CURATOR</h1>
-            <p className="text-xs text-text-muted">FRC Intelligence</p>
+            <p className="text-[10px] uppercase tracking-widest text-[#8A8A8A]">FRC AI</p>
+            <h1 className="text-lg font-bold uppercase tracking-wider text-white">Curator</h1>
           </div>
         </div>
+        <Button
+          onClick={newConversation}
+          className="h-10 w-full gap-2 rounded-xl bg-[#ED1C24] text-white hover:bg-[#c9151b]"
+        >
+          <Plus size={15} />
+          New Chat
+        </Button>
+      </SidebarHeader>
 
-        {/* New Chat */}
-        <div className="p-3">
-          <Button
-            onClick={newConversation}
-            className="w-full gap-2 bg-frc-blue hover:bg-frc-blue/90 text-white font-medium text-sm h-9 transition-all duration-200 hover:shadow-[0_0_15px_rgba(21,101,192,0.4)]"
+      <SidebarContent className="px-2 py-3">
+        <SidebarGroup>
+          <SidebarGroupLabel className="text-xs text-[#8A8A8A]">
+            {session ? "Your chats" : "Guest chats"}
+          </SidebarGroupLabel>
+          <SidebarGroupContent>
+            {conversations.length === 0 ? (
+              <div className="rounded-xl border border-dashed border-[#2e2e2e] px-4 py-8 text-center text-sm text-[#8A8A8A]">
+                No chats yet. Start asking about FRC rules, code, or strategy.
+              </div>
+            ) : (
+              <SidebarMenu className="gap-1">
+                <AnimatePresence initial={false}>
+                  {conversations.map((conv) => (
+                    <SidebarMenuItem key={conv.id}>
+                      <ConversationItem
+                        conversation={conv}
+                        isActive={conv.id === activeConversationId}
+                        onClick={() => setActiveConversation(conv.id)}
+                        onDelete={() => deleteConversation(conv.id)}
+                      />
+                    </SidebarMenuItem>
+                  ))}
+                </AnimatePresence>
+              </SidebarMenu>
+            )}
+          </SidebarGroupContent>
+        </SidebarGroup>
+      </SidebarContent>
+
+      <SidebarFooter className="border-t border-[#2e2e2e] px-4 py-4 gap-2">
+        {isAdmin && (
+          <Button variant="ghost" size="sm" asChild
+            className="w-full justify-start gap-2 rounded-xl text-[#8A8A8A] hover:text-white"
           >
-            <Plus size={15} />
-            New Chat
+            <a href="/admin/documents"><Shield size={14} />Manage Documents</a>
           </Button>
-        </div>
+        )}
+        <Button variant="ghost" size="sm"
+          className="w-full justify-start gap-2 rounded-xl text-[#8A8A8A] hover:text-white"
+          onClick={() => setSettingsOpen(true)}
+        >
+          <Settings2 size={14} />Settings
+        </Button>
 
-        {/* Conversations list */}
-        <div className="flex-1 overflow-y-auto px-2 py-1 space-y-0.5">
-          {conversations.length === 0 ? (
-            <p className="text-center text-xs text-text-muted py-8 px-4">
-              Start a new chat to begin exploring FRC knowledge.
-            </p>
-          ) : (
-            <AnimatePresence initial={false}>
-              {conversations.map((conv) => (
-                <ConversationItem
-                  key={conv.id}
-                  conversation={conv}
-                  isActive={conv.id === activeConversationId}
-                  onClick={() => setActiveConversation(conv.id)}
-                  onDelete={() => deleteConversation(conv.id)}
-                />
-              ))}
-            </AnimatePresence>
-          )}
-        </div>
-
-        {/* Footer */}
-        <div className="p-3 border-t border-surface-border space-y-2">
-          <div className="flex items-center justify-between">
-            <button
-              onClick={() => setSettingsOpen(true)}
-              className="flex items-center gap-2 text-xs text-text-muted hover:text-text-primary transition-colors px-2 py-1.5 rounded-md hover:bg-surface-border/60"
+        {session ? (
+          <div className="flex items-center gap-3 rounded-xl border border-[#2e2e2e] bg-[#0f0f0f] p-3">
+            {session.user?.image && (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img src={session.user.image} alt="" className="h-7 w-7 rounded-full" />
+            )}
+            <div className="min-w-0 flex-1">
+              <p className="truncate text-xs font-medium text-white">{session.user?.name}</p>
+              <p className="truncate text-[10px] text-[#8A8A8A]">{session.user?.email}</p>
+            </div>
+            <Button variant="ghost" size="icon"
+              className="h-7 w-7 shrink-0 text-[#8A8A8A] hover:text-white"
+              onClick={() => signOut({ callbackUrl: "/" })}
+              title="Sign out"
             >
-              <Settings size={13} />
-              Settings
-            </button>
-            <ThemeToggle />
+              <LogOut size={13} />
+            </Button>
           </div>
-          <div className="flex items-center gap-1.5 px-2 py-1.5 rounded-md bg-surface-border/40">
-            <span className="w-1.5 h-1.5 rounded-full bg-success" />
-            <span className="text-xs text-text-muted font-mono">Gemma 3 27B · OpenRouter</span>
-          </div>
-        </div>
-      </div>
-    </motion.aside>
+        ) : (
+          <Button variant="outline" size="sm"
+            className="w-full gap-2 rounded-xl border-[#2e2e2e] bg-[#0f0f0f] text-[#8A8A8A] hover:text-white"
+            onClick={() => signIn("google", { callbackUrl: "/" })}
+          >
+            <LogIn size={14} />Sign in with Google
+          </Button>
+        )}
+      </SidebarFooter>
+      <SidebarRail />
+    </Sidebar>
   );
 }
 
-export function SidebarToggle() {
-  const { sidebarOpen, setSidebarOpen } = useChatStore();
-  return (
-    <button
-      onClick={() => setSidebarOpen(!sidebarOpen)}
-      className="flex items-center justify-center w-6 h-6 rounded-md hover:bg-surface-border transition-colors text-text-muted hover:text-text-primary"
-      aria-label={sidebarOpen ? "Close sidebar" : "Open sidebar"}
-    >
-      {sidebarOpen ? <ChevronLeft size={14} /> : <ChevronRight size={14} />}
-    </button>
-  );
-}
+export function SidebarToggle() { return <SidebarTrigger />; }
+export { AppSidebar as Sidebar };
