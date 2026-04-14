@@ -6,7 +6,8 @@ import type { Citation } from "@/lib/db/schema";
 import { NextRequest, NextResponse } from "next/server";
 import { cookies } from "next/headers";
 
-const GUEST_LIMIT = 1;
+const GUEST_LIMIT = 3;
+const MODEL = "openai/gpt-oss-120b:free";
 const OR_URL = "https://openrouter.ai/api/v1/chat/completions";
 
 const SEARCH_TOOL = {
@@ -21,6 +22,38 @@ const SEARCH_TOOL = {
     },
   },
 };
+
+const WEB_SEARCH_HINTS = [
+  "latest",
+  "recent",
+  "current",
+  "today",
+  "yesterday",
+  "this week",
+  "this month",
+  "news",
+  "update",
+  "updates",
+  "event",
+  "events",
+  "results",
+  "ranking",
+  "rankings",
+  "standing",
+  "standings",
+  "who won",
+  "look up",
+  "search the web",
+  "online",
+];
+
+function shouldRunWebSearch(query: string, ragHitCount: number) {
+  const normalized = query.toLowerCase();
+  const hinted = WEB_SEARCH_HINTS.some((hint) => normalized.includes(hint));
+
+  if (hinted) return true;
+  return ragHitCount === 0 && /team\s+\d+|district|regional|championship|match/i.test(query);
+}
 
 function orHeaders(apiKey: string) {
   return {
@@ -54,64 +87,71 @@ export async function POST(request: NextRequest) {
   const fullMessages = [{ role: "system", content: systemPrompt }, ...messages];
   const allCitations: Citation[] = [...ragCitations];
 
-  // First pass — may trigger tool call
-  const first = await fetch(OR_URL, {
-    method: "POST",
-    headers: orHeaders(apiKey),
-    body: JSON.stringify({
-      model: "google/gemma-3-27b-it:free",
-      messages: fullMessages,
-      tools: [SEARCH_TOOL],
-      tool_choice: "auto",
-      stream: false,
-      temperature,
-      max_tokens: 2048,
-    }),
-  });
-
-  if (!first.ok) {
-    return NextResponse.json({ error: await first.text() }, { status: first.status });
-  }
-
-  const firstData = await first.json();
-  const firstChoice = firstData.choices?.[0];
   let finalMessages = fullMessages;
+  if (lastUser && shouldRunWebSearch(lastUser.content, ragCitations.length)) {
+    try {
+      const first = await fetch(OR_URL, {
+        method: "POST",
+        headers: orHeaders(apiKey),
+        body: JSON.stringify({
+          model: MODEL,
+          messages: fullMessages,
+          tools: [SEARCH_TOOL],
+          tool_choice: "auto",
+          stream: false,
+          temperature,
+          max_tokens: 1024,
+        }),
+      });
 
-  if (firstChoice?.finish_reason === "tool_calls" && firstChoice?.message?.tool_calls) {
-    const toolCall = firstChoice.message.tool_calls[0];
-    const { query } = JSON.parse(toolCall.function.arguments);
-    const webResults = await webSearch(query);
+      if (first.ok) {
+        const firstData = await first.json();
+        const firstChoice = firstData.choices?.[0];
 
-    for (const r of webResults) {
-      try {
-        const domain = new URL(r.url).hostname.replace("www.", "");
-        allCitations.push({ type: "web", label: domain, url: r.url });
-      } catch { /* invalid URL */ }
+        if (firstChoice?.finish_reason === "tool_calls" && firstChoice?.message?.tool_calls) {
+          const toolCall = firstChoice.message.tool_calls[0];
+          const { query } = JSON.parse(toolCall.function.arguments);
+          const webResults = await webSearch(query);
+
+          for (const r of webResults) {
+            try {
+              const domain = new URL(r.url).hostname.replace("www.", "");
+              allCitations.push({ type: "web", label: domain, url: r.url });
+            } catch { /* invalid URL */ }
+          }
+
+          const toolContent = webResults.length > 0
+            ? webResults.map((r, i) => `[WEB ${i + 1}] ${r.title}\n${r.snippet}\nURL: ${r.url}`).join("\n\n")
+            : "No results found.";
+
+          finalMessages = [
+            ...fullMessages,
+            firstChoice.message,
+            { role: "tool", tool_call_id: toolCall.id, content: toolContent },
+          ];
+        }
+      }
+    } catch {
+      // Network error on tool pass — fall through to plain streaming
     }
-
-    const toolContent = webResults.length > 0
-      ? webResults.map((r, i) => `[WEB ${i + 1}] ${r.title}\n${r.snippet}\nURL: ${r.url}`).join("\n\n")
-      : "No results found.";
-
-    finalMessages = [
-      ...fullMessages,
-      firstChoice.message,
-      { role: "tool", tool_call_id: toolCall.id, content: toolContent },
-    ];
   }
 
-  // Stream final response
   const stream = await fetch(OR_URL, {
     method: "POST",
     headers: orHeaders(apiKey),
     body: JSON.stringify({
-      model: "google/gemma-3-27b-it:free",
+      model: MODEL,
       messages: finalMessages,
       stream: true,
       temperature,
       max_tokens: 2048,
     }),
   });
+
+  if (!stream.ok) {
+    const errText = await stream.text();
+    return NextResponse.json({ error: errText }, { status: stream.status });
+  }
 
   const responseHeaders = new Headers({
     "Content-Type": "text/event-stream",

@@ -2,7 +2,7 @@
 
 import { useChatStore } from "@/lib/store";
 
-const SEASONS = [2023, 2024, 2025];
+const SEASONS = [2026, 2025, 2024, 2023];
 
 interface Props {
   conversationId: string;
@@ -16,11 +16,11 @@ export function SeasonSelector({ conversationId, value }: Props) {
     <select
       value={value}
       onChange={(e) => setSeasonYear(conversationId, Number(e.target.value))}
-      className="h-7 min-w-[100px] rounded border border-border bg-background px-2 text-xs text-muted-foreground focus:border-primary focus:outline-none"
+      className="h-9 min-w-[124px] rounded-full border border-white/10 bg-white/[0.04] px-3 text-xs font-medium text-[var(--foreground)] outline-none transition-colors focus:border-[var(--accent)]"
     >
       {SEASONS.map((year) => (
         <option key={year} value={year}>
-          {year} Season
+          {year} season
         </option>
       ))}
     </select>

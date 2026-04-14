@@ -2,14 +2,40 @@ import * as Minio from "minio";
 
 let _client: Minio.Client | null = null;
 
-function getClient(): Minio.Client {
-  if (_client) return _client;
-  _client = new Minio.Client({
-    endPoint: process.env.MINIO_ENDPOINT!,
-    useSSL: process.env.MINIO_USE_SSL === "true",
+function getMinioConfig(): Minio.ClientOptions {
+  const rawEndpoint = process.env.MINIO_ENDPOINT?.trim();
+  if (!rawEndpoint) {
+    throw new Error("MINIO_ENDPOINT is not configured");
+  }
+
+  const defaultUseSSL = process.env.MINIO_USE_SSL === "true";
+
+  if (rawEndpoint.startsWith("http://") || rawEndpoint.startsWith("https://")) {
+    const parsed = new URL(rawEndpoint);
+    if (parsed.pathname !== "/" && parsed.pathname !== "") {
+      throw new Error("MINIO_ENDPOINT must not include a path");
+    }
+
+    return {
+      endPoint: parsed.hostname,
+      port: parsed.port ? Number(parsed.port) : undefined,
+      useSSL: parsed.protocol === "https:",
+      accessKey: process.env.MINIO_ACCESS_KEY!,
+      secretKey: process.env.MINIO_SECRET_KEY!,
+    };
+  }
+
+  return {
+    endPoint: rawEndpoint,
+    useSSL: defaultUseSSL,
     accessKey: process.env.MINIO_ACCESS_KEY!,
     secretKey: process.env.MINIO_SECRET_KEY!,
-  });
+  };
+}
+
+function getClient(): Minio.Client {
+  if (_client) return _client;
+  _client = new Minio.Client(getMinioConfig());
   return _client;
 }
 

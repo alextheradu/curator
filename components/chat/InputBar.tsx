@@ -1,17 +1,8 @@
 "use client";
 
 import { useRef, useState, useEffect, KeyboardEvent } from "react";
-import { AnimatePresence, motion } from "framer-motion";
-import { CornerDownLeft, Eraser, PauseCircle, Send, Sparkles } from "lucide-react";
-import { estimateTokens } from "@/lib/utils";
-import { Button } from "@/components/ui/button";
+import { ArrowUpIcon, SquareIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
-
-const INSERT_PROMPTS = [
-  "Compare two drivetrain options",
-  "Summarize the manual implications",
-  "Generate Java command-based code",
-];
 
 interface Props {
   onSend: (message: string) => void;
@@ -23,133 +14,95 @@ interface Props {
 export function InputBar({ onSend, onStop, disabled, isStreaming }: Props) {
   const [value, setValue] = useState("");
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const [focused, setFocused] = useState(false);
 
   useEffect(() => {
-    const ta = textareaRef.current;
-    if (!ta) return;
-    ta.style.height = "auto";
-    ta.style.height = `${Math.min(ta.scrollHeight, 144)}px`;
+    const textarea = textareaRef.current;
+    if (!textarea) return;
+    textarea.style.height = "auto";
+    textarea.style.height = `${Math.min(textarea.scrollHeight, 200)}px`;
   }, [value]);
+
+  // Auto-focus on mount
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      textareaRef.current?.focus();
+    }, 100);
+    return () => clearTimeout(timer);
+  }, []);
 
   const handleSend = () => {
     const trimmed = value.trim();
     if (!trimmed || disabled || isStreaming) return;
     onSend(trimmed);
     setValue("");
+    if (textareaRef.current) {
+      textareaRef.current.style.height = "auto";
+    }
   };
 
-  const handleKeyDown = (e: KeyboardEvent<HTMLTextAreaElement>) => {
-    if (e.key === "Enter" && !e.shiftKey) {
-      e.preventDefault();
+  const handleKeyDown = (event: KeyboardEvent<HTMLTextAreaElement>) => {
+    if (event.key === "Enter" && !event.shiftKey) {
+      event.preventDefault();
       handleSend();
     }
   };
 
-  const tokens = estimateTokens(value);
   const canSend = value.trim().length > 0 && !disabled && !isStreaming;
 
   return (
-    <div className="space-y-3">
-      <div className="flex flex-wrap items-center gap-2">
-        {INSERT_PROMPTS.map((prompt) => (
+    <div
+      className={cn(
+        "rounded-2xl border border-border/30 bg-card/70 shadow-[var(--shadow-composer)] transition-shadow duration-300",
+        focused && "shadow-[var(--shadow-composer-focus)]"
+      )}
+    >
+      <textarea
+        ref={textareaRef}
+        value={value}
+        onChange={(e) => setValue(e.target.value)}
+        onKeyDown={handleKeyDown}
+        onFocus={() => setFocused(true)}
+        onBlur={() => setFocused(false)}
+        placeholder="Ask anything..."
+        disabled={disabled}
+        rows={1}
+        className="min-h-24 w-full resize-none bg-transparent px-4 pt-3.5 pb-1.5 text-[13px] leading-relaxed placeholder:text-muted-foreground/35 focus:outline-none"
+        style={{ maxHeight: "200px" }}
+      />
+
+      <div className="flex items-center justify-between px-3 pb-3">
+        {/* Left: hint */}
+        <p className="text-[11px] text-muted-foreground/50 select-none">
+          Enter to send · Shift+Enter for newline
+        </p>
+
+        {/* Right: stop or send */}
+        {isStreaming ? (
           <button
-            key={prompt}
             type="button"
-            onClick={() => setValue((current) => (current ? `${current}\n${prompt}` : prompt))}
-            className="rounded-full border border-border/70 bg-background/75 px-3 py-1.5 text-xs text-muted-foreground transition-colors hover:border-primary/25 hover:bg-primary/8 hover:text-foreground"
+            onClick={onStop}
+            className="flex h-7 w-7 items-center justify-center rounded-xl bg-foreground text-background transition-all duration-200 hover:opacity-85 active:scale-95"
+            aria-label="Stop"
           >
-            {prompt}
+            <SquareIcon className="size-3.5" />
           </button>
-        ))}
-      </div>
-
-      <div className="glass-panel rounded-[30px] p-3 shadow-[0_24px_60px_-40px_rgba(0,0,0,0.55)]">
-        <div className="mb-3 flex items-center justify-between gap-3 border-b border-border/70 px-1 pb-3">
-          <div className="flex items-center gap-2 text-xs text-muted-foreground">
-            <span className="inline-flex size-8 items-center justify-center rounded-2xl bg-primary/10 text-primary">
-              <Sparkles size={14} />
-            </span>
-            <div>
-              <p className="font-semibold text-foreground">Prompt Curator</p>
-              <p>Shift+Enter adds a newline.</p>
-            </div>
-          </div>
-          <div className="rounded-full border border-border/70 bg-background/70 px-3 py-1 font-mono text-[11px] uppercase tracking-[0.16em] text-muted-foreground">
-            ~{tokens} tokens
-          </div>
-        </div>
-
-        <textarea
-          ref={textareaRef}
-          value={value}
-          onChange={(e) => setValue(e.target.value)}
-          onKeyDown={handleKeyDown}
-          placeholder="Ask about rules, programming, strategy..."
-          disabled={disabled}
-          rows={1}
-          className={cn(
-            "min-h-[88px] w-full resize-none bg-transparent px-2 pb-2 pt-1 text-sm leading-7 outline-none",
-            "placeholder:text-muted-foreground/80 text-foreground"
-          )}
-          style={{ maxHeight: "144px" }}
-        />
-
-        <div className="flex flex-col gap-3 px-1 pt-2 sm:flex-row sm:items-center sm:justify-between">
-          <div className="flex items-center gap-2 text-xs text-muted-foreground">
-            <CornerDownLeft size={12} />
-            <span>Enter sends</span>
-            <span className="text-border">•</span>
-            <span>Curator may be wrong, verify official sources</span>
-          </div>
-
-          <div className="flex items-center gap-2">
-            {value && !isStreaming && (
-              <Button variant="ghost" size="sm" className="rounded-full" onClick={() => setValue("")}>
-                <Eraser size={14} />
-                Clear
-              </Button>
+        ) : (
+          <button
+            type="button"
+            onClick={handleSend}
+            disabled={!canSend}
+            className={cn(
+              "flex h-7 w-7 items-center justify-center rounded-xl transition-all duration-200",
+              canSend
+                ? "bg-foreground text-background hover:opacity-85 active:scale-95"
+                : "cursor-not-allowed bg-muted text-muted-foreground/25"
             )}
-            <motion.div whileHover={!isStreaming && canSend ? { scale: 1.02 } : {}} whileTap={!isStreaming && canSend ? { scale: 0.98 } : {}}>
-              <Button
-                onClick={isStreaming ? onStop : handleSend}
-                disabled={isStreaming ? false : !canSend}
-                className={cn(
-                  "h-11 rounded-full px-5 text-sm shadow-sm",
-                  isStreaming
-                    ? "bg-secondary text-secondary-foreground hover:bg-secondary/90"
-                    : "bg-[linear-gradient(135deg,var(--first-blue),var(--first-red))] text-white hover:opacity-95"
-                )}
-                aria-label={isStreaming ? "Stop" : "Send"}
-              >
-                <AnimatePresence mode="wait" initial={false}>
-                  {isStreaming ? (
-                    <motion.span
-                      key="stop"
-                      initial={{ opacity: 0, y: 4 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      exit={{ opacity: 0, y: -4 }}
-                      className="inline-flex items-center gap-2"
-                    >
-                      <PauseCircle size={16} />
-                      Stop
-                    </motion.span>
-                  ) : (
-                    <motion.span
-                      key="send"
-                      initial={{ opacity: 0, y: 4 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      exit={{ opacity: 0, y: -4 }}
-                      className="inline-flex items-center gap-2"
-                    >
-                      <Send size={15} />
-                      Send to Curator
-                    </motion.span>
-                  )}
-                </AnimatePresence>
-              </Button>
-            </motion.div>
-          </div>
-        </div>
+            aria-label="Send"
+          >
+            <ArrowUpIcon className="size-4" />
+          </button>
+        )}
       </div>
     </div>
   );

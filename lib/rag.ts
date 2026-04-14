@@ -1,6 +1,5 @@
 import { embedText } from "./embeddings";
 import { searchChunks } from "./qdrant";
-import { getPresignedUrl } from "./minio";
 import type { Citation } from "./db/schema";
 
 export interface RagContext {
@@ -16,7 +15,12 @@ export async function buildRagContext(query: string): Promise<RagContext> {
     return { contextBlock: "", citations: [] };
   }
 
-  const results = await searchChunks(queryEmbedding, 5);
+  let results: Awaited<ReturnType<typeof searchChunks>>;
+  try {
+    results = await searchChunks(queryEmbedding, 5);
+  } catch {
+    return { contextBlock: "", citations: [] };
+  }
   if (results.length === 0) return { contextBlock: "", citations: [] };
 
   const citations: Citation[] = [];
@@ -24,18 +28,11 @@ export async function buildRagContext(query: string): Promise<RagContext> {
 
   for (let i = 0; i < results.length; i++) {
     const { payload } = results[i];
-    let url = "";
-    try {
-      url = await getPresignedUrl(payload.minio_key);
-    } catch {
-      /* non-fatal */
-    }
-
     citations.push({
       type: "doc",
       label: `${payload.doc_name}, p.${payload.page_number}`,
-      url: url ? `${url}#page=${payload.page_number}` : "",
       pageNumber: payload.page_number,
+      minioKey: payload.minio_key,
     });
 
     sourceBlocks.push(

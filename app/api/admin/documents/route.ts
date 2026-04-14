@@ -17,6 +17,15 @@ export async function GET() {
   return NextResponse.json(docs);
 }
 
+export async function PATCH(req: Request) {
+  const session = await auth();
+  if (!isAdmin(session?.user?.email)) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  const { id, description } = await req.json();
+  if (!id) return NextResponse.json({ error: "id required" }, { status: 400 });
+  await db.update(documents).set({ description }).where(eq(documents.id, id));
+  return NextResponse.json({ ok: true });
+}
+
 export async function DELETE(req: Request) {
   const session = await auth();
   if (!isAdmin(session?.user?.email)) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
