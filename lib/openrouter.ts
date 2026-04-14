@@ -1,40 +1,39 @@
-export interface ChatMessage {
-  role: "system" | "user" | "assistant";
-  content: string;
-}
+import type { Citation } from "@/lib/db/schema";
 
-export interface OpenRouterStreamOptions {
-  messages: ChatMessage[];
+interface StreamOptions {
+  messages: Array<{ role: string; content: string }>;
   temperature?: number;
-  apiKey?: string;
-  onToken: (token: string) => void;
-  onDone: () => void;
-  onError: (error: Error) => void;
+  seasonYear?: number;
   signal?: AbortSignal;
+  onToken: (token: string) => void;
+  onDone: (citations: Citation[]) => void;
+  onError: (err: Error) => void;
+  onAuthRequired?: () => void;
 }
 
 export async function streamOpenRouterChat({
-  messages,
-  temperature = 0.2,
-  apiKey,
-  onToken,
-  onDone,
-  onError,
-  signal,
-}: OpenRouterStreamOptions): Promise<void> {
+  messages, temperature = 0.2, seasonYear, signal,
+  onToken, onDone, onError, onAuthRequired,
+}: StreamOptions) {
   try {
     const response = await fetch("/api/chat", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ messages, temperature, apiKey }),
+      body: JSON.stringify({ messages, temperature, seasonYear }),
       signal,
     });
 
-    if (!response.ok) {
-      const errorData = await response.json().catch(() => ({}));
-      throw new Error(errorData.error || `HTTP ${response.status}: ${response.statusText}`);
+    if (response.status === 401) {
+      const data = await response.json().catch(() => ({}));
+      if (data.error === "auth_required") { onAuthRequired?.(); return; }
     }
 
+    if (!response.ok) {
+      const data = await response.json().catch(() => ({ error: "Unknown error" }));
+      throw new Error(data.error ?? `HTTP ${response.status}`);
+    }
+
+    const citations: Citation[] = JSON.parse(response.headers.get("X-Citations") ?? "[]");
     const reader = response.body?.getReader();
     if (!reader) throw new Error("No response body");
 
@@ -44,28 +43,23 @@ export async function streamOpenRouterChat({
     while (true) {
       const { done, value } = await reader.read();
       if (done) break;
-
       buffer += decoder.decode(value, { stream: true });
       const lines = buffer.split("\n");
       buffer = lines.pop() ?? "";
 
       for (const line of lines) {
-        const trimmed = line.trim();
-        if (!trimmed.startsWith("data: ")) continue;
-        const data = trimmed.slice(6);
-        if (data === "[DONE]") { onDone(); return; }
+        if (!line.startsWith("data: ")) continue;
+        const data = line.slice(6).trim();
+        if (data === "[DONE]") { onDone(citations); return; }
         try {
           const parsed = JSON.parse(data);
-          const token = parsed.choices?.[0]?.delta?.content ?? "";
+          const token = parsed.choices?.[0]?.delta?.content;
           if (token) onToken(token);
-        } catch {
-          // Ignore malformed SSE lines
-        }
+        } catch { /* skip malformed chunks */ }
       }
     }
-
-    onDone();
-  } catch (err) {
+    onDone(citations);
+  } catch (err: unknown) {
     if (err instanceof Error && err.name === "AbortError") return;
     onError(err instanceof Error ? err : new Error(String(err)));
   }
