@@ -1,0 +1,10 @@
+{
+  "name": "Curator — FRC AI",
+  "short_name": "Curator",
+  "description": "AI knowledge base for FIRST Robotics Competition",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0f0f0f",
+  "theme_color": "#ED1C24",
+  "icons": [{ "src": "/icon.svg", "sizes": "any", "type": "image/svg+xml" }]
+}
