@@ -1,83 +1,56 @@
 "use client";
 
-import {
-  Modal, ModalOverlay, ModalContent, ModalHeader,
-  ModalBody, ModalCloseButton, Input, FormLabel,
-  FormControl, Slider, SliderTrack, SliderFilledTrack,
-  SliderThumb, Text, VStack, HStack, Badge,
-} from "@chakra-ui/react";
+import { useSession, signIn, signOut } from "next-auth/react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Slider } from "@/components/ui/slider";
+import { Button } from "@/components/ui/button";
 import { useChatStore } from "@/lib/store";
-import { Settings } from "lucide-react";
 
 export function SettingsModal() {
-  const { settingsOpen, setSettingsOpen, temperature, setTemperature, apiKeyOverride, setApiKeyOverride } =
-    useChatStore();
+  const { data: session } = useSession();
+  const { settingsOpen, setSettingsOpen, temperature, setTemperature } = useChatStore();
 
   return (
-    <Modal isOpen={settingsOpen} onClose={() => setSettingsOpen(false)} size="md">
-      <ModalOverlay backdropFilter="blur(8px)" bg="blackAlpha.700" />
-      <ModalContent
-        bg="var(--card, #12121A)"
-        borderColor="rgba(255,255,255,0.08)"
-        borderWidth={1}
-        borderRadius="xl"
-      >
-        <ModalHeader display="flex" alignItems="center" gap={2} fontSize="sm" fontWeight={600}>
-          <Settings size={16} />
-          Curator Settings
-        </ModalHeader>
-        <ModalCloseButton size="sm" />
-        <ModalBody pb={6}>
-          <VStack spacing={5} align="stretch">
-            <FormControl>
-              <FormLabel fontSize="xs" color="gray.500" mb={1.5}>
-                OpenRouter API Key Override
-              </FormLabel>
-              <Input
-                type="password"
-                placeholder="sk-or-v1-... (uses server key if empty)"
-                value={apiKeyOverride}
-                onChange={(e) => setApiKeyOverride(e.target.value)}
-                size="sm"
-                borderRadius="lg"
-                fontSize="xs"
-                fontFamily="mono"
-                _focus={{ borderColor: "#1565C0", boxShadow: "0 0 0 1px #1565C040" }}
-              />
-              <Text fontSize="xs" color="gray.600" mt={1}>
-                Stored locally in your browser only.
-              </Text>
-            </FormControl>
-
-            <FormControl>
-              <HStack justify="space-between" mb={2}>
-                <FormLabel fontSize="xs" color="gray.500" m={0}>Temperature</FormLabel>
-                <Badge fontFamily="mono" fontSize="xs" colorScheme="blue" variant="subtle" borderRadius="md">
-                  {temperature.toFixed(2)}
-                </Badge>
-              </HStack>
-              <Slider value={temperature} onChange={setTemperature} min={0} max={1} step={0.05}>
-                <SliderTrack borderRadius="full">
-                  <SliderFilledTrack bg="#1565C0" />
-                </SliderTrack>
-                <SliderThumb boxSize={4} bg="white" border="2px solid" borderColor="#1565C0" />
-              </Slider>
-              <HStack justify="space-between" mt={1}>
-                <Text fontSize="xs" color="gray.600">Precise</Text>
-                <Text fontSize="xs" color="gray.600">Creative</Text>
-              </HStack>
-            </FormControl>
-
-            <div className="flex items-center gap-2 px-3 py-2.5 rounded-lg border border-white/8 bg-black/20">
-              <span className="w-2 h-2 rounded-full bg-success" />
-              <div>
-                <p className="text-xs font-medium">Gemma 3 27B Instruct</p>
-                <p className="text-xs text-text-muted opacity-60">via OpenRouter · Free tier</p>
-              </div>
+    <Dialog open={settingsOpen} onOpenChange={setSettingsOpen}>
+      <DialogContent className="max-w-sm border-[#2e2e2e] bg-[#1a1a1a]">
+        <DialogHeader>
+          <DialogTitle className="text-white">Settings</DialogTitle>
+        </DialogHeader>
+        <div className="space-y-6 py-2">
+          <div className="space-y-3">
+            <div className="flex items-center justify-between">
+              <label className="text-sm font-medium text-white">Temperature</label>
+              <span className="font-mono text-xs text-[#8A8A8A]">{temperature.toFixed(1)}</span>
             </div>
-          </VStack>
-        </ModalBody>
-      </ModalContent>
-    </Modal>
+            <Slider min={0} max={1} step={0.1} value={[temperature]}
+              onValueChange={([v]) => setTemperature(v)}
+              className="[&_[role=slider]]:bg-[#ED1C24] [&_[role=slider]]:border-[#ED1C24]"
+            />
+            <p className="text-xs text-[#8A8A8A]">Lower = more precise. Higher = more creative.</p>
+          </div>
+
+          <div className="space-y-2 border-t border-[#2e2e2e] pt-4">
+            <p className="text-sm font-medium text-white">Account</p>
+            {session ? (
+              <div className="space-y-2">
+                <p className="text-xs text-[#8A8A8A]">Signed in as {session.user?.email}</p>
+                <Button variant="outline" size="sm"
+                  className="w-full border-[#2e2e2e] text-[#8A8A8A] hover:text-white"
+                  onClick={() => signOut({ callbackUrl: "/" })}
+                >
+                  Sign out
+                </Button>
+              </div>
+            ) : (
+              <Button size="sm" className="w-full bg-white text-black hover:bg-gray-100"
+                onClick={() => signIn("google", { callbackUrl: "/" })}
+              >
+                Sign in with Google
+              </Button>
+            )}
+          </div>
+        </div>
+      </DialogContent>
+    </Dialog>
   );
 }
