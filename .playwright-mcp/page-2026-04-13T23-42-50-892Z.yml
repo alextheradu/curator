@@ -1,0 +1,54 @@
+- generic [active] [ref=e1]:
+  - main [ref=e3]:
+    - complementary [ref=e5]:
+      - generic [ref=e6]:
+        - generic [ref=e7]:
+          - generic [ref=e8]: FRC
+          - generic [ref=e9]: /
+          - generic [ref=e10]: CURATOR
+          - generic [ref=e11]: "2026"
+        - button "New Chat" [ref=e13] [cursor=pointer]:
+          - img [ref=e14]
+          - text: New Chat
+        - paragraph [ref=e16]: No conversations yet
+        - generic [ref=e17]:
+          - generic [ref=e20]: gemma-3-27b · openrouter
+          - button "Settings" [ref=e22] [cursor=pointer]:
+            - img [ref=e23]
+            - text: Settings
+    - generic [ref=e27]:
+      - generic [ref=e28]:
+        - button "Close sidebar" [ref=e29] [cursor=pointer]:
+          - img [ref=e30]
+        - paragraph [ref=e33]: New Chat
+        - generic [ref=e35]: "2026"
+      - generic [ref=e37]:
+        - generic [ref=e38]:
+          - generic [ref=e39]:
+            - generic [ref=e40]: FRC
+            - generic [ref=e41]: /
+            - generic [ref=e42]: CURATOR
+          - paragraph [ref=e43]: AI assistant for the 2026 season — rules, strategy, programming
+        - generic [ref=e44]:
+          - button "What are the 2026 game objectives?" [ref=e45] [cursor=pointer]:
+            - paragraph [ref=e46]: What are the 2026 game objectives?
+          - button "Walk me through the robot size and weight limits" [ref=e47] [cursor=pointer]:
+            - paragraph [ref=e48]: Walk me through the robot size and weight limits
+          - button "What are the key auto period strategies this season?" [ref=e49] [cursor=pointer]:
+            - paragraph [ref=e50]: What are the key auto period strategies this season?
+          - button "How do I implement a PID controller in WPILib?" [ref=e51] [cursor=pointer]:
+            - paragraph [ref=e52]: How do I implement a PID controller in WPILib?
+          - button "Explain the ranking and playoff system" [ref=e53] [cursor=pointer]:
+            - paragraph [ref=e54]: Explain the ranking and playoff system
+          - button "Help me build a scouting spreadsheet template" [ref=e55] [cursor=pointer]:
+            - paragraph [ref=e56]: Help me build a scouting spreadsheet template
+        - paragraph [ref=e57]: Always verify rules at firstinspires.org
+      - generic [ref=e58]:
+        - generic [ref=e59]:
+          - textbox "Ask about rules, programming, strategy..." [disabled] [ref=e60]
+          - generic [ref=e61]:
+            - generic [ref=e62]: ~0 tokens · ⏎ send · ⇧⏎ newline
+            - button "Send" [disabled] [ref=e63] [cursor=pointer]
+        - paragraph [ref=e64]: Curator may make mistakes — always verify with official FIRST materials
+  - button "Open Next.js Dev Tools" [ref=e70] [cursor=pointer]:
+    - img [ref=e71]

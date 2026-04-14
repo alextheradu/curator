@@ -71,11 +71,12 @@ export function AppSidebar() {
 
       <SidebarFooter className="border-t border-[#2e2e2e] px-4 py-4 gap-2">
         {isAdmin && (
-          <Button variant="ghost" size="sm" asChild
-            className="w-full justify-start gap-2 rounded-xl text-[#8A8A8A] hover:text-white"
+          <a
+            href="/admin/documents"
+            className="inline-flex w-full items-center justify-start gap-2 rounded-xl px-2.5 py-1 text-sm text-[#8A8A8A] transition-colors hover:bg-muted hover:text-white"
           >
-            <a href="/admin/documents"><Shield size={14} />Manage Documents</a>
-          </Button>
+            <Shield size={14} />Manage Documents
+          </a>
         )}
         <Button variant="ghost" size="sm"
           className="w-full justify-start gap-2 rounded-xl text-[#8A8A8A] hover:text-white"
