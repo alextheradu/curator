@@ -5,6 +5,10 @@ export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs))
 }
 
+export function normalizeAssistantMarkdown(text: string): string {
+  return text.replace(/<br\s*\/?>/gi, "\n");
+}
+
 /** Estimate token count: ~1 token per 4 chars */
 export function estimateTokens(text: string): number {
   return Math.ceil(text.length / 4);

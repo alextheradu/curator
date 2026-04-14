@@ -19,19 +19,23 @@ function splitText(text: string): string[] {
 
 export async function extractChunks(buffer: Buffer): Promise<{ chunks: Chunk[]; pageCount: number }> {
   const parser = new PDFParse({ data: buffer });
-  const textResult = await parser.getText();
+  try {
+    const textResult = await parser.getText();
 
-  const pageCount = textResult.total;
-  const chunks: Chunk[] = [];
-  let idx = 0;
+    const pageCount = textResult.total;
+    const chunks: Chunk[] = [];
+    let idx = 0;
 
-  for (let p = 0; p < textResult.pages.length; p++) {
-    const pageText = (textResult.pages[p].text as string).trim();
-    if (!pageText) continue;
-    for (const text of splitText(pageText)) {
-      chunks.push({ text, pageNumber: p + 1, chunkIndex: idx++ });
+    for (let p = 0; p < textResult.pages.length; p++) {
+      const pageText = (textResult.pages[p].text as string).trim();
+      if (!pageText) continue;
+      for (const text of splitText(pageText)) {
+        chunks.push({ text, pageNumber: p + 1, chunkIndex: idx++ });
+      }
     }
-  }
 
-  return { chunks, pageCount };
+    return { chunks, pageCount };
+  } finally {
+    await parser.destroy();
+  }
 }

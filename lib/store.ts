@@ -34,6 +34,7 @@ interface ChatStore {
   newConversation: () => string;
   setActiveConversation: (id: string) => void;
   addMessage: (conversationId: string, message: Omit<Message, "id" | "timestamp">) => string;
+  startStreaming: () => void;
   updateStreamingContent: (content: string) => void;
   finalizeStreamingMessage: (conversationId: string, citations?: Citation[]) => void;
   resetStreamingState: () => void;
@@ -89,6 +90,8 @@ export const useChatStore = create<ChatStore>()(
         }));
         return id;
       },
+
+      startStreaming: () => set({ isStreaming: true, streamingContent: "" }),
 
       updateStreamingContent: (content) => set({ streamingContent: content, isStreaming: true }),
 

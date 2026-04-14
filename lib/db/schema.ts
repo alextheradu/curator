@@ -58,6 +58,7 @@ export const messages = pgTable("messages", {
 export const documents = pgTable("documents", {
   id: uuid("id").primaryKey().defaultRandom(),
   name: text("name").notNull(),
+  description: text("description"),
   seasonYear: integer("season_year").notNull(),
   minioKey: text("minio_key").notNull(),
   pageCount: integer("page_count").notNull().default(0),
@@ -77,6 +78,7 @@ export const docChunks = pgTable("doc_chunks", {
 export type Citation = {
   type: "doc" | "web";
   label: string;
-  url: string;
+  url?: string;
   pageNumber?: number;
+  minioKey?: string;
 };

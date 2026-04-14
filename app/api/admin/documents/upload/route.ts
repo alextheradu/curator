@@ -26,8 +26,12 @@ export async function POST(req: Request) {
   const buffer = Buffer.from(await file.arrayBuffer());
   const minioKey = `${seasonYear}/${Date.now()}-${file.name.replace(/\s+/g, "-")}`;
 
-  await uploadPdf(minioKey, buffer, buffer.length);
   const { chunks, pageCount } = await extractChunks(buffer);
+  if (chunks.length === 0) {
+    return NextResponse.json({ error: "No extractable text found in this PDF" }, { status: 400 });
+  }
+
+  await uploadPdf(minioKey, buffer, buffer.length);
 
   const [doc] = await db.insert(documents).values({
     name: file.name, seasonYear, minioKey, pageCount,

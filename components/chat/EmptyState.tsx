@@ -1,44 +1,68 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { Bot } from "lucide-react";
 
-const STARTERS = [
+const SUGGESTIONS = [
   "What are the key robot rules for the 2026 season?",
-  "Explain the scoring system for this year's game.",
-  "How do I set up a WPILib command-based project?",
-  "What is the robot weight limit?",
-  "How does alliance selection work at district events?",
-  "Show me a PID controller example in Java.",
+  "Explain this year's scoring system in plain English.",
+  "Show me a Java command-based subsystem example.",
+  "Compare swerve and tank drive for a defensive robot.",
 ];
 
-interface Props { onPromptSelect: (prompt: string) => void; }
+interface Props {
+  onPromptSelect: (prompt: string) => void;
+}
 
 export function EmptyState({ onPromptSelect }: Props) {
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 16 }}
-      animate={{ opacity: 1, y: 0 }}
-      className="flex min-h-full flex-col items-center justify-center px-4 py-16 text-center"
-    >
-      <div className="mb-6 flex h-16 w-16 items-center justify-center rounded-2xl bg-[#ED1C24]">
-        <Bot size={28} className="text-white" />
+    <div className="mx-auto flex w-full max-w-3xl flex-1 flex-col justify-center gap-8 px-4 pb-40 pt-16">
+      {/* Greeting */}
+      <div className="flex flex-col items-center gap-3 px-4">
+        <motion.div
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.35, duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
+          className="text-center text-2xl font-semibold tracking-tight text-foreground md:text-3xl"
+        >
+          What can I help with?
+        </motion.div>
+        <motion.div
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.5, duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
+          className="text-center text-sm text-muted-foreground/80"
+        >
+          Ask about FRC rules, strategy, programming, or game documentation.
+        </motion.div>
       </div>
-      <h2 className="mb-2 text-2xl font-bold text-white">Ask Curator</h2>
-      <p className="mb-8 max-w-sm text-sm text-[#8A8A8A]">
-        Your AI knowledge base for FIRST Robotics Competition. Ask about rules, programming, strategy, and more.
-      </p>
-      <div className="grid max-w-lg grid-cols-1 gap-2 sm:grid-cols-2">
-        {STARTERS.map((prompt) => (
-          <button
-            key={prompt}
-            onClick={() => onPromptSelect(prompt)}
-            className="rounded-xl border border-[#2e2e2e] bg-[#1a1a1a] px-4 py-3 text-left text-sm text-[#F5F5F5] transition-colors hover:border-[#ED1C24]/40 hover:bg-[#242424]"
+
+      {/* Suggested actions */}
+      <div
+        className="flex w-full gap-2.5 overflow-x-auto pb-1 sm:grid sm:grid-cols-2 sm:overflow-visible no-scrollbar"
+      >
+        {SUGGESTIONS.map((suggestion, index) => (
+          <motion.div
+            key={suggestion}
+            initial={{ opacity: 0, y: 16 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 16 }}
+            transition={{
+              delay: 0.06 * index,
+              duration: 0.4,
+              ease: [0.22, 1, 0.36, 1],
+            }}
+            className="min-w-[200px] shrink-0 sm:min-w-0 sm:shrink"
           >
-            {prompt}
-          </button>
+            <button
+              type="button"
+              onClick={() => onPromptSelect(suggestion)}
+              className="h-auto w-full cursor-pointer whitespace-nowrap rounded-xl border border-border/50 bg-card/30 px-4 py-3 text-left text-[12px] leading-relaxed text-muted-foreground transition-all duration-200 hover:-translate-y-0.5 hover:bg-card/60 hover:text-foreground hover:shadow-[var(--shadow-card)] sm:whitespace-normal sm:p-4 sm:text-[13px]"
+            >
+              {suggestion}
+            </button>
+          </motion.div>
         ))}
       </div>
-    </motion.div>
+    </div>
   );
 }

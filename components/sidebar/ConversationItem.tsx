@@ -1,11 +1,8 @@
 "use client";
 
-import * as React from "react";
-import { motion } from "framer-motion";
-import { MessageSquareText, Trash2 } from "lucide-react";
-import { formatTimestamp } from "@/lib/utils";
-import { Conversation } from "@/lib/store";
+import { Trash2 } from "lucide-react";
 import { SidebarMenuButton, SidebarMenuAction } from "@/components/ui/sidebar";
+import type { Conversation } from "@/lib/store";
 
 interface Props {
   conversation: Conversation;
@@ -15,48 +12,26 @@ interface Props {
 }
 
 export function ConversationItem({ conversation, isActive, onClick, onDelete }: Props) {
-  const lastMessage =
-    conversation.messages.at(-1)?.content ?? "Start a new room for rules, strategy, scouting, or code.";
-
   return (
-    <motion.div
-      layout
-      initial={{ opacity: 0, x: -16 }}
-      animate={{ opacity: 1, x: 0 }}
-      exit={{ opacity: 0, x: -16 }}
-      className="relative"
-    >
+    <div className="group/item relative">
       <SidebarMenuButton
         isActive={isActive}
         onClick={onClick}
-        className="h-auto min-h-[88px] items-start rounded-2xl border border-transparent bg-background/60 px-3 py-3 pr-10 backdrop-blur transition-all hover:border-primary/15 hover:bg-background/90 data-[active=true]:border-primary/20 data-[active=true]:bg-primary/8"
+        className="h-8 rounded-lg px-2 text-[13px] text-sidebar-foreground/70 transition-colors duration-150 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground data-[active=true]:bg-sidebar-accent data-[active=true]:text-sidebar-accent-foreground"
       >
-        <div className="mt-0.5 flex size-9 shrink-0 items-center justify-center rounded-2xl border border-primary/15 bg-primary/10 text-primary">
-          <MessageSquareText size={16} />
-        </div>
-        <div className="min-w-0 flex-1 space-y-1">
-          <div className="flex items-center justify-between gap-2">
-            <p className="truncate text-sm font-semibold leading-tight">{conversation.title}</p>
-            <span className="shrink-0 text-[10px] uppercase tracking-[0.16em] text-muted-foreground">
-              {conversation.seasonYear}
-            </span>
-          </div>
-          <p className="line-clamp-2 text-xs leading-relaxed text-muted-foreground">
-            {lastMessage}
-          </p>
-          <p className="text-[10px] uppercase tracking-[0.16em] text-muted-foreground/80">
-            {formatTimestamp(new Date(conversation.updatedAt))}
-          </p>
-        </div>
+        <span className="truncate">{conversation.title}</span>
       </SidebarMenuButton>
       <SidebarMenuAction
         showOnHover
-        onClick={(e: React.MouseEvent) => { e.stopPropagation(); onDelete(); }}
+        onClick={(e: React.MouseEvent) => {
+          e.stopPropagation();
+          onDelete();
+        }}
         aria-label="Delete conversation"
-        className="right-2 top-2 rounded-full text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
+        className="right-1 rounded-md text-sidebar-foreground/30 hover:bg-destructive/10 hover:text-destructive"
       >
-        <Trash2 size={12} />
+        <Trash2 className="size-3.5" />
       </SidebarMenuAction>
-    </motion.div>
+    </div>
   );
 }

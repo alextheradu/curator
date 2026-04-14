@@ -30,29 +30,38 @@ export function DocumentUploader({ onSuccess }: { onSuccess: () => void }) {
   };
 
   return (
-    <div className="rounded-xl border border-dashed border-[#2e2e2e] bg-[#1a1a1a] p-8">
+    <div className="rounded-3xl border border-dashed border-border/70 bg-card/30 p-8 shadow-[var(--shadow-card)] backdrop-blur-sm">
       <div className="flex flex-col items-center gap-4 text-center">
-        <div className="flex h-12 w-12 items-center justify-center rounded-full bg-[#ED1C24]/10">
-          <Upload size={22} className="text-[#ED1C24]" />
+        <div className="flex h-12 w-12 items-center justify-center rounded-full border border-[#0066B3]/20 bg-[#0066B3]/10">
+          <Upload size={22} className="text-[#0066B3]" />
         </div>
         <div>
-          <p className="font-medium text-white">Upload FRC Document</p>
-          <p className="text-sm text-[#8A8A8A]">PDF only — game manuals, team updates, rule supplements</p>
+          <p className="font-medium text-foreground">Upload FRC Document</p>
+          <p className="text-sm text-muted-foreground">PDF only. Use this for manuals, team updates, and rule supplements.</p>
         </div>
-        <div className="flex items-center gap-3">
-          <select value={seasonYear} onChange={(e) => setSeasonYear(parseInt(e.target.value, 10))}
-            className="rounded-lg border border-[#2e2e2e] bg-[#0f0f0f] px-3 py-2 text-sm text-white"
+        <div className="flex flex-wrap items-center justify-center gap-3">
+          <select
+            value={seasonYear}
+            onChange={(e) => setSeasonYear(parseInt(e.target.value, 10))}
+            className="rounded-xl border border-border/70 bg-background/80 px-3 py-2 text-sm text-foreground shadow-[var(--shadow-card)] outline-none transition-colors focus:border-[#0066B3]/40"
           >
             {[2026, 2025, 2024, 2023].map((y) => <option key={y} value={y}>{y}</option>)}
           </select>
-          <Button onClick={() => inputRef.current?.click()} disabled={uploading}
-            className="bg-[#ED1C24] text-white hover:bg-[#c9151b]"
+          <Button
+            onClick={() => inputRef.current?.click()}
+            disabled={uploading}
+            className="h-10 rounded-xl border border-[#0066B3]/20 bg-[#0066B3] px-4 text-white shadow-[var(--shadow-card)] hover:bg-[#00579a]"
           >
             {uploading ? <Loader2 size={16} className="animate-spin" /> : <Upload size={16} />}
             {uploading ? "Indexing..." : "Choose PDF"}
           </Button>
         </div>
-        <input ref={inputRef} type="file" accept="application/pdf" className="hidden"
+        <p className="text-xs text-muted-foreground">The file is stored, chunked page-by-page, embedded, and added to the retrieval index.</p>
+        <input
+          ref={inputRef}
+          type="file"
+          accept="application/pdf"
+          className="hidden"
           onChange={(e) => { const f = e.target.files?.[0]; if (f) handleUpload(f); }} />
       </div>
     </div>
