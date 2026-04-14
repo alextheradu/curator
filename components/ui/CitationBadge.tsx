@@ -1,23 +1,25 @@
-"use client";
+import { ExternalLink, FileText, Globe } from "lucide-react";
+import type { Citation } from "@/lib/db/schema";
 
-import { motion } from "framer-motion";
-import { BookOpen } from "lucide-react";
+interface Props { citation: Citation; index: number; }
 
-interface Props {
-  citation: string;
-}
+export function CitationBadge({ citation, index }: Props) {
+  const isWeb = citation.type === "web";
+  const color = isWeb ? "#0066B3" : "#ED1C24";
 
-export function CitationBadge({ citation }: Props) {
   return (
-    <motion.span
-      initial={{ opacity: 0, scale: 0.9 }}
-      animate={{ opacity: 1, scale: 1 }}
-      className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-mono
-        bg-frc-blue/10 border border-frc-blue/20 text-frc-blue/90
-        hover:bg-frc-blue/20 transition-colors cursor-default"
+    <a
+      href={citation.url || undefined}
+      target="_blank"
+      rel="noopener noreferrer"
+      className="inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[11px] transition-colors hover:bg-white/5"
+      style={{ borderColor: `${color}40`, color }}
+      title={citation.label}
     >
-      <BookOpen size={10} />
-      {citation}
-    </motion.span>
+      {isWeb ? <Globe size={10} /> : <FileText size={10} />}
+      <span className="font-medium">[{index}]</span>
+      <span className="max-w-[140px] truncate">{citation.label}</span>
+      {citation.url && <ExternalLink size={9} className="shrink-0 opacity-60" />}
+    </a>
   );
 }
