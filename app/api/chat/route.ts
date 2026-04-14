@@ -1,57 +1,129 @@
-import { NextRequest } from "next/server";
+import { auth } from "@/auth";
+import { buildSystemPrompt } from "@/lib/frc-system-prompt";
+import { buildRagContext } from "@/lib/rag";
+import { webSearch } from "@/lib/langsearch";
+import type { Citation } from "@/lib/db/schema";
+import { NextRequest, NextResponse } from "next/server";
+import { cookies } from "next/headers";
 
-export const runtime = "edge";
+const GUEST_LIMIT = 1;
+const OR_URL = "https://openrouter.ai/api/v1/chat/completions";
+
+const SEARCH_TOOL = {
+  type: "function" as const,
+  function: {
+    name: "search_web",
+    description: "Search the web for current FRC news, team info, event results, or anything not in uploaded docs.",
+    parameters: {
+      type: "object",
+      properties: { query: { type: "string" } },
+      required: ["query"],
+    },
+  },
+};
+
+function orHeaders(apiKey: string) {
+  return {
+    Authorization: `Bearer ${apiKey}`,
+    "Content-Type": "application/json",
+    "HTTP-Referer": process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000",
+    "X-Title": "Curator FRC Assistant",
+  };
+}
 
 export async function POST(request: NextRequest) {
-  const { messages, temperature = 0.2 } = await request.json();
+  const session = await auth();
+  const cookieStore = await cookies();
 
-  const apiKey = process.env.OPENROUTER_API_KEY;
-  if (!apiKey) {
-    return new Response(JSON.stringify({ error: "OPENROUTER_API_KEY not configured" }), {
-      status: 500,
-      headers: { "Content-Type": "application/json" },
-    });
-  }
-
-  const openRouterResponse = await fetch(
-    "https://openrouter.ai/api/v1/chat/completions",
-    {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${apiKey}`,
-        "Content-Type": "application/json",
-        "HTTP-Referer": process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000",
-        "X-Title": "Curator FRC Assistant",
-      },
-      body: JSON.stringify({
-        model: "google/gemma-3-27b-it:free",
-        messages,
-        stream: true,
-        temperature,
-        top_p: 0.9,
-        max_tokens: 2048,
-      }),
+  if (!session?.user?.id) {
+    const count = parseInt(cookieStore.get("guest_message_count")?.value ?? "0", 10);
+    if (count >= GUEST_LIMIT) {
+      return NextResponse.json({ error: "auth_required" }, { status: 401 });
     }
-  );
-
-  if (!openRouterResponse.ok) {
-    const errorText = await openRouterResponse.text();
-    let errorMessage = `OpenRouter error ${openRouterResponse.status}`;
-    try {
-      const parsed = JSON.parse(errorText);
-      errorMessage = parsed.error?.message ?? errorMessage;
-    } catch {}
-    return new Response(JSON.stringify({ error: errorMessage }), {
-      status: openRouterResponse.status,
-      headers: { "Content-Type": "application/json" },
-    });
   }
 
-  return new Response(openRouterResponse.body, {
-    headers: {
-      "Content-Type": "text/event-stream",
-      "Cache-Control": "no-cache",
-      "X-Accel-Buffering": "no",
-    },
+  const { messages, temperature = 0.2, seasonYear = 2026 } = await request.json();
+  const apiKey = process.env.OPENROUTER_API_KEY!;
+
+  const lastUser = [...messages].reverse().find((m: { role: string }) => m.role === "user");
+  const { contextBlock, citations: ragCitations } = lastUser
+    ? await buildRagContext(lastUser.content)
+    : { contextBlock: "", citations: [] };
+
+  const systemPrompt = buildSystemPrompt(seasonYear, contextBlock);
+  const fullMessages = [{ role: "system", content: systemPrompt }, ...messages];
+  const allCitations: Citation[] = [...ragCitations];
+
+  // First pass — may trigger tool call
+  const first = await fetch(OR_URL, {
+    method: "POST",
+    headers: orHeaders(apiKey),
+    body: JSON.stringify({
+      model: "google/gemma-3-27b-it:free",
+      messages: fullMessages,
+      tools: [SEARCH_TOOL],
+      tool_choice: "auto",
+      stream: false,
+      temperature,
+      max_tokens: 2048,
+    }),
   });
+
+  if (!first.ok) {
+    return NextResponse.json({ error: await first.text() }, { status: first.status });
+  }
+
+  const firstData = await first.json();
+  const firstChoice = firstData.choices?.[0];
+  let finalMessages = fullMessages;
+
+  if (firstChoice?.finish_reason === "tool_calls" && firstChoice?.message?.tool_calls) {
+    const toolCall = firstChoice.message.tool_calls[0];
+    const { query } = JSON.parse(toolCall.function.arguments);
+    const webResults = await webSearch(query);
+
+    for (const r of webResults) {
+      try {
+        const domain = new URL(r.url).hostname.replace("www.", "");
+        allCitations.push({ type: "web", label: domain, url: r.url });
+      } catch { /* invalid URL */ }
+    }
+
+    const toolContent = webResults.length > 0
+      ? webResults.map((r, i) => `[WEB ${i + 1}] ${r.title}\n${r.snippet}\nURL: ${r.url}`).join("\n\n")
+      : "No results found.";
+
+    finalMessages = [
+      ...fullMessages,
+      firstChoice.message,
+      { role: "tool", tool_call_id: toolCall.id, content: toolContent },
+    ];
+  }
+
+  // Stream final response
+  const stream = await fetch(OR_URL, {
+    method: "POST",
+    headers: orHeaders(apiKey),
+    body: JSON.stringify({
+      model: "google/gemma-3-27b-it:free",
+      messages: finalMessages,
+      stream: true,
+      temperature,
+      max_tokens: 2048,
+    }),
+  });
+
+  const responseHeaders = new Headers({
+    "Content-Type": "text/event-stream",
+    "Cache-Control": "no-cache",
+    "X-Accel-Buffering": "no",
+    "X-Citations": JSON.stringify(allCitations),
+  });
+
+  if (!session?.user?.id) {
+    const count = parseInt(cookieStore.get("guest_message_count")?.value ?? "0", 10);
+    responseHeaders.set("Set-Cookie", `guest_message_count=${count + 1}; Path=/; SameSite=Lax`);
+  }
+
+  return new Response(stream.body, { headers: responseHeaders });
 }
