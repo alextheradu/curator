@@ -31,6 +31,8 @@ interface ChatStore {
   sidebarOpen: boolean;
   settingsOpen: boolean;
   temperature: number;
+  typingTitleConversationId: string | null;
+  typingTitle: string;
 
   newConversation: () => string;
   setActiveConversation: (id: string | null) => void;
@@ -39,6 +41,8 @@ interface ChatStore {
   updateStreamingContent: (content: string) => void;
   finalizeStreamingMessage: (conversationId: string, citations?: Citation[]) => void;
   resetStreamingState: () => void;
+  setTypingTitle: (conversationId: string, title: string) => void;
+  clearTypingTitle: () => void;
   clearConversation: (conversationId: string) => void;
   deleteConversation: (conversationId: string) => void;
   setSeasonYear: (conversationId: string, year: number) => void;
@@ -69,6 +73,8 @@ export const useChatStore = create<ChatStore>()(
       sidebarOpen: true,
       settingsOpen: false,
       temperature: 0.2,
+      typingTitleConversationId: null,
+      typingTitle: "",
 
       newConversation: () => {
         const id = crypto.randomUUID();
@@ -135,6 +141,10 @@ export const useChatStore = create<ChatStore>()(
           ),
         }));
       },
+
+      setTypingTitle: (conversationId, title) =>
+        set({ typingTitleConversationId: conversationId, typingTitle: title }),
+      clearTypingTitle: () => set({ typingTitleConversationId: null, typingTitle: "" }),
 
       resetStreamingState: () => set({ streamingContent: "", isStreaming: false }),
 

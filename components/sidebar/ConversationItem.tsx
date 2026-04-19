@@ -2,7 +2,7 @@
 
 import { Trash2 } from "lucide-react";
 import { SidebarMenuButton, SidebarMenuAction } from "@/components/ui/sidebar";
-import type { Conversation } from "@/lib/store";
+import { useChatStore, type Conversation } from "@/lib/store";
 
 interface Props {
   conversation: Conversation;
@@ -12,6 +12,10 @@ interface Props {
 }
 
 export function ConversationItem({ conversation, isActive, onClick, onDelete }: Props) {
+  const { typingTitleConversationId, typingTitle } = useChatStore();
+  const isTyping = typingTitleConversationId === conversation.id;
+  const displayTitle = isTyping ? typingTitle : conversation.title;
+
   return (
     <div className="group/item relative">
       <SidebarMenuButton
@@ -19,7 +23,12 @@ export function ConversationItem({ conversation, isActive, onClick, onDelete }: 
         onClick={onClick}
         className="h-8 rounded-lg px-2 text-[13px] text-sidebar-foreground/70 transition-colors duration-150 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground data-[active=true]:bg-sidebar-accent data-[active=true]:text-sidebar-accent-foreground"
       >
-        <span className="truncate">{conversation.title}</span>
+        <span className="truncate">
+          {displayTitle || "\u00A0"}
+          {isTyping && (
+            <span className="ml-px inline-block h-3 w-0.5 animate-pulse rounded-full bg-current align-middle" />
+          )}
+        </span>
       </SidebarMenuButton>
       <SidebarMenuAction
         showOnHover
