@@ -1,5 +1,5 @@
 import {
-  pgTable, text, timestamp, integer, jsonb, uuid, boolean,
+  pgTable, text, timestamp, integer, jsonb, uuid, boolean, pgEnum,
 } from "drizzle-orm/pg-core";
 
 export const users = pgTable("users", {
@@ -8,6 +8,9 @@ export const users = pgTable("users", {
   email: text("email").notNull().unique(),
   emailVerified: timestamp("email_verified", { mode: "date" }),
   image: text("image"),
+  isAdmin: boolean("is_admin").notNull().default(false),
+  ipBanned: boolean("ip_banned").notNull().default(false),
+  bannedIp: text("banned_ip"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
@@ -64,6 +67,7 @@ export const documents = pgTable("documents", {
   seasonYear: integer("season_year"),
   minioKey: text("minio_key").notNull(),
   pageCount: integer("page_count").notNull().default(0),
+  tags: text("tags").array().notNull().default([]),
   uploadedAt: timestamp("uploaded_at").defaultNow().notNull(),
   uploadedById: text("uploaded_by_id").references(() => users.id),
 });
@@ -77,6 +81,25 @@ export const docChunks = pgTable("doc_chunks", {
   qdrantPointId: text("qdrant_point_id"),
 });
 
+export const bannedIps = pgTable("banned_ips", {
+  ip: text("ip").primaryKey(),
+  reason: text("reason"),
+  bannedAt: timestamp("banned_at").defaultNow().notNull(),
+  bannedById: text("banned_by_id").references(() => users.id),
+});
+
+export const reportStatusEnum = pgEnum("report_status", ["pending", "reviewed", "dismissed"]);
+
+export const reports = pgTable("reports", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  conversationId: uuid("conversation_id").notNull().references(() => conversations.id, { onDelete: "cascade" }),
+  messageId: uuid("message_id").notNull().references(() => messages.id, { onDelete: "cascade" }),
+  reportedById: text("reported_by_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  reason: text("reason").notNull(),
+  status: reportStatusEnum("status").notNull().default("pending"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
 export type Citation = {
   type: "doc" | "web";
   label: string;
@@ -86,3 +109,4 @@ export type Citation = {
 };
 
 export type DocumentScope = "season" | "general";
+export type ReportStatus = "pending" | "reviewed" | "dismissed";
