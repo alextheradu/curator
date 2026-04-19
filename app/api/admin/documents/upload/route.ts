@@ -33,6 +33,10 @@ export async function POST(req: Request) {
   const seasonYear = scope === "season"
     ? parseInt((formData.get("seasonYear") as string) ?? "2026", 10)
     : null;
+  const customName = (formData.get("name") as string | null)?.trim() || null;
+  const description = (formData.get("description") as string | null)?.trim() || null;
+  const tagsRaw = formData.get("tags") as string | null;
+  const tags: string[] = tagsRaw ? JSON.parse(tagsRaw) as string[] : [];
 
   if (!file || file.type !== "application/pdf") {
     return NextResponse.json({ error: "PDF file required" }, { status: 400 });
@@ -56,7 +60,13 @@ export async function POST(req: Request) {
   await uploadPdf(minioKey, buffer, buffer.length);
 
   const [doc] = await db.insert(documents).values({
-    name: file.name, scope, seasonYear, minioKey, pageCount,
+    name: customName ?? file.name,
+    description,
+    tags,
+    scope,
+    seasonYear,
+    minioKey,
+    pageCount,
     uploadedById: session!.user!.id,
   }).returning();
 
