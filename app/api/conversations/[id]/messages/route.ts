@@ -30,7 +30,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
   const session = await auth();
   if (!session?.user?.id) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   const { id } = await params;
-  const { role, content, citations } = await req.json();
+  const { role, content, citations, id: msgId } = await req.json();
 
   const [conv] = await db.select().from(conversations)
     .where(and(eq(conversations.id, id), eq(conversations.userId, session.user.id)));
@@ -39,7 +39,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
   }
 
   const [msg] = await db.insert(messages)
-    .values({ conversationId: id, role, content, citations })
+    .values({ ...(msgId ? { id: msgId } : {}), conversationId: id, role, content, citations })
     .returning();
 
   await db.update(conversations)

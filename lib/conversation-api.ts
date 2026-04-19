@@ -65,6 +65,7 @@ export async function deleteConversation(id: string) {
 export async function createConversationMessage(
   id: string,
   payload: {
+    id?: string;
     role: "user" | "assistant";
     content: string;
     citations?: Citation[];
