@@ -5,6 +5,7 @@ import remarkGfm from "remark-gfm";
 import { Prism as SyntaxHighlighter } from "react-syntax-highlighter";
 import { oneDark } from "react-syntax-highlighter/dist/esm/styles/prism";
 import { CitationBadge } from "@/components/ui/CitationBadge";
+import { ReportButton } from "@/components/chat/ReportButton";
 import { cn, normalizeAssistantMarkdown } from "@/lib/utils";
 import type { Message } from "@/lib/store";
 import type { Citation } from "@/lib/db/schema";
@@ -134,6 +135,11 @@ export function MessageBubble({ message, isStreaming, onOpenCitation }: Props) {
                   />
                 ))}
               </div>
+            )}
+
+            {/* Report button — only for persisted (non-streaming) messages */}
+            {!isStreaming && message.id && (
+              <ReportButton messageId={message.id} />
             )}
           </div>
         ) : (

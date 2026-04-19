@@ -109,6 +109,7 @@ export function ChatWindow({
 
     try {
       await createConversationMessage(conversationId, {
+        id: latestMessage.id,
         role: "assistant",
         content: latestMessage.content,
         citations: citations ?? latestMessage.citations,
@@ -171,11 +172,11 @@ export function ChatWindow({
     const previousConversation = useChatStore.getState().activeConversation();
     const previousTitle = previousConversation?.title ?? "New Chat";
 
-    addMessage(conversationId, { role: "user", content: text });
+    const userMsgId = addMessage(conversationId, { role: "user", content: text });
 
     if (isAuthenticated) {
       try {
-        await createConversationMessage(conversationId, { role: "user", content: text });
+        await createConversationMessage(conversationId, { id: userMsgId, role: "user", content: text });
       } catch (error) {
         console.error(error);
         toast.error("Your message could not be saved.");
