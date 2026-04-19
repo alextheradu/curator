@@ -3,6 +3,7 @@ import Google from "next-auth/providers/google";
 import { DrizzleAdapter } from "@auth/drizzle-adapter";
 import { db } from "@/lib/db";
 import { users, accounts, sessions, verificationTokens } from "@/lib/db/schema";
+import { eq } from "drizzle-orm";
 
 type GoogleProfile = {
   sub: string;
@@ -44,16 +45,35 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
   ],
   session: { strategy: "jwt" },
   callbacks: {
-    jwt({ token, user }) {
+    async jwt({ token, user, trigger }) {
       if (user) token.id = user.id;
       const email = user?.email ?? token.email;
-      token.isAdmin = isAdminEmail(email);
+
+      // Superadmin always wins — no DB check needed
+      if (isAdminEmail(email)) {
+        token.isAdmin = true;
+        token.isSuperAdmin = true;
+        return token;
+      }
+
+      // Check DB admin flag on sign-in or explicit update trigger
+      if ((user || trigger === "update") && token.id) {
+        const [row] = await db
+          .select({ isAdmin: users.isAdmin })
+          .from(users)
+          .where(eq(users.id, token.id as string))
+          .limit(1);
+        token.isAdmin = row?.isAdmin ?? false;
+      }
+
+      token.isSuperAdmin = false;
       return token;
     },
     session({ session, token }) {
       if (session.user && token.id) {
         session.user.id = token.id as string;
         session.user.isAdmin = Boolean(token.isAdmin);
+        session.user.isSuperAdmin = Boolean(token.isSuperAdmin);
       }
       return session;
     },
