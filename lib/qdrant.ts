@@ -18,18 +18,69 @@ export async function ensureCollection() {
 }
 
 export type DocChunkPayload = {
-  doc_id: string; doc_name: string; season_year: number;
+  doc_id: string; doc_name: string; doc_scope: "season" | "general"; season_year?: number | null;
   page_number: number; chunk_index: number; minio_key: string; content: string;
 };
+
+function sanitizePayloadString(value: string) {
+  return value
+    .replace(/\u0000/g, "")
+    .replace(
+      /[\uD800-\uDBFF](?![\uDC00-\uDFFF])|(?<![\uD800-\uDBFF])[\uDC00-\uDFFF]/g,
+      "\uFFFD",
+    );
+}
 
 export async function upsertChunks(
   points: Array<{ id: string; vector: number[]; payload: DocChunkPayload }>
 ) {
-  await getClient().upsert(COLLECTION, { wait: true, points });
+  await getClient().upsert(COLLECTION, {
+    wait: true,
+    points: points.map((point) => ({
+      ...point,
+      payload: {
+        ...point.payload,
+        doc_id: sanitizePayloadString(point.payload.doc_id),
+        doc_name: sanitizePayloadString(point.payload.doc_name),
+        minio_key: sanitizePayloadString(point.payload.minio_key),
+        content: sanitizePayloadString(point.payload.content),
+      },
+    })),
+  });
 }
 
 export async function searchChunks(vector: number[], limit = 5) {
-  const result = await getClient().search(COLLECTION, { vector, limit, with_payload: true });
+  return searchChunksForSeason(vector, limit);
+}
+
+export async function searchChunksForSeason(vector: number[], limit = 5, seasonYear?: number) {
+  const result = await getClient().search(COLLECTION, {
+    vector,
+    limit: seasonYear ? Math.max(limit * 4, 24) : limit,
+    with_payload: true,
+    ...(seasonYear
+      ? {
+          filter: {
+            must: [{ key: "season_year", match: { value: seasonYear } }],
+          },
+        }
+      : {}),
+  });
+  return result
+    .map((r) => ({ score: r.score, payload: r.payload as DocChunkPayload }))
+    .slice(0, limit);
+}
+
+export async function searchGeneralChunks(vector: number[], limit = 5) {
+  const result = await getClient().search(COLLECTION, {
+    vector,
+    limit,
+    with_payload: true,
+    filter: {
+      must: [{ key: "doc_scope", match: { value: "general" } }],
+    },
+  });
+
   return result.map((r) => ({ score: r.score, payload: r.payload as DocChunkPayload }));
 }
 

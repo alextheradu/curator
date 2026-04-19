@@ -60,7 +60,8 @@ export const documents = pgTable("documents", {
   id: uuid("id").primaryKey().defaultRandom(),
   name: text("name").notNull(),
   description: text("description"),
-  seasonYear: integer("season_year").notNull(),
+  scope: text("scope", { enum: ["season", "general"] }).notNull().default("season"),
+  seasonYear: integer("season_year"),
   minioKey: text("minio_key").notNull(),
   pageCount: integer("page_count").notNull().default(0),
   uploadedAt: timestamp("uploaded_at").defaultNow().notNull(),
@@ -83,3 +84,5 @@ export type Citation = {
   pageNumber?: number;
   minioKey?: string;
 };
+
+export type DocumentScope = "season" | "general";

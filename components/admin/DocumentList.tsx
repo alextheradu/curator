@@ -1,16 +1,20 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
-import { Eye, FileText, Loader2, Pencil, Sparkles, Trash2, X, Check } from "lucide-react";
+import { useState, useEffect, useCallback, useMemo } from "react";
+import { Eye, FileText, Loader2, Pencil, Search, Sparkles, Trash2, X, Check, FolderSearch } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
+import { getDocumentScopeLabel } from "@/lib/documents";
 import { toast } from "sonner";
-import type { Citation } from "@/lib/db/schema";
+import type { Citation, DocumentScope } from "@/lib/db/schema";
 
-interface Doc {
+export interface Doc {
   id: string;
   name: string;
   description: string | null;
-  seasonYear: number;
+  scope: DocumentScope;
+  seasonYear: number | null;
   pageCount: number;
   minioKey: string;
   uploadedAt: string;
@@ -19,6 +23,7 @@ interface Doc {
 interface Props {
   refreshTrigger: number;
   onPreview: (citation: Citation) => void;
+  onDocumentsChange?: (docs: Doc[]) => void;
 }
 
 function DescriptionRow({ doc, onSaved }: { doc: Doc; onSaved: (id: string, desc: string) => void }) {
@@ -123,17 +128,23 @@ function DescriptionRow({ doc, onSaved }: { doc: Doc; onSaved: (id: string, desc
   );
 }
 
-export function DocumentList({ refreshTrigger, onPreview }: Props) {
+export function DocumentList({ refreshTrigger, onPreview, onDocumentsChange }: Props) {
   const [docs, setDocs] = useState<Doc[]>([]);
   const [loading, setLoading] = useState(true);
   const [deleting, setDeleting] = useState<string | null>(null);
+  const [query, setQuery] = useState("");
+  const [scopeFilter, setScopeFilter] = useState("all");
 
   const load = useCallback(async () => {
     setLoading(true);
     const res = await fetch("/api/admin/documents");
-    if (res.ok) setDocs(await res.json());
+    if (res.ok) {
+      const rows = await res.json();
+      setDocs(rows);
+      onDocumentsChange?.(rows);
+    }
     setLoading(false);
-  }, []);
+  }, [onDocumentsChange]);
 
   useEffect(() => { load(); }, [load, refreshTrigger]);
 
@@ -146,65 +157,169 @@ export function DocumentList({ refreshTrigger, onPreview }: Props) {
         body: JSON.stringify({ id }),
       });
       if (!res.ok) throw new Error("Failed");
-      setDocs((p) => p.filter((d) => d.id !== id));
+      setDocs((previous) => {
+        const next = previous.filter((d) => d.id !== id);
+        onDocumentsChange?.(next);
+        return next;
+      });
       toast.success("Document removed.");
     } catch { toast.error("Failed to delete document."); }
     finally { setDeleting(null); }
   };
 
   const handleDescriptionSaved = (id: string, description: string) => {
-    setDocs((prev) => prev.map((d) => d.id === id ? { ...d, description } : d));
+    setDocs((previous) => {
+      const next = previous.map((d) => d.id === id ? { ...d, description } : d);
+      onDocumentsChange?.(next);
+      return next;
+    });
   };
+
+  const seasonOptions = useMemo(
+    () =>
+      [...new Set(docs.map((doc) => doc.seasonYear).filter((year): year is number => typeof year === "number"))]
+        .sort((a, b) => b - a),
+    [docs]
+  );
+
+  const filteredDocs = useMemo(() => {
+    const normalizedQuery = query.trim().toLowerCase();
+
+    return docs.filter((doc) => {
+      if (scopeFilter === "general" && doc.scope !== "general") return false;
+      if (scopeFilter === "season" && doc.scope !== "season") return false;
+      if (scopeFilter.startsWith("season:") && doc.seasonYear !== Number(scopeFilter.slice(7))) return false;
+
+      if (!normalizedQuery) return true;
+
+      const haystack = [doc.name, doc.description ?? "", doc.minioKey].join(" ").toLowerCase();
+      return haystack.includes(normalizedQuery);
+    });
+  }, [docs, query, scopeFilter]);
 
   if (loading) {
     return (
-      <div className="flex justify-center py-12">
-        <Loader2 className="animate-spin text-muted-foreground" />
+      <div className="flex min-h-64 items-center justify-center rounded-3xl border border-border/60 bg-card px-6 py-12 shadow-[var(--shadow-card)]">
+        <div className="flex items-center gap-3 text-sm text-muted-foreground">
+          <Loader2 className="size-4 animate-spin" />
+          Loading indexed documents...
+        </div>
       </div>
     );
   }
 
   if (!docs.length) {
-    return <p className="py-8 text-center text-sm text-muted-foreground">No documents indexed yet.</p>;
+    return (
+      <div className="flex min-h-64 flex-col items-center justify-center gap-3 rounded-3xl border border-dashed border-border/70 bg-card px-6 py-12 text-center shadow-[var(--shadow-card)]">
+        <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-muted text-muted-foreground">
+          <FolderSearch className="size-5" />
+        </div>
+        <div className="space-y-1">
+          <p className="text-sm font-medium text-foreground">No documents indexed yet.</p>
+          <p className="text-sm text-muted-foreground">Upload an FRC PDF to start building the retrieval library.</p>
+        </div>
+      </div>
+    );
   }
 
   return (
-    <div className="space-y-2">
-      {docs.map((doc) => (
+    <div className="space-y-4">
+      <div className="flex flex-col gap-3 rounded-3xl border border-border/60 bg-card p-4 shadow-[var(--shadow-card)] md:flex-row md:items-center md:justify-between">
+        <div className="space-y-1">
+          <p className="text-sm font-medium text-foreground">Document library</p>
+          <p className="text-sm text-muted-foreground">
+            {filteredDocs.length} of {docs.length} documents shown
+          </p>
+        </div>
+
+        <div className="flex flex-col gap-3 md:flex-row md:items-center">
+          <div className="relative min-w-0 md:w-72">
+            <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+            <Input
+              value={query}
+              onChange={(event) => setQuery(event.target.value)}
+              placeholder="Search documents, descriptions, or paths"
+              className="h-10 rounded-xl border-border/70 bg-background pl-9 shadow-[var(--shadow-card)]"
+            />
+          </div>
+
+          <select
+            value={scopeFilter}
+            onChange={(event) => setScopeFilter(event.target.value)}
+            className="h-10 rounded-xl border border-border/70 bg-background px-3 text-sm text-foreground shadow-[var(--shadow-card)] outline-none transition-colors focus:border-ring"
+          >
+            <option value="all">All documents</option>
+            <option value="general">General</option>
+            <option value="season">All seasonal docs</option>
+            {seasonOptions.map((year) => (
+              <option key={year} value={`season:${year}`}>
+                {year} season
+              </option>
+            ))}
+          </select>
+        </div>
+      </div>
+
+      {!filteredDocs.length ? (
+        <div className="rounded-3xl border border-border/60 bg-card px-6 py-12 text-center shadow-[var(--shadow-card)]">
+          <p className="text-sm font-medium text-foreground">No matching documents.</p>
+          <p className="mt-1 text-sm text-muted-foreground">Try a different category or search term.</p>
+        </div>
+      ) : filteredDocs.map((doc) => (
         <div
           key={doc.id}
-          className="rounded-2xl border border-border/60 bg-background/70 px-4 py-3 shadow-[var(--shadow-card)] transition-colors hover:bg-card/70"
+          className="rounded-3xl border border-border/60 bg-card px-4 py-4 shadow-[var(--shadow-card)] transition-colors hover:border-border hover:bg-card/95 md:px-5"
         >
-          <div className="flex items-start gap-3">
-            <div className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-[#0066B3]/15 bg-[#0066B3]/10">
+          <div className="flex flex-col gap-4 md:flex-row md:items-start">
+            <div className="mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl border border-[#0066B3]/15 bg-[#0066B3]/10">
               <FileText size={16} className="text-[#0066B3]" />
             </div>
-            <div className="min-w-0 flex-1">
-              <p className="truncate text-sm font-medium text-foreground">{doc.name}</p>
-              <p className="text-xs text-muted-foreground">
-                {doc.seasonYear} · {doc.pageCount} pages · {new Date(doc.uploadedAt).toLocaleDateString()}
-              </p>
+
+            <div className="min-w-0 flex-1 space-y-3">
+              <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
+                <div className="min-w-0 space-y-2">
+                  <p className="truncate text-sm font-medium text-foreground md:text-[15px]">{doc.name}</p>
+                  <div className="flex flex-wrap items-center gap-2">
+                    <Badge variant="secondary" className="rounded-full border-0 bg-[#0066B3]/10 text-[#0066B3]">
+                      {getDocumentScopeLabel(doc.scope, doc.seasonYear)}
+                    </Badge>
+                    <Badge variant="secondary" className="rounded-full border-0 bg-muted text-muted-foreground">
+                      {doc.pageCount} pages
+                    </Badge>
+                    <Badge variant="secondary" className="rounded-full border-0 bg-muted text-muted-foreground">
+                      {new Date(doc.uploadedAt).toLocaleDateString()}
+                    </Badge>
+                  </div>
+                </div>
+
+                <div className="flex shrink-0 flex-wrap items-center gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="h-9 rounded-xl border-border/70 bg-background px-3"
+                    title="Preview PDF"
+                    onClick={() => onPreview({ type: "doc", label: doc.name, url: "", minioKey: doc.minioKey })}
+                  >
+                    <Eye size={14} />
+                    Preview
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="icon-sm"
+                    className="text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
+                    onClick={() => handleDelete(doc.id)}
+                    disabled={deleting === doc.id}
+                  >
+                    {deleting === doc.id ? <Loader2 size={14} className="animate-spin" /> : <Trash2 size={14} />}
+                  </Button>
+                </div>
+              </div>
+
+              <div className="rounded-2xl border border-border/60 bg-background px-3 py-2 text-xs text-muted-foreground">
+                <span className="font-medium text-foreground/80">Storage path:</span> {doc.minioKey}
+              </div>
+
               <DescriptionRow doc={doc} onSaved={handleDescriptionSaved} />
-            </div>
-            <div className="flex shrink-0 items-center gap-1">
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-8 w-8 rounded-xl text-muted-foreground hover:bg-muted hover:text-foreground"
-                title="Preview PDF"
-                onClick={() => onPreview({ type: "doc", label: doc.name, url: "", minioKey: doc.minioKey })}
-              >
-                <Eye size={14} />
-              </Button>
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-8 w-8 rounded-xl text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
-                onClick={() => handleDelete(doc.id)}
-                disabled={deleting === doc.id}
-              >
-                {deleting === doc.id ? <Loader2 size={14} className="animate-spin" /> : <Trash2 size={14} />}
-              </Button>
             </div>
           </div>
         </div>

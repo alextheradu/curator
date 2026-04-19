@@ -25,7 +25,8 @@ import {
 } from "@/components/ui/dialog";
 import { useAutoScroll } from "@/hooks/useAutoScroll";
 import { useGuestLimit } from "@/hooks/useGuestLimit";
-import { createConversationMessage, updateConversation } from "@/lib/conversation-api";
+import { createConversation, createConversationMessage, updateConversation } from "@/lib/conversation-api";
+import { normalizeConversation } from "@/lib/conversations";
 import type { Citation } from "@/lib/db/schema";
 import type { Conversation } from "@/lib/store";
 import { useChatStore } from "@/lib/store";
@@ -53,6 +54,8 @@ export function ChatWindow({
   const {
     activeConversation,
     activeConversationId,
+    setActiveConversation,
+    upsertConversation,
     streamingContent,
     isStreaming,
     temperature,
@@ -77,6 +80,7 @@ export function ChatWindow({
   const pendingMessageRef = useRef<string | null>(null);
   const [viewerCitation, setViewerCitation] = useState<Citation | null>(null);
   const [shareDialogOpen, setShareDialogOpen] = useState(false);
+  const [streamStatus, setStreamStatus] = useState("");
   const [origin] = useState(() => (typeof window !== "undefined" ? window.location.origin : ""));
 
   const conversation = conversationOverride ?? activeConversation();
@@ -121,10 +125,12 @@ export function ChatWindow({
 
     if (activeConversationId && streamingContent) {
       finalizeStreamingMessage(activeConversationId);
+      setStreamStatus("");
       await persistLatestAssistantMessage(activeConversationId);
       return;
     }
 
+    setStreamStatus("");
     resetStreamingState();
   }, [
     activeConversationId,
@@ -135,13 +141,32 @@ export function ChatWindow({
   ]);
 
   const sendMessage = useCallback(async (text: string) => {
-    if (!activeConversationId || isStreaming || readOnly) {
+    if (isStreaming || readOnly) {
       return;
     }
 
-    const conversationId = activeConversationId;
+    let conversationId = activeConversationId;
+    if (!conversationId) {
+      if (isAuthenticated) {
+        const created = normalizeConversation(await createConversation());
+        upsertConversation(created);
+        setActiveConversation(created.id);
+        conversationId = created.id;
+      } else {
+        conversationId = useChatStore.getState().newConversation();
+        setActiveConversation(conversationId);
+      }
+
+      window.history.replaceState(null, "", `/c/${conversationId}`);
+    }
+
+    if (!conversationId) {
+      return;
+    }
+
     const controller = new AbortController();
     abortRef.current = controller;
+    setStreamStatus("");
 
     const previousConversation = useChatStore.getState().activeConversation();
     const previousTitle = previousConversation?.title ?? "New Chat";
@@ -185,14 +210,19 @@ export function ChatWindow({
         accumulated += token;
         updateStreamingContent(accumulated);
       },
+      onStatus: (status) => {
+        setStreamStatus(status);
+      },
       onDone: async (citations: Citation[]) => {
         abortRef.current = null;
+        setStreamStatus("");
         finalizeStreamingMessage(conversationId, citations);
         await persistLatestAssistantMessage(conversationId, citations);
         scrollToBottom();
       },
       onError: async (error) => {
         abortRef.current = null;
+        setStreamStatus("");
         finalizeStreamingMessage(conversationId);
         await persistLatestAssistantMessage(conversationId);
         window.dispatchEvent(new CustomEvent("curator:error", {
@@ -214,14 +244,16 @@ export function ChatWindow({
     readOnly,
     resetStreamingState,
     scrollToBottom,
+    setActiveConversation,
     setShowAuthModal,
     startStreaming,
     temperature,
+    upsertConversation,
     updateStreamingContent,
   ]);
 
   const handleSend = useCallback((text: string) => {
-    if (!activeConversationId || isStreaming || readOnly) {
+    if (isStreaming || readOnly) {
       return;
     }
 
@@ -237,7 +269,6 @@ export function ChatWindow({
 
     void sendMessage(text);
   }, [
-    activeConversationId,
     consumeGuestTurn,
     isAuthenticated,
     isStreaming,
@@ -291,7 +322,7 @@ export function ChatWindow({
   const shareUrl = conversation ? `${origin}/c/${conversation.id}` : "";
 
   return (
-    <SidebarInset className="min-h-svh overflow-hidden bg-background">
+    <SidebarInset className="flex min-h-svh max-h-svh flex-col overflow-hidden bg-background">
       <TosModal open={showTosModal} onAccept={handleAcceptTos} />
       <AuthModal open={showAuthModal} onOpenChange={setShowAuthModal} />
       <SettingsModal />
@@ -360,7 +391,7 @@ export function ChatWindow({
       </Dialog>
 
       <div className="border-b border-border/60 bg-background/90 px-3 py-2 backdrop-blur md:px-6 md:py-3">
-        <div className="mx-auto flex w-full max-w-3xl items-center gap-2">
+        <div className="mx-auto flex w-full max-w-3xl items-center gap-2 sm:gap-3">
           {/* Sidebar trigger — mobile only */}
           {!readOnly && (
             <SidebarTrigger className="shrink-0 text-muted-foreground md:hidden" />
@@ -393,24 +424,34 @@ export function ChatWindow({
           {readOnly ? (
             <Link
               href="/"
-              className="inline-flex h-8 items-center rounded-xl border border-border/60 px-3 text-sm font-medium text-foreground transition-colors hover:bg-muted"
+              className="inline-flex h-8 shrink-0 items-center rounded-xl border border-border/60 px-2.5 text-xs font-medium text-foreground transition-colors hover:bg-muted sm:px-3 sm:text-sm"
             >
-              Start your own chat
+              <span className="hidden sm:inline">Start your own chat</span>
+              <span className="sm:hidden">Start chat</span>
             </Link>
-          ) : canShare ? (
+          ) : (
             <Button
               variant="outline"
-              onClick={() => setShareDialogOpen(true)}
+              onClick={() => {
+                if (canShare) {
+                  setShareDialogOpen(true);
+                  return;
+                }
+
+                setShowAuthModal(true);
+                toast.info("Sign in to share chats.");
+              }}
               disabled={!conversation || messages.length === 0 || isShareUpdating}
+              className="h-8 shrink-0 px-2.5 text-xs sm:px-3 sm:text-sm"
             >
               <Share2Icon className="size-4" />
-              Share
+              <span className="hidden sm:inline">Share</span>
             </Button>
-          ) : null}
+          )}
         </div>
       </div>
 
-      <div ref={containerRef} className="relative flex h-full flex-1 flex-col overflow-y-auto">
+      <div ref={containerRef} className="relative min-h-0 flex-1 overflow-y-auto overscroll-contain">
         <AnimatePresence mode="popLayout">
           {isEmpty && readOnly ? (
             <div className="mx-auto flex w-full max-w-3xl flex-1 flex-col items-center justify-center gap-3 px-4 pb-40 pt-16 text-center">
@@ -428,7 +469,7 @@ export function ChatWindow({
               key={`${conversation?.id ?? "messages"}-${readOnly ? "readonly" : "editable"}`}
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
-              className="mx-auto flex w-full max-w-3xl flex-1 flex-col gap-6 px-4 pb-28 pt-6 sm:pb-40 sm:pt-8 md:px-6"
+              className="mx-auto flex w-full max-w-3xl flex-col gap-6 px-3 pb-32 pt-5 sm:px-4 sm:pb-40 sm:pt-8 md:px-6"
             >
               {messages.map((message) => (
                 <MessageBubble
@@ -439,7 +480,7 @@ export function ChatWindow({
               ))}
 
               {isStreaming && !streamingContent && (
-                <StreamingIndicator key="indicator" />
+                <StreamingIndicator key="indicator" label={streamStatus} />
               )}
 
               {isStreaming && streamingContent && (
@@ -460,7 +501,7 @@ export function ChatWindow({
         </AnimatePresence>
       </div>
 
-      <div className="absolute inset-x-0 bottom-0 z-20 bg-gradient-to-t from-background via-background/95 to-transparent px-3 pb-3 pt-5 sm:px-4 sm:pb-5 sm:pt-6 md:px-6">
+      <div className="sticky inset-x-0 bottom-0 z-20 mt-auto bg-gradient-to-t from-background via-background/95 to-transparent px-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))] pt-5 sm:px-4 sm:pb-[calc(1rem+env(safe-area-inset-bottom))] sm:pt-6 md:px-6">
         <div className="mx-auto w-full max-w-3xl">
           {readOnly ? (
             <div className="rounded-2xl border border-border/40 bg-card/70 px-4 py-3 text-sm text-muted-foreground shadow-[var(--shadow-composer)]">
@@ -470,7 +511,7 @@ export function ChatWindow({
             <InputBar
               onSend={handleSend}
               onStop={() => void stopStreaming()}
-              disabled={!activeConversationId}
+              disabled={false}
               isStreaming={isStreaming}
             />
           )}

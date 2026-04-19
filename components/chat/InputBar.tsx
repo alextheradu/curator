@@ -55,7 +55,7 @@ export function InputBar({ onSend, onStop, disabled, isStreaming }: Props) {
   return (
     <div
       className={cn(
-        "rounded-2xl border border-border/30 bg-card/70 shadow-[var(--shadow-composer)] transition-shadow duration-300",
+        "rounded-2xl border border-border/40 bg-card shadow-[var(--shadow-composer)] transition-shadow duration-300",
         focused && "shadow-[var(--shadow-composer-focus)]"
       )}
     >
@@ -69,11 +69,11 @@ export function InputBar({ onSend, onStop, disabled, isStreaming }: Props) {
         placeholder="Ask anything..."
         disabled={disabled}
         rows={1}
-        className="min-h-14 w-full resize-none bg-transparent px-4 pt-3.5 pb-1.5 text-[13px] leading-relaxed placeholder:text-muted-foreground/35 focus:outline-none sm:min-h-24"
+        className="min-h-12 w-full resize-none bg-transparent px-4 pt-3 pb-1 text-sm leading-relaxed placeholder:text-muted-foreground/35 focus:outline-none sm:text-[13px]"
         style={{ maxHeight: "200px" }}
       />
 
-      <div className="flex items-center justify-between px-3 pb-3">
+      <div className="flex items-center justify-between px-3 pb-3 sm:pb-2">
         {/* Left: hint — hidden on mobile */}
         <p className="hidden text-[11px] text-muted-foreground/50 select-none sm:block">
           Enter to send · Shift+Enter for newline
@@ -84,7 +84,7 @@ export function InputBar({ onSend, onStop, disabled, isStreaming }: Props) {
           <button
             type="button"
             onClick={onStop}
-            className="flex h-7 w-7 items-center justify-center rounded-xl bg-foreground text-background transition-all duration-200 hover:opacity-85 active:scale-95"
+            className="flex h-9 w-9 items-center justify-center rounded-xl bg-foreground text-background transition-all duration-200 hover:opacity-85 active:scale-95 sm:h-7 sm:w-7"
             aria-label="Stop"
           >
             <SquareIcon className="size-3.5" />
@@ -95,7 +95,7 @@ export function InputBar({ onSend, onStop, disabled, isStreaming }: Props) {
             onClick={handleSend}
             disabled={!canSend}
             className={cn(
-              "flex h-7 w-7 items-center justify-center rounded-xl transition-all duration-200",
+              "flex h-9 w-9 items-center justify-center rounded-xl transition-all duration-200 sm:h-7 sm:w-7",
               canSend
                 ? "bg-foreground text-background hover:opacity-85 active:scale-95"
                 : "cursor-not-allowed bg-muted text-muted-foreground/25"
