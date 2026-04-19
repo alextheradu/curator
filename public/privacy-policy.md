@@ -1,7 +1,7 @@
 # Privacy Policy
 
 **Curator — FRC AI Assistant**
-**Last updated: April 14, 2026**
+**Last updated: April 18, 2026**
 
 ## 1. Overview
 
@@ -49,7 +49,7 @@ We do **not** sell your data, use it for advertising, or share it with third par
 
 - User data and conversation history are stored in a self-hosted PostgreSQL database.
 - Public/private sharing status for authenticated conversations is stored alongside the conversation record in PostgreSQL.
-- PDF documents are stored in a self-hosted MinIO instance.
+- PDF documents, including season-specific references and general team reference files, are stored in a self-hosted MinIO instance.
 - Vector embeddings are stored in a self-hosted Qdrant instance.
 - No user data is stored on third-party cloud storage.
 

@@ -9,7 +9,6 @@ import { SidebarProvider } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/sidebar/Sidebar";
 import { ChatWindow } from "@/components/chat/ChatWindow";
 import {
-  createConversation,
   deleteConversation as deleteConversationRequest,
   fetchConversation,
   fetchConversationList,
@@ -59,7 +58,6 @@ export function ChatApp({ requestedConversationId }: ChatAppProps) {
   const isAuthenticated = !!session?.user?.id;
 
   const {
-    newConversation,
     setActiveConversation,
     deleteConversation,
     replaceConversations,
@@ -143,33 +141,10 @@ export function ChatApp({ requestedConversationId }: ChatAppProps) {
             return;
           }
 
-          const state = useChatStore.getState();
-          let targetId = state.activeConversationId;
-          if (!targetId || !state.conversations.some((conversation) => conversation.id === targetId)) {
-            targetId = state.conversations[0]?.id ?? null;
-          }
-
-          if (!targetId) {
-            const created = normalizeConversation(await createConversation());
-            if (cancelled) return;
-
-            upsertConversation(created);
-            targetId = created.id;
-          }
-
-          const loaded = await readConversation(targetId);
-          if (cancelled) return;
-
-          if (!loaded || loaded.access !== "owner") {
-            setViewMode("not-found");
-            return;
-          }
-
-          upsertConversation(loaded.conversation);
-          setActiveConversation(targetId);
+          setActiveConversation(null);
           setPublicConversation(null);
           setViewMode("owner");
-          navigateToConversation(targetId, true);
+          router.replace("/");
           return;
         } catch (error) {
           if (!cancelled) {
@@ -212,22 +187,12 @@ export function ChatApp({ requestedConversationId }: ChatAppProps) {
         return;
       }
 
-      const state = useChatStore.getState();
-      let targetId = state.activeConversationId;
-      if (!targetId || !state.conversations.some((conversation) => conversation.id === targetId)) {
-        targetId = state.conversations[0]?.id ?? null;
-      }
-
-      if (!targetId) {
-        targetId = newConversation();
-      }
-
       if (cancelled) return;
 
-      setActiveConversation(targetId);
+      setActiveConversation(null);
       setPublicConversation(null);
       setViewMode("guest");
-      navigateToConversation(targetId, true);
+      router.replace("/");
     };
 
     void bootstrap();
@@ -239,43 +204,21 @@ export function ChatApp({ requestedConversationId }: ChatAppProps) {
     clearAllConversations,
     isAuthenticated,
     navigateToConversation,
-    newConversation,
     readConversation,
     replaceConversations,
     requestedConversationId,
+    router,
     setActiveConversation,
     status,
     upsertConversation,
   ]);
 
   const handleCreateConversation = useCallback(async () => {
-    try {
-      if (isAuthenticated) {
-        const created = normalizeConversation(await createConversation());
-        upsertConversation(created);
-        setActiveConversation(created.id);
-        setPublicConversation(null);
-        setViewMode("owner");
-        navigateToConversation(created.id);
-        return;
-      }
-
-      const conversationId = newConversation();
-      setActiveConversation(conversationId);
-      setPublicConversation(null);
-      setViewMode("guest");
-      navigateToConversation(conversationId);
-    } catch (error) {
-      console.error(error);
-      toast.error("Unable to create a new chat.");
-    }
-  }, [
-    isAuthenticated,
-    navigateToConversation,
-    newConversation,
-    setActiveConversation,
-    upsertConversation,
-  ]);
+    setActiveConversation(null);
+    setPublicConversation(null);
+    setViewMode(isAuthenticated ? "owner" : "guest");
+    router.push("/");
+  }, [isAuthenticated, router, setActiveConversation]);
 
   const handleOpenConversation = useCallback(async (conversationId: string) => {
     try {
@@ -311,6 +254,7 @@ export function ChatApp({ requestedConversationId }: ChatAppProps) {
   ]);
 
   const handleDeleteConversation = useCallback(async (conversationId: string) => {
+    const currentActiveId = useChatStore.getState().activeConversationId;
     const remaining = useChatStore.getState().conversations.filter((conversation) => conversation.id !== conversationId);
 
     try {
@@ -321,39 +265,28 @@ export function ChatApp({ requestedConversationId }: ChatAppProps) {
       deleteConversation(conversationId);
       setPublicConversation(null);
 
-      if (remaining[0]) {
+      if (currentActiveId === conversationId && remaining[0]) {
         await handleOpenConversation(remaining[0].id);
         return;
       }
 
-      await handleCreateConversation();
+      if (currentActiveId === conversationId) {
+        setActiveConversation(null);
+        setPublicConversation(null);
+        setViewMode(isAuthenticated ? "owner" : "guest");
+        router.push("/");
+      }
     } catch (error) {
       console.error(error);
       toast.error("Unable to delete that chat.");
     }
   }, [
     deleteConversation,
-    handleCreateConversation,
     handleOpenConversation,
     isAuthenticated,
+    router,
+    setActiveConversation,
   ]);
-
-  const handleDeleteAllConversations = useCallback(async () => {
-    try {
-      const ids = useChatStore.getState().conversations.map((conversation) => conversation.id);
-
-      if (isAuthenticated) {
-        await Promise.all(ids.map((id) => deleteConversationRequest(id)));
-      }
-
-      clearAllConversations();
-      setPublicConversation(null);
-      await handleCreateConversation();
-    } catch (error) {
-      console.error(error);
-      toast.error("Unable to delete your chats.");
-    }
-  }, [clearAllConversations, handleCreateConversation, isAuthenticated]);
 
   const handleShareChange = useCallback(async (makePublic: boolean) => {
     const conversationId = useChatStore.getState().activeConversationId;
@@ -399,7 +332,6 @@ export function ChatApp({ requestedConversationId }: ChatAppProps) {
             onCreateConversation={handleCreateConversation}
             onOpenConversation={handleOpenConversation}
             onDeleteConversation={handleDeleteConversation}
-            onDeleteAllConversations={handleDeleteAllConversations}
           />
         )}
         <ChatWindow

@@ -33,7 +33,7 @@ interface ChatStore {
   temperature: number;
 
   newConversation: () => string;
-  setActiveConversation: (id: string) => void;
+  setActiveConversation: (id: string | null) => void;
   addMessage: (conversationId: string, message: Omit<Message, "id" | "timestamp">) => string;
   startStreaming: () => void;
   updateStreamingContent: (content: string) => void;

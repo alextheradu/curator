@@ -1,27 +1,105 @@
 import { embedText } from "./embeddings";
-import { searchChunks } from "./qdrant";
+import { searchChunksForSeason, searchGeneralChunks } from "./qdrant";
 import type { Citation } from "./db/schema";
+import { parseSeasonYearsFromText } from "./seasons";
 
 export interface RagContext {
   contextBlock: string;
   citations: Citation[];
+  selectedSeasonYear: number | null;
+  hitCount: number;
+  bestScore: number;
 }
 
-export async function buildRagContext(query: string): Promise<RagContext> {
+function pickDominantSeason(
+  results: Array<{ score: number; payload: { season_year?: number | null; doc_scope: "season" | "general" } }>,
+  preferredSeasonYear?: number,
+) {
+  const weights = new Map<number, number>();
+
+  for (const result of results) {
+    if (result.payload.doc_scope !== "season" || typeof result.payload.season_year !== "number") {
+      continue;
+    }
+
+    const seasonYear = result.payload.season_year;
+    weights.set(seasonYear, (weights.get(seasonYear) ?? 0) + result.score);
+  }
+
+  if (weights.size === 0) {
+    return preferredSeasonYear ?? null;
+  }
+
+  if (preferredSeasonYear && weights.has(preferredSeasonYear)) {
+    const preferredWeight = weights.get(preferredSeasonYear) ?? 0;
+    const strongestWeight = Math.max(...weights.values());
+    if (preferredWeight >= strongestWeight * 0.9) {
+      return preferredSeasonYear;
+    }
+  }
+
+  return [...weights.entries()].sort((a, b) => b[1] - a[1])[0]?.[0] ?? null;
+}
+
+async function searchChunksForScope(queryEmbedding: number[], seasonYear?: number | null) {
+  if (!seasonYear) {
+    return searchChunksForSeason(queryEmbedding, 5);
+  }
+
+  const [seasonResults, generalResults] = await Promise.all([
+    searchChunksForSeason(queryEmbedding, 5, seasonYear),
+    searchGeneralChunks(queryEmbedding, 5),
+  ]);
+
+  return [...seasonResults, ...generalResults]
+    .sort((a, b) => b.score - a.score)
+    .slice(0, 5);
+}
+
+export async function buildRagContext(query: string, preferredSeasonYear?: number): Promise<RagContext> {
   let queryEmbedding: number[];
   try {
     queryEmbedding = await embedText(query);
   } catch {
-    return { contextBlock: "", citations: [] };
+    return {
+      contextBlock: "",
+      citations: [],
+      selectedSeasonYear: preferredSeasonYear ?? null,
+      hitCount: 0,
+      bestScore: 0,
+    };
   }
 
-  let results: Awaited<ReturnType<typeof searchChunks>>;
+  const explicitSeasonYears = parseSeasonYearsFromText(query);
+  let selectedSeasonYear: number | null = explicitSeasonYears[0] ?? null;
+  let results: Awaited<ReturnType<typeof searchChunksForSeason>> = [];
+
   try {
-    results = await searchChunks(queryEmbedding, 5);
+    if (selectedSeasonYear) {
+      results = await searchChunksForScope(queryEmbedding, selectedSeasonYear);
+    } else {
+      const broadResults = await searchChunksForSeason(queryEmbedding, 18);
+      selectedSeasonYear = pickDominantSeason(broadResults, preferredSeasonYear);
+      results = await searchChunksForScope(queryEmbedding, selectedSeasonYear);
+    }
   } catch {
-    return { contextBlock: "", citations: [] };
+    return {
+      contextBlock: "",
+      citations: [],
+      selectedSeasonYear: selectedSeasonYear ?? preferredSeasonYear ?? null,
+      hitCount: 0,
+      bestScore: 0,
+    };
   }
-  if (results.length === 0) return { contextBlock: "", citations: [] };
+  if (results.length === 0) {
+    return {
+      contextBlock: "",
+      citations: [],
+      selectedSeasonYear: selectedSeasonYear ?? preferredSeasonYear ?? null,
+      hitCount: 0,
+      bestScore: 0,
+    };
+  }
 
   const citations: Citation[] = [];
   const sourceBlocks: string[] = [];
@@ -43,5 +121,8 @@ export async function buildRagContext(query: string): Promise<RagContext> {
   return {
     contextBlock: `\n\nRelevant documentation:\n${sourceBlocks.join("\n\n")}`,
     citations,
+    selectedSeasonYear,
+    hitCount: results.length,
+    bestScore: results[0]?.score ?? 0,
   };
 }

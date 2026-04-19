@@ -6,6 +6,7 @@ interface StreamOptions {
   seasonYear?: number;
   signal?: AbortSignal;
   onToken: (token: string) => void;
+  onStatus?: (status: string) => void;
   onDone: (citations: Citation[]) => void;
   onError: (err: Error) => void;
   onAuthRequired?: () => void;
@@ -13,7 +14,7 @@ interface StreamOptions {
 
 export async function streamOpenRouterChat({
   messages, temperature = 0.2, seasonYear, signal,
-  onToken, onDone, onError, onAuthRequired,
+  onToken, onStatus, onDone, onError, onAuthRequired,
 }: StreamOptions) {
   try {
     const response = await fetch("/api/chat", {
@@ -33,7 +34,7 @@ export async function streamOpenRouterChat({
       throw new Error(data.error ?? `HTTP ${response.status}`);
     }
 
-    const citations: Citation[] = JSON.parse(response.headers.get("X-Citations") ?? "[]");
+    let citations: Citation[] = [];
     const reader = response.body?.getReader();
     if (!reader) throw new Error("No response body");
 
@@ -51,16 +52,45 @@ export async function streamOpenRouterChat({
         if (!line.startsWith("data: ")) continue;
         const data = line.slice(6).trim();
         if (data === "[DONE]") { onDone(citations); return; }
+        let parsed: {
+          type?: string;
+          message?: string;
+          citations?: Citation[];
+          token?: string;
+          choices?: Array<{ delta?: { content?: string } }>;
+        };
         try {
-          const parsed = JSON.parse(data);
-          const token = parsed.choices?.[0]?.delta?.content;
-          if (token) onToken(token);
-        } catch { /* skip malformed chunks */ }
+          parsed = JSON.parse(data);
+        } catch {
+          continue;
+        }
+
+        if (parsed.type === "status") {
+          onStatus?.(parsed.message ?? "");
+          continue;
+        }
+        if (parsed.type === "citations") {
+          citations = parsed.citations ?? [];
+          continue;
+        }
+        if (parsed.type === "error") {
+          throw new Error(parsed.message ?? "Failed to reach OpenRouter.");
+        }
+
+        const token = parsed.type === "token"
+          ? parsed.token
+          : parsed.choices?.[0]?.delta?.content;
+        if (token) {
+          onStatus?.("");
+          onToken(token);
+        }
       }
     }
+    onStatus?.("");
     onDone(citations);
   } catch (err: unknown) {
     if (err instanceof Error && err.name === "AbortError") return;
+    onStatus?.("");
     onError(err instanceof Error ? err : new Error(String(err)));
   }
 }

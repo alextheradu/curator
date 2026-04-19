@@ -81,8 +81,8 @@ export function DocumentViewerModal({ citation, open, onOpenChange }: Props) {
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="h-[90vh] max-w-6xl gap-3 border-border/60 bg-background/95 p-0 shadow-[var(--shadow-float)] backdrop-blur-xl">
-        <DialogHeader className="border-b border-border/60 px-6 py-4">
+      <DialogContent className="grid h-[92vh] w-[min(96vw,84rem)] max-w-none grid-rows-[auto,minmax(0,1fr)] overflow-hidden gap-0 border border-border/70 bg-background p-0 shadow-[var(--shadow-float)]">
+        <DialogHeader className="border-b border-border/60 bg-background px-6 py-4">
           <DialogTitle className="flex items-center gap-2 text-base text-foreground">
             <FileText className="size-4 text-[#0066B3]" />
             <span className="truncate">{citation?.label ?? "Document viewer"}</span>
@@ -92,8 +92,8 @@ export function DocumentViewerModal({ citation, open, onOpenChange }: Props) {
           </DialogDescription>
         </DialogHeader>
 
-        <div className="flex min-h-0 flex-1 flex-col px-4 pb-4">
-          <div className="min-h-0 flex-1 overflow-hidden rounded-2xl border border-border/60 bg-card/30">
+        <div className="flex min-h-0 flex-col px-4 py-4">
+          <div className="min-h-0 flex-1 overflow-hidden rounded-2xl border border-border/60 bg-card shadow-[var(--shadow-card)]">
             {loading ? (
               <div className="flex h-full items-center justify-center gap-3 text-sm text-muted-foreground">
                 <Loader2 className="size-4 animate-spin" />
@@ -118,7 +118,7 @@ export function DocumentViewerModal({ citation, open, onOpenChange }: Props) {
                 key={viewerUrl}
                 src={viewerUrl}
                 title={citation?.label ?? "Document preview"}
-                className="h-full w-full"
+                className="h-full min-h-0 w-full bg-background"
               />
             ) : (
               <div className="flex h-full items-center justify-center text-sm text-muted-foreground">

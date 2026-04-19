@@ -1,20 +1,9 @@
 "use client";
 
 import { isToday, isYesterday, subWeeks, subMonths } from "date-fns";
-import { ChevronUpIcon, MessageSquareIcon, PanelLeftIcon, PenSquareIcon, Shield, TrashIcon } from "lucide-react";
+import { ChevronUpIcon, MessageSquareIcon, PanelLeftIcon, PenSquareIcon, Shield } from "lucide-react";
 import { useTheme } from "next-themes";
 import { signIn, signOut, useSession } from "next-auth/react";
-import { useState } from "react";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -71,14 +60,12 @@ interface AppSidebarProps {
   onCreateConversation: () => void | Promise<void>;
   onOpenConversation: (id: string) => void | Promise<void>;
   onDeleteConversation: (id: string) => void | Promise<void>;
-  onDeleteAllConversations: () => void | Promise<void>;
 }
 
 export function AppSidebar({
   onCreateConversation,
   onOpenConversation,
   onDeleteConversation,
-  onDeleteAllConversations,
 }: AppSidebarProps) {
   const { data: session } = useSession();
   const { resolvedTheme, setTheme } = useTheme();
@@ -88,17 +75,9 @@ export function AppSidebar({
     activeConversationId,
   } = useChatStore();
 
-  const [showDeleteAllDialog, setShowDeleteAllDialog] = useState(false);
-
-  const adminEmails = (process.env.NEXT_PUBLIC_ADMIN_EMAILS ?? "").split(",").map((e) => e.trim());
-  const isAdmin = adminEmails.includes(session?.user?.email ?? "");
+  const isAdmin = !!session?.user?.isAdmin;
 
   const grouped = groupConversationsByDate(conversations);
-
-  const handleDeleteAll = () => {
-    setShowDeleteAllDialog(false);
-    void onDeleteAllConversations();
-  };
 
   const handleDeleteOne = (id: string) => {
     void onDeleteConversation(id);
@@ -164,19 +143,6 @@ export function AppSidebar({
                     <span className="font-medium">New chat</span>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
-
-                {conversations.length > 0 && (
-                  <SidebarMenuItem>
-                    <SidebarMenuButton
-                      className="rounded-lg text-sidebar-foreground/40 transition-colors duration-150 hover:bg-destructive/10 hover:text-destructive"
-                      onClick={() => setShowDeleteAllDialog(true)}
-                      tooltip="Delete All"
-                    >
-                      <TrashIcon className="size-4" />
-                      <span className="text-[13px]">Delete all</span>
-                    </SidebarMenuButton>
-                  </SidebarMenuItem>
-                )}
               </SidebarMenu>
             </SidebarGroupContent>
           </SidebarGroup>
@@ -293,22 +259,6 @@ export function AppSidebar({
 
         <SidebarRail />
       </Sidebar>
-
-      {/* Delete all dialog */}
-      <AlertDialog open={showDeleteAllDialog} onOpenChange={setShowDeleteAllDialog}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Delete all chats?</AlertDialogTitle>
-            <AlertDialogDescription>
-              This action cannot be undone. All your conversations will be permanently removed.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={handleDeleteAll}>Delete All</AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
     </>
   );
 }

@@ -13,7 +13,7 @@ const SparklesIcon = ({ size = 13 }: { size?: number }) => (
   </svg>
 );
 
-export function StreamingIndicator() {
+export function StreamingIndicator({ label }: { label?: string }) {
   return (
     <div className="group/message w-full" data-role="assistant">
       <div className="flex items-start gap-3">
@@ -25,14 +25,23 @@ export function StreamingIndicator() {
         </div>
 
         {/* Typing bubble */}
-        <div className="flex items-center gap-1.5 rounded-2xl rounded-tl-sm border border-border/50 bg-card px-4 py-3 shadow-[var(--shadow-card)]">
-          {[0, 1, 2].map((i) => (
-            <span
-              key={i}
-              className="block size-2 rounded-full bg-muted-foreground/50"
-              style={{ animation: `typing-dot 1.2s ease-in-out ${i * 0.18}s infinite` }}
-            />
-          ))}
+        <div className="flex items-center gap-2 rounded-2xl rounded-tl-sm border border-border/50 bg-card px-4 py-3 text-[13px] text-muted-foreground shadow-[var(--shadow-card)]">
+          {label ? (
+            <>
+              <span className="block size-2 rounded-full bg-muted-foreground/50 animate-pulse" />
+              <span>{label}</span>
+            </>
+          ) : (
+            <>
+              {[0, 1, 2].map((i) => (
+                <span
+                  key={i}
+                  className="block size-2 rounded-full bg-muted-foreground/50"
+                  style={{ animation: `typing-dot 1.2s ease-in-out ${i * 0.18}s infinite` }}
+                />
+              ))}
+            </>
+          )}
         </div>
       </div>
     </div>
