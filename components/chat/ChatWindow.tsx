@@ -64,6 +64,9 @@ export function ChatWindow({
     updateStreamingContent,
     finalizeStreamingMessage,
     resetStreamingState,
+    setTypingTitle,
+    clearTypingTitle,
+    updateConversation,
   } = useChatStore();
 
   const {
@@ -220,6 +223,28 @@ export function ChatWindow({
         finalizeStreamingMessage(conversationId, citations);
         await persistLatestAssistantMessage(conversationId, citations);
         scrollToBottom();
+
+        // Generate AI title after first assistant response
+        if (isAuthenticated) {
+          const conv = useChatStore.getState().conversations.find((c) => c.id === conversationId);
+          const assistantCount = conv?.messages.filter((m) => m.role === "assistant").length ?? 0;
+          if (assistantCount === 1 && conv?.title === "New Chat") {
+            void (async () => {
+              try {
+                const res = await fetch(`/api/conversations/${conversationId}/title`, { method: "POST" });
+                const data = await res.json() as { title: string | null };
+                if (!data.title) return;
+                setTypingTitle(conversationId, "");
+                for (let i = 0; i <= data.title.length; i++) {
+                  await new Promise((r) => setTimeout(r, 35));
+                  setTypingTitle(conversationId, data.title!.slice(0, i));
+                }
+                updateConversation(conversationId, { title: data.title });
+                clearTypingTitle();
+              } catch { /* title gen failed — keep "New Chat" */ }
+            })();
+          }
+        }
       },
       onError: async (error) => {
         abortRef.current = null;
