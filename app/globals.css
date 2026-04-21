@@ -126,6 +126,9 @@
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
     text-rendering: optimizeLegibility;
+    transition:
+      background-color 280ms var(--ease-smooth),
+      color 280ms var(--ease-smooth);
   }
 
   code, kbd, pre, samp {

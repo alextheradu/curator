@@ -1,11 +1,9 @@
 import { db } from "@/lib/db";
 import { users, conversations, messages, documents, docChunks, reports } from "@/lib/db/schema";
 import { eq, gte, count, sum, sql } from "drizzle-orm";
-import { qdrant } from "@/lib/qdrant";
+import { getCollectionInfo } from "@/lib/qdrant";
 import { BarChart3, FileText, Hash, MessageSquare, Users, Zap, Flag } from "lucide-react";
 import Link from "next/link";
-
-const COLLECTION = process.env.QDRANT_COLLECTION ?? "curator-docs";
 
 async function fetchStats() {
   const now = new Date();
@@ -43,7 +41,7 @@ async function fetchStats() {
 
   let qdrantCount = 0;
   try {
-    const info = await qdrant.getCollection(COLLECTION);
+    const info = await getCollectionInfo();
     qdrantCount = info.points_count ?? 0;
   } catch { /* not fatal */ }
 
@@ -80,7 +78,7 @@ export default async function AdminStatsPage() {
   return (
     <div className="relative min-h-svh">
       <div className="pointer-events-none absolute inset-x-0 top-0 h-64 bg-[radial-gradient(circle_at_top,_color-mix(in_oklab,_#0066B3_10%,_transparent)_0%,_transparent_70%)]" />
-      <div className="relative mx-auto max-w-5xl space-y-8 px-6 py-8">
+      <div className="relative mx-auto max-w-5xl space-y-8 px-4 py-6 sm:px-6 sm:py-8">
         <div>
           <h1 className="text-2xl font-semibold tracking-tight text-foreground">Overview</h1>
           <p className="mt-1 text-[13px] text-muted-foreground">Live metrics from the database and retrieval index.</p>
@@ -111,23 +109,25 @@ export default async function AdminStatsPage() {
         {s.top.length > 0 && (
           <section className="space-y-3">
             <h2 className="text-[13px] font-semibold uppercase tracking-widest text-muted-foreground">Top users</h2>
-            <div className="rounded-[1.75rem] border border-border/60 bg-card shadow-[var(--shadow-card)]">
-              <table className="w-full text-[13px]">
-                <thead>
-                  <tr className="border-b border-border/60">
-                    <th className="px-5 py-3 text-left font-medium text-muted-foreground">User</th>
-                    <th className="px-5 py-3 text-right font-medium text-muted-foreground">Messages</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {s.top.map((u, i) => (
-                    <tr key={i} className="border-b border-border/40 last:border-0">
-                      <td className="px-5 py-3 text-foreground">{u.name ?? u.email}</td>
-                      <td className="px-5 py-3 text-right tabular-nums text-muted-foreground">{u.msgCount}</td>
+            <div className="overflow-hidden rounded-[1.75rem] border border-border/60 bg-card shadow-[var(--shadow-card)]">
+              <div className="overflow-x-auto">
+                <table className="min-w-[420px] w-full text-[13px]">
+                  <thead>
+                    <tr className="border-b border-border/60">
+                      <th className="px-5 py-3 text-left font-medium text-muted-foreground">User</th>
+                      <th className="px-5 py-3 text-right font-medium text-muted-foreground">Messages</th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
+                  </thead>
+                  <tbody>
+                    {s.top.map((u, i) => (
+                      <tr key={i} className="border-b border-border/40 last:border-0">
+                        <td className="px-5 py-3 text-foreground">{u.name ?? u.email}</td>
+                        <td className="px-5 py-3 text-right tabular-nums text-muted-foreground">{u.msgCount}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
             </div>
           </section>
         )}

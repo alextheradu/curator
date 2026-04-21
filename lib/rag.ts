@@ -2,6 +2,7 @@ import { embedText } from "./embeddings";
 import { searchChunksForSeason, searchGeneralChunks } from "./qdrant";
 import type { Citation } from "./db/schema";
 import { parseSeasonYearsFromText } from "./seasons";
+import { buildDocumentViewHref } from "./utils";
 
 export interface RagContext {
   contextBlock: string;
@@ -9,6 +10,52 @@ export interface RagContext {
   selectedSeasonYear: number | null;
   hitCount: number;
   bestScore: number;
+}
+
+interface RagStatusOptions {
+  onStatus?: (message: string) => void;
+}
+
+function selectQuoteSnippet(content: string, query: string, maxLength = 220) {
+  const normalizedContent = content.replace(/\s+/g, " ").trim();
+  if (!normalizedContent) {
+    return "";
+  }
+
+  const segments = normalizedContent
+    .split(/(?<=[.?!])\s+|\n+/)
+    .map((segment) => segment.trim())
+    .filter(Boolean);
+
+  const queryTerms = [...new Set(
+    query
+      .toLowerCase()
+      .match(/[a-z0-9]{3,}/g)
+      ?.filter((term) => !["with", "from", "that", "this", "what", "when", "where", "which"].includes(term))
+      ?? []
+  )];
+
+  const bestSegment = (segments.length > 0 ? segments : [normalizedContent]).reduce((best, segment) => {
+    const lowerSegment = segment.toLowerCase();
+    const score = queryTerms.reduce((sum, term) => sum + (lowerSegment.includes(term) ? 1 : 0), 0);
+    const bestScore = queryTerms.reduce((sum, term) => sum + (best.toLowerCase().includes(term) ? 1 : 0), 0);
+
+    if (score > bestScore) {
+      return segment;
+    }
+
+    if (score === bestScore && segment.length < best.length) {
+      return segment;
+    }
+
+    return best;
+  }, segments[0] ?? normalizedContent);
+
+  if (bestSegment.length <= maxLength) {
+    return bestSegment;
+  }
+
+  return `${bestSegment.slice(0, maxLength - 1).trimEnd()}…`;
 }
 
 function pickDominantSeason(
@@ -56,9 +103,15 @@ async function searchChunksForScope(queryEmbedding: number[], seasonYear?: numbe
     .slice(0, 5);
 }
 
-export async function buildRagContext(query: string, preferredSeasonYear?: number): Promise<RagContext> {
+export async function buildRagContext(
+  query: string,
+  preferredSeasonYear?: number,
+  options?: RagStatusOptions,
+): Promise<RagContext> {
+  const onStatus = options?.onStatus;
   let queryEmbedding: number[];
   try {
+    onStatus?.("Embedding your question for document search...");
     queryEmbedding = await embedText(query);
   } catch {
     return {
@@ -71,15 +124,25 @@ export async function buildRagContext(query: string, preferredSeasonYear?: numbe
   }
 
   const explicitSeasonYears = parseSeasonYearsFromText(query);
-  let selectedSeasonYear: number | null = explicitSeasonYears[0] ?? null;
+  const explicitSeasonYear = explicitSeasonYears[0] ?? null;
+  let selectedSeasonYear: number | null = explicitSeasonYear ?? preferredSeasonYear ?? null;
   let results: Awaited<ReturnType<typeof searchChunksForSeason>> = [];
 
   try {
-    if (selectedSeasonYear) {
+    if (explicitSeasonYear) {
+      onStatus?.(`Checking ${explicitSeasonYear} season documents and evergreen references...`);
       results = await searchChunksForScope(queryEmbedding, selectedSeasonYear);
+    } else if (preferredSeasonYear) {
+      // Keep the conversation pinned to its selected season unless the user names a different one.
+      onStatus?.(`Checking ${preferredSeasonYear} season documents and evergreen references...`);
+      results = await searchChunksForScope(queryEmbedding, preferredSeasonYear);
     } else {
+      onStatus?.("Checking indexed documents across seasons...");
       const broadResults = await searchChunksForSeason(queryEmbedding, 18);
       selectedSeasonYear = pickDominantSeason(broadResults, preferredSeasonYear);
+      if (selectedSeasonYear) {
+        onStatus?.(`Narrowing document search to ${selectedSeasonYear} season sources...`);
+      }
       results = await searchChunksForScope(queryEmbedding, selectedSeasonYear);
     }
   } catch {
@@ -101,20 +164,42 @@ export async function buildRagContext(query: string, preferredSeasonYear?: numbe
     };
   }
 
+  onStatus?.("Selecting the most relevant document pages...");
+
   const citations: Citation[] = [];
   const sourceBlocks: string[] = [];
+  const uniqueResults = new Map<string, (typeof results)[number]>();
 
-  for (let i = 0; i < results.length; i++) {
-    const { payload } = results[i];
+  for (const result of results) {
+    const pageKey = `${result.payload.minio_key}:${result.payload.page_number}`;
+    if (!uniqueResults.has(pageKey)) {
+      uniqueResults.set(pageKey, result);
+    }
+  }
+
+  const filteredResults = [...uniqueResults.values()].slice(0, 4);
+
+  for (let i = 0; i < filteredResults.length; i++) {
+    const { payload } = filteredResults[i];
+    const quote = selectQuoteSnippet(payload.content, query);
+
     citations.push({
       type: "doc",
-      label: `${payload.doc_name}, p.${payload.page_number}`,
+      label: payload.doc_name,
+      documentName: payload.doc_name,
       pageNumber: payload.page_number,
       minioKey: payload.minio_key,
+      url: buildDocumentViewHref(payload.minio_key, payload.page_number),
+      quote,
     });
 
     sourceBlocks.push(
-      `[SOURCE ${i + 1}] ${payload.doc_name} (page ${payload.page_number}):\n${payload.content}`
+      `[SOURCE ${i + 1}]
+Document: ${payload.doc_name}
+Exact page: ${payload.page_number}
+Quoted excerpt candidate: "${quote}"
+Full extracted page text:
+${payload.content}`
     );
   }
 
@@ -122,7 +207,7 @@ export async function buildRagContext(query: string, preferredSeasonYear?: numbe
     contextBlock: `\n\nRelevant documentation:\n${sourceBlocks.join("\n\n")}`,
     citations,
     selectedSeasonYear,
-    hitCount: results.length,
-    bestScore: results[0]?.score ?? 0,
+    hitCount: filteredResults.length,
+    bestScore: filteredResults[0]?.score ?? 0,
   };
 }

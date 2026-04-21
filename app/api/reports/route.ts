@@ -14,11 +14,14 @@ export async function POST(req: NextRequest) {
   }
 
   const [msg] = await db
-    .select({ id: messages.id, conversationId: messages.conversationId })
+    .select({ id: messages.id, conversationId: messages.conversationId, role: messages.role })
     .from(messages)
     .where(eq(messages.id, messageId))
     .limit(1);
   if (!msg) return NextResponse.json({ error: "Message not found" }, { status: 404 });
+  if (msg.role !== "assistant") {
+    return NextResponse.json({ error: "Only assistant messages can be reported" }, { status: 400 });
+  }
 
   // One report per user per message
   const [existing] = await db

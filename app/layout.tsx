@@ -1,26 +1,101 @@
 import type { Metadata, Viewport } from "next";
+import { readFileSync } from "node:fs";
+import path from "node:path";
 import { Inter, JetBrains_Mono } from "next/font/google";
+import Script from "next/script";
 import { Providers } from "@/components/Providers";
+import { SITE_DESCRIPTION, SITE_NAME, SITE_OG_IMAGE, SITE_TITLE, SITE_URL } from "@/lib/site";
 import "./globals.css";
 
 const inter = Inter({ subsets: ["latin"], variable: "--font-sans" });
 const jetbrainsMono = JetBrains_Mono({ subsets: ["latin"], variable: "--font-mono" });
+const faviconSvg = readFileSync(path.join(process.cwd(), "app", "favicon.svg"), "utf-8");
+const faviconSvgDataUrl = `data:image/svg+xml,${encodeURIComponent(faviconSvg)}`;
+const GOOGLE_ANALYTICS_MEASUREMENT_ID = "G-RHVZBWPE6R";
+const googleSiteVerification = process.env.NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION?.trim();
 
 export const metadata: Metadata = {
-  title: "Curator — FRC AI Knowledge Base",
-  description: "AI-powered assistant for FIRST Robotics Competition. Ask about rules, strategy, programming, and more.",
+  metadataBase: new URL(SITE_URL),
+  title: {
+    default: SITE_TITLE,
+    template: `%s | ${SITE_NAME}`,
+  },
+  description: SITE_DESCRIPTION,
+  generator: "Next.js",
+  applicationName: SITE_NAME,
+  referrer: "origin-when-cross-origin",
+  formatDetection: {
+    email: false,
+    address: false,
+    telephone: false,
+  },
   manifest: "/manifest.json",
+  keywords: [
+    "FRC",
+    "FIRST Robotics Competition",
+    "FRC AI",
+    "FRC rules",
+    "FRC game manual",
+    "FRC scouting",
+    "The Blue Alliance",
+    "FRC event results",
+    "FRC rankings",
+    "robotics assistant",
+  ],
+  authors: [{ name: "Pascack Pi-oneers", url: "https://team1676.org" }],
+  creator: "Pascack Pi-oneers",
+  publisher: "Pascack Pi-oneers",
+  category: "technology",
+  alternates: {
+    canonical: "/",
+    types: {
+      "text/plain": "/llms.txt",
+    },
+  },
+  icons: {
+    icon: [{ url: faviconSvgDataUrl, type: "image/svg+xml" }],
+    shortcut: [{ url: faviconSvgDataUrl, type: "image/svg+xml" }],
+  },
   openGraph: {
-    title: "Curator — FRC AI Knowledge Base",
-    description: "Ask about FRC rules, game manuals, strategy, and programming.",
-    siteName: "Curator",
+    title: SITE_TITLE,
+    description: SITE_DESCRIPTION,
+    url: SITE_URL,
+    siteName: SITE_NAME,
     type: "website",
+    locale: "en_US",
+    images: [
+      {
+        url: SITE_OG_IMAGE,
+        width: 1200,
+        height: 630,
+        alt: `${SITE_NAME} Open Graph Image`,
+      },
+    ],
   },
   twitter: {
     card: "summary_large_image",
-    title: "Curator — FRC AI Knowledge Base",
-    description: "Ask about FRC rules, game manuals, strategy, and programming.",
+    title: SITE_TITLE,
+    description: SITE_DESCRIPTION,
+    images: [SITE_OG_IMAGE],
   },
+  robots: {
+    index: true,
+    follow: true,
+    googleBot: {
+      index: true,
+      follow: true,
+      "max-image-preview": "large",
+      "max-snippet": -1,
+      "max-video-preview": -1,
+    },
+  },
+  ...(googleSiteVerification
+    ? {
+        verification: {
+          google: googleSiteVerification,
+        },
+      }
+    : {}),
 };
 
 export const viewport: Viewport = {
@@ -29,9 +104,54 @@ export const viewport: Viewport = {
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
+  const structuredData = {
+    "@context": "https://schema.org",
+    "@graph": [
+      {
+        "@type": "WebSite",
+        name: SITE_NAME,
+        url: SITE_URL,
+        description: SITE_DESCRIPTION,
+      },
+      {
+        "@type": "Organization",
+        name: "Pascack Pi-oneers",
+        url: "https://team1676.org",
+        sameAs: ["https://team1676.org"],
+      },
+      {
+        "@type": "SoftwareApplication",
+        name: SITE_NAME,
+        applicationCategory: "EducationalApplication",
+        operatingSystem: "Web",
+        url: SITE_URL,
+        description: SITE_DESCRIPTION,
+        offers: {
+          "@type": "Offer",
+          price: "0",
+          priceCurrency: "USD",
+        },
+      },
+    ],
+  };
+
   return (
     <html lang="en" className={`${inter.variable} ${jetbrainsMono.variable}`} suppressHydrationWarning>
       <body>
+        <Script
+          src={`https://www.googletagmanager.com/gtag/js?id=${GOOGLE_ANALYTICS_MEASUREMENT_ID}`}
+          strategy="afterInteractive"
+        />
+        <Script id="google-analytics" strategy="afterInteractive">
+          {`window.dataLayer = window.dataLayer || [];
+function gtag(){dataLayer.push(arguments);}
+gtag('js', new Date());
+gtag('config', '${GOOGLE_ANALYTICS_MEASUREMENT_ID}');`}
+        </Script>
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData) }}
+        />
         <Providers>{children}</Providers>
       </body>
     </html>

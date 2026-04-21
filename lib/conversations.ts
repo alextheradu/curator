@@ -4,6 +4,7 @@ import type { Conversation, Message, Role } from "@/lib/store";
 export type ConversationRecord = {
   id: string;
   title: string;
+  searchDescription?: string | null;
   seasonYear: number;
   isPublic: boolean;
   createdAt: string | Date;
@@ -36,6 +37,7 @@ export function normalizeConversation(
   return {
     id: conversation.id,
     title: conversation.title,
+    searchDescription: conversation.searchDescription ?? null,
     seasonYear: conversation.seasonYear,
     isPublic: conversation.isPublic,
     createdAt: new Date(conversation.createdAt),

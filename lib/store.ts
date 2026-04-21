@@ -16,6 +16,7 @@ export interface Message {
 export interface Conversation {
   id: string;
   title: string;
+  searchDescription?: string | null;
   messages: Message[];
   createdAt: Date;
   updatedAt: Date;
@@ -83,6 +84,7 @@ export const useChatStore = create<ChatStore>()(
             {
               id,
               title: "New Chat",
+              searchDescription: null,
               messages: [],
               createdAt: new Date(),
               updatedAt: new Date(),

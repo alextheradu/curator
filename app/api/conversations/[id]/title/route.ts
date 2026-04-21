@@ -32,11 +32,15 @@ export async function POST(req: NextRequest, { params }: Params) {
     .orderBy(asc(messages.createdAt))
     .limit(4);
 
-  if (msgs.length < 2) return NextResponse.json({ title: null });
-
-  const context = msgs
+  const relevantMessages = msgs
     .filter((m) => m.role !== "system")
-    .slice(0, 3)
+    .slice(0, 3);
+
+  if (relevantMessages.length === 0) {
+    return NextResponse.json({ title: null });
+  }
+
+  const context = relevantMessages
     .map((m) => `${m.role}: ${m.content.slice(0, 400)}`)
     .join("\n");
 

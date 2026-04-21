@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { AssistantMarkdown } from "@/components/chat/AssistantMarkdown";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -77,10 +78,12 @@ export function ReportDetailModal({ report, onClose, onAction, onViewChat }: Pro
       <DialogContent className="flex max-h-[80vh] w-full max-w-lg flex-col rounded-[1.75rem] border border-border/60 bg-card/95 p-0 shadow-[var(--shadow-float)] backdrop-blur-xl">
         <DialogHeader className="border-b border-border/60 px-6 py-4">
           <DialogTitle className="text-sm font-semibold">Reported message</DialogTitle>
-          <p className="text-[12px] text-muted-foreground">
-            From <span className="text-foreground">{report?.reporterName ?? report?.reporterEmail}</span>
-            {" · "}Reason: {report?.reason}
-          </p>
+          <div className="space-y-1 text-[12px] text-muted-foreground">
+            <p>
+              From <span className="text-foreground">{report?.reporterName ?? report?.reporterEmail}</span>
+            </p>
+            <p>Reason: {report?.reason}</p>
+          </div>
         </DialogHeader>
 
         <div className="flex-1 overflow-y-auto space-y-3 px-6 py-4">
@@ -89,12 +92,24 @@ export function ReportDetailModal({ report, onClose, onAction, onViewChat }: Pro
           )}
           {messages.map((m) => (
             <div key={m.id} className={cn("flex", m.role === "user" ? "justify-end" : "justify-start")}>
-              <div className={cn(
-                "max-w-[85%] rounded-2xl px-4 py-2.5 text-[13px] leading-relaxed",
-                m.id === report?.messageId ? "ring-2 ring-red-500/60" : "",
-                m.role === "user" ? "bg-[#0066B3] text-white" : "bg-muted text-foreground"
-              )}>
-                {m.content}
+              <div
+                className={cn(
+                  "max-w-[85%]",
+                  m.id === report?.messageId && "rounded-2xl ring-2 ring-foreground/15",
+                  m.role === "user" &&
+                    "rounded-2xl rounded-br-lg border border-border/50 bg-muted px-3.5 py-2.5"
+                )}
+              >
+                {m.role === "assistant" ? (
+                  <AssistantMarkdown
+                    content={m.content}
+                    className={cn(m.id === report?.messageId && "rounded-2xl px-1.5 py-1")}
+                  />
+                ) : (
+                  <p className="whitespace-pre-wrap text-[13px] leading-[1.65] text-foreground">
+                    {m.content}
+                  </p>
+                )}
               </div>
             </div>
           ))}
@@ -106,6 +121,15 @@ export function ReportDetailModal({ report, onClose, onAction, onViewChat }: Pro
             onClick={() => { onClose(); onViewChat(report!.conversationId); }}
           >
             View full chat
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            className="rounded-xl text-[13px]"
+            disabled={acting || report?.status === "reviewed"}
+            onClick={() => act("reviewed")}
+          >
+            Mark reviewed
           </Button>
           <Button
             variant="outline" size="sm" className="rounded-xl text-[13px]"

@@ -1,7 +1,18 @@
 "use client";
 
 import { isToday, isYesterday, subWeeks, subMonths } from "date-fns";
-import { ChevronUpIcon, MessageSquareIcon, PanelLeftIcon, PenSquareIcon, Shield } from "lucide-react";
+import { useMemo, useState } from "react";
+import { motion } from "framer-motion";
+import {
+  ChevronUpIcon,
+  MessageCircleIcon,
+  MessageSquareIcon,
+  PanelLeftIcon,
+  PenSquareIcon,
+  SearchIcon,
+  Shield,
+  XIcon,
+} from "lucide-react";
 import { useTheme } from "next-themes";
 import { signIn, signOut, useSession } from "next-auth/react";
 import {
@@ -11,6 +22,11 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import {
+  Dialog,
+  DialogContent,
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
 import {
   Sidebar,
   SidebarContent,
@@ -30,6 +46,26 @@ import {
 import { ConversationItem } from "./ConversationItem";
 import { useChatStore } from "@/lib/store";
 import type { Conversation } from "@/lib/store";
+
+function getConversationDescription(conversation: Conversation) {
+  if (conversation.searchDescription?.trim()) {
+    return conversation.searchDescription.trim();
+  }
+
+  const firstRealMessage = conversation.messages.find((message) => message.role !== "system");
+  if (!firstRealMessage) {
+    return "No messages yet";
+  }
+
+  return firstRealMessage.content
+    .replace(/```[\s\S]*?```/g, " ")
+    .replace(/`([^`]+)`/g, "$1")
+    .replace(/\[(.*?)\]\((.*?)\)/g, "$1")
+    .replace(/[#>*_\-]+/g, " ")
+    .replace(/\s+/g, " ")
+    .trim()
+    .slice(0, 120);
+}
 
 function groupConversationsByDate(conversations: Conversation[]) {
   const now = new Date();
@@ -59,17 +95,24 @@ function emailToHue(email: string): number {
 interface AppSidebarProps {
   onCreateConversation: () => void | Promise<void>;
   onOpenConversation: (id: string) => void | Promise<void>;
+  onRenameConversation: (id: string, title: string) => void | Promise<void>;
+  onShareConversation: (id: string) => void | Promise<void>;
   onDeleteConversation: (id: string) => void | Promise<void>;
 }
 
 export function AppSidebar({
   onCreateConversation,
   onOpenConversation,
+  onRenameConversation,
+  onShareConversation,
   onDeleteConversation,
 }: AppSidebarProps) {
   const { data: session } = useSession();
   const { resolvedTheme, setTheme } = useTheme();
   const { toggleSidebar, setOpenMobile } = useSidebar();
+  const [searchOpen, setSearchOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [isSearchFocused, setIsSearchFocused] = useState(false);
   const {
     conversations,
     activeConversationId,
@@ -91,8 +134,142 @@ export function AppSidebar({
     { label: "Older", items: grouped.older },
   ].filter((g) => g.items.length > 0);
 
+  const filteredConversations = useMemo(() => {
+    const query = searchQuery.trim().toLowerCase();
+    if (!query) {
+      return conversations;
+    }
+
+    return conversations.filter((conversation) => {
+      const haystack = [
+        conversation.title,
+        getConversationDescription(conversation),
+      ]
+        .join(" ")
+        .toLowerCase();
+
+      return haystack.includes(query);
+    });
+  }, [conversations, searchQuery]);
+
+  const searchGroups: { label: string; items: Conversation[] }[] = [
+    { label: "Today", items: groupConversationsByDate(filteredConversations).today },
+    { label: "Yesterday", items: groupConversationsByDate(filteredConversations).yesterday },
+    { label: "Last 7 days", items: groupConversationsByDate(filteredConversations).lastWeek },
+    { label: "Last 30 days", items: groupConversationsByDate(filteredConversations).lastMonth },
+    { label: "Older", items: groupConversationsByDate(filteredConversations).older },
+  ].filter((g) => g.items.length > 0);
+
   return (
     <>
+      <Dialog
+        open={searchOpen}
+        onOpenChange={(open) => {
+          setSearchOpen(open);
+          if (!open) {
+            setSearchQuery("");
+          }
+        }}
+      >
+        <DialogContent className="max-w-[580px] gap-0 overflow-hidden rounded-[1.6rem] border border-white/6 bg-[#2f2f2f] p-0 text-white shadow-[0_28px_90px_rgba(0,0,0,0.42)] sm:max-h-[430px]">
+          <div className="border-b border-white/8 px-5 py-4">
+            <div className="flex items-center gap-3">
+              <motion.div
+                className="min-w-0 flex-1 rounded-xl bg-white/[0.03]"
+                initial={false}
+                animate={{
+                  scaleX: isSearchFocused || searchQuery ? 1 : 0.97,
+                  backgroundColor:
+                    isSearchFocused || searchQuery
+                      ? "rgba(255,255,255,0.055)"
+                      : "rgba(255,255,255,0.03)",
+                }}
+                transition={{ duration: 0.22, ease: [0.22, 1, 0.36, 1] }}
+                style={{ transformOrigin: "left center" }}
+              >
+                <Input
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  onFocus={() => setIsSearchFocused(true)}
+                  onBlur={() => setIsSearchFocused(false)}
+                  placeholder="Search chats..."
+                  className="h-auto border-0 bg-transparent px-3 py-2 text-[16px] font-medium text-white placeholder:text-white/55 focus-visible:ring-0"
+                />
+              </motion.div>
+              <button
+                type="button"
+                onClick={() => setSearchOpen(false)}
+                className="flex size-8 shrink-0 items-center justify-center rounded-full text-white/60 transition-colors hover:bg-white/5 hover:text-white"
+                aria-label="Close search"
+              >
+                <XIcon className="size-4.5" />
+              </button>
+            </div>
+          </div>
+
+          <div className="max-h-[362px] overflow-y-auto px-5 py-4">
+            <button
+              type="button"
+              onClick={() => {
+                setSearchOpen(false);
+                setSearchQuery("");
+                setOpenMobile(false);
+                void onCreateConversation();
+              }}
+              className="flex w-full items-center gap-3 rounded-xl bg-white/[0.08] px-3 py-2.5 text-left text-white transition-colors hover:bg-white/[0.1]"
+            >
+              <div className="flex size-7 items-center justify-center rounded-full text-white/95">
+                <PenSquareIcon className="size-4" />
+              </div>
+              <div className="min-w-0">
+                <p className="text-[14px] font-medium leading-5">New chat</p>
+              </div>
+            </button>
+
+            <div className="mt-4 space-y-5">
+              {searchGroups.length === 0 ? (
+                <div className="px-3 py-10 text-sm text-white/55">
+                  No chats match that search.
+                </div>
+              ) : (
+                searchGroups.map((group) => (
+                  <div key={group.label}>
+                    <p className="px-3 text-[12px] font-medium text-white/50">{group.label}</p>
+                    <div className="mt-2 space-y-0.5">
+                      {group.items.map((conversation) => (
+                        <button
+                          key={conversation.id}
+                          type="button"
+                          onClick={() => {
+                            setSearchOpen(false);
+                            setSearchQuery("");
+                            setOpenMobile(false);
+                            void onOpenConversation(conversation.id);
+                          }}
+                          className="flex w-full items-start gap-3 rounded-xl px-3 py-2 text-left text-white transition-colors hover:bg-white/[0.035]"
+                        >
+                          <div className="mt-0.5 flex size-6 shrink-0 items-center justify-center text-white/90">
+                            <MessageCircleIcon className="size-4" />
+                          </div>
+                          <div className="min-w-0">
+                            <p className="truncate text-[14px] font-medium leading-5 text-white">
+                              {conversation.title}
+                            </p>
+                            <p className="mt-0.5 line-clamp-1 text-[11px] leading-4 text-white/50">
+                              {getConversationDescription(conversation)}
+                            </p>
+                          </div>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
       <Sidebar collapsible="icon">
         {/* Header */}
         <SidebarHeader className="pb-0 pt-3">
@@ -129,10 +306,10 @@ export function AppSidebar({
         <SidebarContent>
           <SidebarGroup className="pt-1">
             <SidebarGroupContent>
-              <SidebarMenu>
+              <SidebarMenu className="space-y-2">
                 <SidebarMenuItem>
                   <SidebarMenuButton
-                    className="h-8 rounded-lg border border-sidebar-border text-[13px] text-sidebar-foreground/70 transition-colors duration-150 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground"
+                    className="h-9 justify-start gap-2.5 rounded-xl border border-sidebar-border px-4 text-[13px] text-sidebar-foreground/70 transition-colors duration-150 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground"
                     onClick={() => {
                       setOpenMobile(false);
                       void onCreateConversation();
@@ -141,6 +318,16 @@ export function AppSidebar({
                   >
                     <PenSquareIcon className="size-4" />
                     <span className="font-medium">New chat</span>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+                <SidebarMenuItem>
+                  <SidebarMenuButton
+                    className="h-9 justify-start gap-2.5 rounded-xl border border-sidebar-border px-4 text-[13px] text-sidebar-foreground/70 transition-colors duration-150 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground"
+                    onClick={() => setSearchOpen(true)}
+                    tooltip="Search chats"
+                  >
+                    <SearchIcon className="size-4" />
+                    <span className="font-medium">Search chats</span>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
               </SidebarMenu>
@@ -178,6 +365,13 @@ export function AppSidebar({
                                 setOpenMobile(false);
                                 void onOpenConversation(conv.id);
                               }}
+                              onRename={(title) => {
+                                void onRenameConversation(conv.id, title);
+                              }}
+                              onShare={() => {
+                                setOpenMobile(false);
+                                void onShareConversation(conv.id);
+                              }}
                               onDelete={() => handleDeleteOne(conv.id)}
                             />
                           </SidebarMenuItem>
@@ -201,7 +395,7 @@ export function AppSidebar({
                   onClick={() => window.location.href = "/admin/documents"}
                 >
                   <Shield className="size-4" />
-                  <span>Manage Documents</span>
+                  <span>Admin Panel</span>
                 </SidebarMenuButton>
               </SidebarMenuItem>
             </SidebarMenu>

@@ -8,6 +8,7 @@ import { ErrorToastListener } from "@/components/ui/ErrorToast";
 import { TooltipProvider } from "@/components/ui/tooltip";
 
 const ASSET_RECOVERY_KEY = "curator:asset-recovery";
+const ASSET_RECOVERY_PARAM = "__asset_recovery";
 const ASSET_RECOVERY_WINDOW_MS = 30_000;
 
 function shouldReloadForAssetFailure(message: string) {
@@ -30,7 +31,9 @@ function AssetRecovery() {
       }
 
       sessionStorage.setItem(ASSET_RECOVERY_KEY, String(now));
-      window.location.reload();
+      const url = new URL(window.location.href);
+      url.searchParams.set(ASSET_RECOVERY_PARAM, String(now));
+      window.location.replace(url.toString());
     };
 
     const handleWindowError = (event: ErrorEvent) => {
@@ -82,7 +85,7 @@ function AssetRecovery() {
 export function Providers({ children }: { children: ReactNode }) {
   return (
     <SessionProvider>
-      <ThemeProvider attribute="class" defaultTheme="dark" disableTransitionOnChange>
+      <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
         <TooltipProvider>
           <AssetRecovery />
           <ErrorToastListener />

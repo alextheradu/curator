@@ -2,6 +2,8 @@ import { auth } from "@/auth";
 import { buildSystemPrompt } from "@/lib/frc-system-prompt";
 import { buildRagContext } from "@/lib/rag";
 import { buildWebContext, webSearch } from "@/lib/langsearch";
+import { buildTbaContext, isTbaMcpEnabled, shouldRunTbaLookup } from "@/lib/tba";
+import { shouldRunWebSearch } from "@/lib/web-search-decision";
 import type { Citation } from "@/lib/db/schema";
 import { NextRequest, NextResponse } from "next/server";
 import { cookies } from "next/headers";
@@ -15,39 +17,6 @@ const CHAT_MODELS = (
   .split(",")
   .map((model) => model.trim())
   .filter(Boolean);
-
-const WEB_SEARCH_HINTS = [
-  "latest",
-  "recent",
-  "current",
-  "today",
-  "yesterday",
-  "this week",
-  "this month",
-  "news",
-  "update",
-  "updates",
-  "event",
-  "events",
-  "results",
-  "ranking",
-  "rankings",
-  "standing",
-  "standings",
-  "who won",
-  "look up",
-  "search the web",
-  "online",
-];
-
-function shouldRunWebSearch(query: string, ragHitCount: number, bestScore: number) {
-  const normalized = query.toLowerCase();
-  const hinted = WEB_SEARCH_HINTS.some((hint) => normalized.includes(hint));
-
-  if (hinted) return true;
-  if (ragHitCount === 0) return true;
-  return bestScore < 0.25 && /team\s+\d+|district|regional|championship|match/i.test(query);
-}
 
 function orHeaders(apiKey: string) {
   return {
@@ -64,27 +33,72 @@ function encodeSse(data: unknown) {
 
 const OPENROUTER_TIMEOUT_MS = 60_000;
 
+function pluralize(count: number, singular: string, plural = `${singular}s`) {
+  return count === 1 ? singular : plural;
+}
+
+function joinNaturalList(parts: string[]) {
+  if (parts.length === 0) {
+    return "";
+  }
+
+  if (parts.length === 1) {
+    return parts[0];
+  }
+
+  if (parts.length === 2) {
+    return `${parts[0]} and ${parts[1]}`;
+  }
+
+  return `${parts.slice(0, -1).join(", ")}, and ${parts.at(-1)}`;
+}
+
+function describeAnswerInputs(
+  ragCitations: Citation[],
+  tbaCitations: Citation[],
+  webCitations: Citation[],
+) {
+  const parts: string[] = [];
+
+  if (ragCitations.length > 0) {
+    parts.push(`${ragCitations.length} document ${pluralize(ragCitations.length, "page")}`);
+  }
+
+  if (tbaCitations.length > 0) {
+    parts.push("The Blue Alliance data");
+  }
+
+  if (webCitations.length > 0) {
+    parts.push(`${webCitations.length} web ${pluralize(webCitations.length, "result")}`);
+  }
+
+  return parts.length > 0 ? joinNaturalList(parts) : "";
+}
+
 async function streamChatCompletion({
   apiKey,
   messages,
   temperature,
   sendEvent,
-  sendDone,
-  controller,
   signal,
 }: {
   apiKey: string;
   messages: Array<{ role: string; content: string }>;
   temperature: number;
   sendEvent: (payload: unknown) => void;
-  sendDone: () => void;
-  controller: ReadableStreamDefaultController<Uint8Array>;
   signal?: AbortSignal;
 }) {
   const errors: string[] = [];
 
   for (const [index, model] of CHAT_MODELS.entries()) {
     try {
+      sendEvent({
+        type: "status",
+        message: index === 0
+          ? "Asking Curator's primary model to draft the answer..."
+          : `Asking Curator's backup model (${index + 1}/${CHAT_MODELS.length}) to draft the answer...`,
+      });
+
       const timeoutSignal = AbortSignal.timeout(OPENROUTER_TIMEOUT_MS);
       const combinedSignal = signal
         ? AbortSignal.any([signal, timeoutSignal])
@@ -108,7 +122,7 @@ async function streamChatCompletion({
         if (index < CHAT_MODELS.length - 1) {
           sendEvent({
             type: "status",
-            message: `Retrying with backup model (${index + 2}/${CHAT_MODELS.length})...`,
+            message: `Switching to Curator's backup model (${index + 2}/${CHAT_MODELS.length})...`,
           });
         }
         continue;
@@ -120,10 +134,16 @@ async function streamChatCompletion({
         continue;
       }
 
+      sendEvent({
+        type: "status",
+        message: "Waiting for the model to start responding...",
+      });
+
       const decoder = new TextDecoder();
       let buffer = "";
       let tokenCount = 0;
       let streamDone = false;
+      let fullText = "";
 
       outer: while (true) {
         const { done, value } = await reader.read();
@@ -152,6 +172,7 @@ async function streamChatCompletion({
 
             if (token) {
               tokenCount++;
+              fullText += token;
               sendEvent({ type: "token", token });
             }
           } catch {
@@ -161,16 +182,14 @@ async function streamChatCompletion({
       }
 
       if (streamDone && tokenCount > 0) {
-        sendDone();
-        controller.close();
-        return;
+        return fullText;
       }
 
       errors.push(`${model}: stream ended with no content`);
       if (index < CHAT_MODELS.length - 1) {
         sendEvent({
           type: "status",
-          message: `Retrying with backup model (${index + 2}/${CHAT_MODELS.length})...`,
+          message: `Switching to Curator's backup model (${index + 2}/${CHAT_MODELS.length})...`,
         });
       }
     } catch (error) {
@@ -178,13 +197,49 @@ async function streamChatCompletion({
       if (index < CHAT_MODELS.length - 1) {
         sendEvent({
           type: "status",
-          message: `Retrying with backup model (${index + 2}/${CHAT_MODELS.length})...`,
+          message: `Switching to Curator's backup model (${index + 2}/${CHAT_MODELS.length})...`,
         });
       }
     }
   }
 
   throw new Error(errors.join(" | "));
+}
+
+function filterUsedCitations(
+  assistantText: string,
+  docCitations: Citation[],
+  tbaCitations: Citation[],
+  webCitations: Citation[],
+) {
+  const docMap = new Map(docCitations.map((citation, index) => [index + 1, citation]));
+  const tbaMap = new Map(tbaCitations.map((citation, index) => [index + 1, citation]));
+  const webMap = new Map(webCitations.map((citation, index) => [index + 1, citation]));
+  const used: Citation[] = [];
+  const seen = new Set<string>();
+  const pattern = /\[(SOURCE|TBA|WEB)\s+(\d+)\]/gi;
+
+  for (const match of assistantText.matchAll(pattern)) {
+    const kind = match[1]?.toUpperCase();
+    const index = Number(match[2]);
+    const citation = kind === "SOURCE"
+      ? docMap.get(index)
+      : kind === "TBA"
+        ? tbaMap.get(index)
+        : webMap.get(index);
+
+    if (!citation) {
+      continue;
+    }
+
+    const key = `${citation.type}:${citation.minioKey ?? citation.url ?? citation.label}:${citation.pageNumber ?? ""}`;
+    if (!seen.has(key)) {
+      seen.add(key);
+      used.push(citation);
+    }
+  }
+
+  return used;
 }
 
 export async function POST(request: NextRequest) {
@@ -232,57 +287,116 @@ export async function POST(request: NextRequest) {
           let effectiveSeasonYear = seasonYear;
           let ragHitCount = 0;
           let ragBestScore = 0;
-          const allCitations: Citation[] = [];
+          let ragCitations: Citation[] = [];
+          let tbaCitations: Citation[] = [];
+          let tbaDirectAnswer: string | undefined;
+          const webCitations: Citation[] = [];
 
           if (lastUser) {
-            sendEvent({ type: "status", message: "Searching files..." });
+            sendEvent({ type: "status", message: "Reading your question..." });
+            sendEvent({ type: "status", message: "Checking uploaded documents and indexed manuals..." });
 
             try {
-              const ragContext = await buildRagContext(lastUser.content, seasonYear);
+              const ragContext = await buildRagContext(lastUser.content, seasonYear, {
+                onStatus: (message) => sendEvent({ type: "status", message }),
+              });
               contextBlock += ragContext.contextBlock;
-              allCitations.push(...ragContext.citations);
+              ragCitations = ragContext.citations;
               ragHitCount = ragContext.hitCount;
               ragBestScore = ragContext.bestScore;
               effectiveSeasonYear = ragContext.selectedSeasonYear ?? seasonYear;
+              sendEvent({
+                type: "status",
+                message: ragHitCount > 0
+                  ? `Found ${ragHitCount} relevant document ${pluralize(ragHitCount, "page")} in the indexed files.`
+                  : "No strong document match yet, continuing to live sources...",
+              });
             } catch {
-              sendEvent({ type: "status", message: "File search unavailable, continuing without it..." });
+              sendEvent({ type: "status", message: "Document search is unavailable, continuing without it..." });
             }
           }
 
-          if (lastUser && shouldRunWebSearch(lastUser.content, ragHitCount, ragBestScore)) {
-            sendEvent({ type: "status", message: "Searching the web..." });
+          if (lastUser && isTbaMcpEnabled() && shouldRunTbaLookup(lastUser.content)) {
+            sendEvent({ type: "status", message: "Checking The Blue Alliance for live FRC data..." });
 
             try {
-              const webResults = await webSearch(lastUser.content, 5);
+              const tbaContext = await buildTbaContext(lastUser.content, effectiveSeasonYear, {
+                onStatus: (message) => sendEvent({ type: "status", message }),
+              });
+              contextBlock += tbaContext.contextBlock;
+              tbaCitations = tbaContext.citations;
+              tbaDirectAnswer = tbaContext.directAnswer;
+              if (tbaCitations.length > 0 && !tbaDirectAnswer) {
+                sendEvent({
+                  type: "status",
+                  message: "The Blue Alliance returned live data for this question.",
+                });
+              }
+            } catch {
+              sendEvent({ type: "status", message: "The Blue Alliance lookup is unavailable, continuing without it..." });
+            }
+          }
+
+          if (tbaDirectAnswer) {
+            sendEvent({ type: "status", message: "Formatting the live TBA result into a direct answer..." });
+            sendEvent({ type: "token", token: tbaDirectAnswer });
+            sendEvent({ type: "citations", citations: tbaCitations });
+            sendDone();
+            controller.close();
+            return;
+          }
+
+          if (lastUser && shouldRunWebSearch(lastUser.content, ragHitCount, ragBestScore)) {
+            sendEvent({ type: "status", message: "Checking whether a live web search is needed..." });
+
+            try {
+              const webResults = await webSearch(lastUser.content, 5, effectiveSeasonYear, {
+                onStatus: (message) => sendEvent({ type: "status", message }),
+              });
               contextBlock += buildWebContext(webResults);
 
               for (const result of webResults) {
                 try {
                   const domain = new URL(result.url).hostname.replace("www.", "");
-                  allCitations.push({ type: "web", label: domain, url: result.url });
+                  webCitations.push({ type: "web", label: domain, url: result.url });
                 } catch {
                   // Ignore malformed URLs from providers.
                 }
               }
+              if (webResults.length > 0) {
+                sendEvent({
+                  type: "status",
+                  message: `Found ${webResults.length} live web ${pluralize(webResults.length, "result")}.`,
+                });
+              }
             } catch {
-              sendEvent({ type: "status", message: "Web search unavailable, continuing without it..." });
+              sendEvent({ type: "status", message: "Web search is unavailable, continuing without it..." });
             }
           }
 
-          sendEvent({ type: "citations", citations: allCitations });
-          sendEvent({ type: "status", message: "Writing answer..." });
+          const answerInputs = describeAnswerInputs(ragCitations, tbaCitations, webCitations);
+          sendEvent({
+            type: "status",
+            message: answerInputs
+              ? `Building the answer from ${answerInputs}...`
+              : "Thinking through the answer from the available context...",
+          });
 
           const systemPrompt = buildSystemPrompt(effectiveSeasonYear, contextBlock);
           const fullMessages = [{ role: "system", content: systemPrompt }, ...messages];
-          await streamChatCompletion({
+          const assistantText = await streamChatCompletion({
             apiKey,
             messages: fullMessages,
             temperature,
             sendEvent,
-            sendDone,
-            controller,
             signal: request.signal,
           });
+          sendEvent({
+            type: "citations",
+            citations: filterUsedCitations(assistantText, ragCitations, tbaCitations, webCitations),
+          });
+          sendDone();
+          controller.close();
         } catch (error) {
           const message = error instanceof Error ? error.message : "Chat request failed";
           sendEvent({ type: "error", message });
