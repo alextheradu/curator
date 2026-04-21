@@ -1,0 +1,36 @@
+# Curator
+
+Curator is an AI assistant for FIRST Robotics Competition (FRC) teams.
+
+It helps users find accurate, cited information from:
+- Official FIRST game manuals and team updates
+- Team reference documents
+- Live FRC data (teams, events, matches, rankings)
+
+## Primary audience
+
+- FRC students
+- Mentors
+- Drive teams and scouting teams
+
+## Core capabilities
+
+- Answers questions about FRC rules and gameplay
+- Summarizes and explains official documentation
+- Retrieves live competition context from The Blue Alliance
+- Supports authenticated chat history and optional public chat sharing
+
+## Important limitations
+
+- Responses may be incorrect or outdated
+- Users should verify competition-critical guidance against official FIRST sources
+
+## Public URLs
+
+- Home: https://curator.team1676.org/
+- Privacy Policy: https://curator.team1676.org/privacy-policy
+- Terms of Service: https://curator.team1676.org/terms-of-service
+
+## Operator
+
+Curator is operated by Team 1676 (Pascack Pi-oneers) as a community tool.

@@ -68,6 +68,7 @@ export function ChatApp({ requestedConversationId }: ChatAppProps) {
   const [viewMode, setViewMode] = useState<ViewMode>("loading");
   const [publicConversation, setPublicConversation] = useState<Conversation | null>(null);
   const [isShareUpdating, setIsShareUpdating] = useState(false);
+  const [shareDialogConversationId, setShareDialogConversationId] = useState<string | null>(null);
   const previousAuthRef = useRef(false);
 
   const navigateToConversation = useCallback((conversationId: string, replace = false) => {
@@ -316,6 +317,68 @@ export function ChatApp({ requestedConversationId }: ChatAppProps) {
     }
   }, [isAuthenticated, upsertConversation]);
 
+  const handleRenameConversation = useCallback(async (conversationId: string, title: string) => {
+    const nextTitle = title.trim();
+    if (!nextTitle) {
+      return;
+    }
+
+    const currentConversation = useChatStore
+      .getState()
+      .conversations
+      .find((conversation) => conversation.id === conversationId);
+
+    if (!currentConversation || currentConversation.title === nextTitle) {
+      return;
+    }
+
+    upsertConversation({
+      ...currentConversation,
+      title: nextTitle,
+      updatedAt: new Date(),
+    });
+
+    try {
+      if (isAuthenticated) {
+        const updated = normalizeConversation(
+          await updateConversationRequest(conversationId, { title: nextTitle }),
+          currentConversation.messages,
+        );
+        upsertConversation(updated);
+      }
+    } catch (error) {
+      console.error(error);
+      upsertConversation(currentConversation);
+      toast.error("Unable to rename that chat.");
+    }
+  }, [isAuthenticated, upsertConversation]);
+
+  const handleShareConversation = useCallback(async (conversationId: string) => {
+    if (!isAuthenticated) {
+      toast.info("Sign in to share chats.");
+      return;
+    }
+
+    const loaded = await readConversation(conversationId);
+    if (!loaded || loaded.access !== "owner") {
+      toast.error("Unable to open that chat.");
+      return;
+    }
+
+    upsertConversation(loaded.conversation);
+    setActiveConversation(loaded.conversation.id);
+    setPublicConversation(null);
+    setViewMode("owner");
+    setShareDialogConversationId(loaded.conversation.id);
+    navigateToConversation(conversationId);
+  }, [
+    isAuthenticated,
+    navigateToConversation,
+    readConversation,
+    setActiveConversation,
+    upsertConversation,
+  ]);
+
   if (viewMode === "loading") {
     return <LoadingState />;
   }
@@ -331,6 +394,8 @@ export function ChatApp({ requestedConversationId }: ChatAppProps) {
           <AppSidebar
             onCreateConversation={handleCreateConversation}
             onOpenConversation={handleOpenConversation}
+            onRenameConversation={handleRenameConversation}
+            onShareConversation={handleShareConversation}
             onDeleteConversation={handleDeleteConversation}
           />
         )}
@@ -340,6 +405,8 @@ export function ChatApp({ requestedConversationId }: ChatAppProps) {
           canShare={viewMode === "owner" && isAuthenticated}
           onShareChange={handleShareChange}
           isShareUpdating={isShareUpdating}
+          shareDialogConversationId={shareDialogConversationId}
+          onShareDialogHandled={() => setShareDialogConversationId(null)}
         />
       </div>
     </SidebarProvider>

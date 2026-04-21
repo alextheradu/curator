@@ -5,6 +5,15 @@ export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs))
 }
 
+export function buildDocumentViewHref(minioKey: string, pageNumber?: number) {
+  const params = new URLSearchParams({ key: minioKey });
+  if (typeof pageNumber === "number" && Number.isFinite(pageNumber) && pageNumber > 0) {
+    params.set("page", String(pageNumber));
+  }
+
+  return `/api/documents/view?${params.toString()}`;
+}
+
 export function normalizeAssistantMarkdown(text: string): string {
   return text.replace(/<br\s*\/?>/gi, "\n");
 }

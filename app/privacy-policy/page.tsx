@@ -1,9 +1,16 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { readPublicMarkdown } from "@/lib/markdown";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 
-export const metadata = { title: "Privacy Policy — Curator" };
+export const metadata: Metadata = {
+  title: "Privacy Policy",
+  description: "Read Curator's privacy policy, including data collection, retention, third-party services, and user rights.",
+  alternates: {
+    canonical: "/privacy-policy",
+  },
+};
 
 export default async function PrivacyPage() {
   const content = await readPublicMarkdown("privacy-policy.md");

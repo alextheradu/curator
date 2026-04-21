@@ -103,9 +103,11 @@ export const reports = pgTable("reports", {
 export type Citation = {
   type: "doc" | "web";
   label: string;
+  documentName?: string;
   url?: string;
   pageNumber?: number;
   minioKey?: string;
+  quote?: string;
 };
 
 export type DocumentScope = "season" | "general";

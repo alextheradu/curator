@@ -3,9 +3,7 @@ import { requireAdmin } from "@/lib/admin-auth";
 import { db } from "@/lib/db";
 import { users, conversations, messages, documents, docChunks, reports } from "@/lib/db/schema";
 import { eq, gte, count, sum, sql } from "drizzle-orm";
-import { qdrant } from "@/lib/qdrant";
-
-const COLLECTION = process.env.QDRANT_COLLECTION ?? "curator-docs";
+import { getCollectionInfo } from "@/lib/qdrant";
 
 export async function GET(req: NextRequest) {
   const adminAuth = await requireAdmin(req);
@@ -64,7 +62,7 @@ export async function GET(req: NextRequest) {
 
   let qdrantCount = 0;
   try {
-    const info = await qdrant.getCollection(COLLECTION);
+    const info = await getCollectionInfo();
     qdrantCount = info.points_count ?? 0;
   } catch {
     // Qdrant unavailable — not fatal

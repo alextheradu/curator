@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useSession } from "next-auth/react";
 import { AnimatePresence, motion } from "framer-motion";
@@ -25,12 +26,17 @@ import {
 } from "@/components/ui/dialog";
 import { useAutoScroll } from "@/hooks/useAutoScroll";
 import { useGuestLimit } from "@/hooks/useGuestLimit";
-import { createConversation, createConversationMessage, updateConversation } from "@/lib/conversation-api";
+import {
+  createConversation,
+  createConversationMessage,
+  updateConversation as updateConversationRecord,
+} from "@/lib/conversation-api";
 import { normalizeConversation } from "@/lib/conversations";
 import type { Citation } from "@/lib/db/schema";
 import type { Conversation } from "@/lib/store";
 import { useChatStore } from "@/lib/store";
 import { streamOpenRouterChat } from "@/lib/openrouter";
+import { generateChatTitle } from "@/lib/utils";
 import { toast } from "sonner";
 
 interface ChatWindowProps {
@@ -39,6 +45,8 @@ interface ChatWindowProps {
   canShare?: boolean;
   onShareChange?: (makePublic: boolean) => Promise<void>;
   isShareUpdating?: boolean;
+  shareDialogConversationId?: string | null;
+  onShareDialogHandled?: () => void;
 }
 
 export function ChatWindow({
@@ -47,6 +55,8 @@ export function ChatWindow({
   canShare = false,
   onShareChange,
   isShareUpdating = false,
+  shareDialogConversationId = null,
+  onShareDialogHandled,
 }: ChatWindowProps) {
   const { data: session } = useSession();
   const isAuthenticated = !!session?.user?.id;
@@ -94,6 +104,19 @@ export function ChatWindow({
   ]);
 
   useEffect(() => () => abortRef.current?.abort(), []);
+
+  useEffect(() => {
+    if (!shareDialogConversationId || !conversation || readOnly) {
+      return;
+    }
+
+    if (conversation.id === shareDialogConversationId) {
+      queueMicrotask(() => {
+        setShareDialogOpen(true);
+      });
+      onShareDialogHandled?.();
+    }
+  }, [conversation, onShareDialogHandled, readOnly, shareDialogConversationId]);
 
   const persistLatestAssistantMessage = useCallback(async (conversationId: string, citations?: Citation[]) => {
     if (!isAuthenticated || readOnly) {
@@ -176,6 +199,8 @@ export function ChatWindow({
     const previousTitle = previousConversation?.title ?? "New Chat";
 
     const userMsgId = addMessage(conversationId, { role: "user", content: text });
+    const fallbackTitle = generateChatTitle(text);
+    const shouldGenerateAiTitle = isAuthenticated && previousTitle === "New Chat";
 
     if (isAuthenticated) {
       try {
@@ -185,13 +210,31 @@ export function ChatWindow({
         toast.error("Your message could not be saved.");
       }
 
-      const updatedConversation = useChatStore.getState().activeConversation();
-      if (updatedConversation && updatedConversation.title !== previousTitle) {
+      if (previousTitle === "New Chat") {
         try {
-          await updateConversation(conversationId, { title: updatedConversation.title });
+          await updateConversationRecord(conversationId, { title: fallbackTitle });
         } catch (error) {
           console.error(error);
         }
+      }
+
+      if (shouldGenerateAiTitle) {
+        void (async () => {
+          try {
+            const res = await fetch(`/api/conversations/${conversationId}/title`, { method: "POST" });
+            const data = await res.json() as { title: string | null };
+            if (!data.title) return;
+            setTypingTitle(conversationId, "");
+            for (let i = 0; i <= data.title.length; i++) {
+              await new Promise((r) => setTimeout(r, 35));
+              setTypingTitle(conversationId, data.title.slice(0, i));
+            }
+            updateConversation(conversationId, { title: data.title });
+            clearTypingTitle();
+          } catch {
+            clearTypingTitle();
+          }
+        })();
       }
     }
 
@@ -223,28 +266,6 @@ export function ChatWindow({
         finalizeStreamingMessage(conversationId, citations);
         await persistLatestAssistantMessage(conversationId, citations);
         scrollToBottom();
-
-        // Generate AI title after first assistant response
-        if (isAuthenticated) {
-          const conv = useChatStore.getState().conversations.find((c) => c.id === conversationId);
-          const assistantCount = conv?.messages.filter((m) => m.role === "assistant").length ?? 0;
-          if (assistantCount === 1 && conv?.title === "New Chat") {
-            void (async () => {
-              try {
-                const res = await fetch(`/api/conversations/${conversationId}/title`, { method: "POST" });
-                const data = await res.json() as { title: string | null };
-                if (!data.title) return;
-                setTypingTitle(conversationId, "");
-                for (let i = 0; i <= data.title.length; i++) {
-                  await new Promise((r) => setTimeout(r, 35));
-                  setTypingTitle(conversationId, data.title!.slice(0, i));
-                }
-                updateConversation(conversationId, { title: data.title });
-                clearTypingTitle();
-              } catch { /* title gen failed — keep "New Chat" */ }
-            })();
-          }
-        }
       },
       onError: async (error) => {
         abortRef.current = null;
@@ -270,11 +291,14 @@ export function ChatWindow({
     readOnly,
     resetStreamingState,
     scrollToBottom,
+    clearTypingTitle,
     setActiveConversation,
     setShowAuthModal,
+    setTypingTitle,
     startStreaming,
     temperature,
     upsertConversation,
+    updateConversation,
     updateStreamingContent,
   ]);
 
@@ -416,41 +440,55 @@ export function ChatWindow({
         </DialogContent>
       </Dialog>
 
-      <div className="border-b border-border/60 bg-background/90 px-3 py-2 backdrop-blur md:px-6 md:py-3">
-        <div className="mx-auto flex w-full max-w-3xl items-center gap-2 sm:gap-3">
-          {/* Sidebar trigger — mobile only */}
+      <div className="border-b border-border/40 bg-background/90 px-3 py-2.5 backdrop-blur md:px-6">
+        <div className="mx-auto flex w-full max-w-3xl items-center">
+          {/* Sidebar trigger — fixed width so logo centers between it and title */}
           {!readOnly && (
-            <SidebarTrigger className="shrink-0 text-muted-foreground md:hidden" />
+            <div className="flex w-10 shrink-0 items-center justify-center md:hidden">
+              <SidebarTrigger className="text-muted-foreground" />
+            </div>
           )}
 
-          <div className="min-w-0 flex-1">
+          {/* Logo — centered in its own fixed-width column */}
+          <div className="flex w-14 shrink-0 items-center justify-center">
+            <Image
+              src="/logo.png"
+              alt="Curator"
+              width={32}
+              height={32}
+              className="h-7 w-7 object-contain sm:h-8 sm:w-8"
+              style={{ filter: "drop-shadow(0 0 7px rgba(120,40,40,0.22))" }}
+            />
+          </div>
+
+          {/* Title + status badge — inline on the same row */}
+          <div className="flex min-w-0 flex-1 items-center gap-2">
             <div className="truncate text-sm font-semibold text-foreground">
               {conversation?.title ?? "New Chat"}
             </div>
-            <div className="mt-1 flex items-center gap-2 text-xs text-muted-foreground">
-              {readOnly ? (
-                <>
-                  <GlobeIcon className="size-3.5" />
-                  Public read-only chat
-                </>
-              ) : conversation?.isPublic ? (
-                <>
-                  <GlobeIcon className="size-3.5" />
-                  Public
-                </>
-              ) : (
-                <>
-                  <LockIcon className="size-3.5" />
-                  Private
-                </>
-              )}
-            </div>
+            {readOnly ? (
+              <span className="inline-flex shrink-0 items-center gap-1 rounded-full border border-border/50 bg-muted/50 px-2 py-0.5 text-[10px] font-medium text-muted-foreground">
+                <GlobeIcon className="size-2.5" />
+                Public · read-only
+              </span>
+            ) : conversation?.isPublic ? (
+              <span className="inline-flex shrink-0 items-center gap-1 rounded-full border border-blue-500/20 bg-blue-500/10 px-2 py-0.5 text-[10px] font-medium text-blue-400">
+                <GlobeIcon className="size-2.5" />
+                Public
+              </span>
+            ) : (
+              <span className="inline-flex shrink-0 items-center gap-1 rounded-full border border-border/50 bg-muted/50 px-2 py-0.5 text-[10px] font-medium text-muted-foreground">
+                <LockIcon className="size-2.5" />
+                Private
+              </span>
+            )}
           </div>
 
+          {/* Right: action */}
           {readOnly ? (
             <Link
               href="/"
-              className="inline-flex h-8 shrink-0 items-center rounded-xl border border-border/60 px-2.5 text-xs font-medium text-foreground transition-colors hover:bg-muted sm:px-3 sm:text-sm"
+              className="inline-flex h-8 shrink-0 items-center rounded-xl border border-border/60 px-2.5 text-xs font-medium text-foreground transition-colors hover:bg-muted sm:px-3"
             >
               <span className="hidden sm:inline">Start your own chat</span>
               <span className="sm:hidden">Start chat</span>
@@ -477,7 +515,7 @@ export function ChatWindow({
         </div>
       </div>
 
-      <div ref={containerRef} className="relative min-h-0 flex-1 overflow-y-auto overscroll-contain">
+      <div ref={containerRef} className="relative flex min-h-0 flex-1 flex-col overflow-y-auto overscroll-contain">
         <AnimatePresence mode="popLayout">
           {isEmpty && readOnly ? (
             <div className="mx-auto flex w-full max-w-3xl flex-1 flex-col items-center justify-center gap-3 px-4 pb-40 pt-16 text-center">
@@ -489,12 +527,23 @@ export function ChatWindow({
               </p>
             </div>
           ) : isEmpty ? (
-            <EmptyState key="empty" onPromptSelect={handleSend} />
+            <motion.div
+              key={`empty-${conversation?.id ?? "root"}`}
+              initial={{ opacity: 0, y: 18, scale: 0.985 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: -12, scale: 0.985 }}
+              transition={{ duration: 0.28, ease: [0.22, 1, 0.36, 1] }}
+              className="flex flex-1"
+            >
+              <EmptyState onPromptSelect={handleSend} />
+            </motion.div>
           ) : (
             <motion.div
               key={`${conversation?.id ?? "messages"}-${readOnly ? "readonly" : "editable"}`}
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
+              initial={{ opacity: 0, y: 10, scale: 0.995 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: -8, scale: 0.992 }}
+              transition={{ duration: 0.24, ease: [0.22, 1, 0.36, 1] }}
               className="mx-auto flex w-full max-w-3xl flex-col gap-6 px-3 pb-32 pt-5 sm:px-4 sm:pb-40 sm:pt-8 md:px-6"
             >
               {messages.map((message) => (

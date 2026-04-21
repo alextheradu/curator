@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { AssistantMarkdown } from "@/components/chat/AssistantMarkdown";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
 
@@ -26,12 +27,42 @@ export function ChatViewerModal({ conversationId, onClose }: Props) {
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    if (!conversationId) { setData(null); return; }
-    setLoading(true);
-    fetch(`/api/admin/chats/${conversationId}`)
+    let cancelled = false;
+
+    if (!conversationId) {
+      queueMicrotask(() => {
+        if (!cancelled) {
+          setData(null);
+          setLoading(false);
+        }
+      });
+      return () => {
+        cancelled = true;
+      };
+    }
+
+    queueMicrotask(() => {
+      if (!cancelled) {
+        setLoading(true);
+      }
+    });
+
+    void fetch(`/api/admin/chats/${conversationId}`)
       .then((r) => r.json())
-      .then(setData)
-      .finally(() => setLoading(false));
+      .then((payload) => {
+        if (!cancelled) {
+          setData(payload);
+        }
+      })
+      .finally(() => {
+        if (!cancelled) {
+          setLoading(false);
+        }
+      });
+
+    return () => {
+      cancelled = true;
+    };
   }, [conversationId]);
 
   return (
@@ -49,17 +80,27 @@ export function ChatViewerModal({ conversationId, onClose }: Props) {
           {loading && (
             <p className="py-8 text-center text-[13px] text-muted-foreground">Loading...</p>
           )}
+          {!loading && data?.messages.filter((m) => m.role !== "system").length === 0 && (
+            <p className="py-8 text-center text-[13px] text-muted-foreground">No messages in this chat.</p>
+          )}
           {data?.messages
             .filter((m) => m.role !== "system")
             .map((m) => (
               <div key={m.id} className={cn("flex", m.role === "user" ? "justify-end" : "justify-start")}>
-                <div className={cn(
-                  "max-w-[80%] rounded-2xl px-4 py-2.5 text-[13px] leading-relaxed",
-                  m.role === "user"
-                    ? "bg-[#0066B3] text-white"
-                    : "bg-muted text-foreground"
-                )}>
-                  {m.content}
+                <div
+                  className={cn(
+                    "max-w-[80%]",
+                    m.role === "user" &&
+                      "rounded-2xl rounded-br-lg border border-border/50 bg-muted px-3.5 py-2.5"
+                  )}
+                >
+                  {m.role === "assistant" ? (
+                    <AssistantMarkdown content={m.content} />
+                  ) : (
+                    <p className="whitespace-pre-wrap text-[13px] leading-[1.65] text-foreground">
+                      {m.content}
+                    </p>
+                  )}
                 </div>
               </div>
             ))}

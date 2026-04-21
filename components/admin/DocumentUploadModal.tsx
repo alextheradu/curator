@@ -96,9 +96,9 @@ export function DocumentUploadModal({ open, onClose, onSuccess }: Props) {
                 key={s}
                 className={`flex h-5 w-5 items-center justify-center rounded-full text-[11px] font-semibold transition-colors ${
                   s < step
-                    ? "bg-[#0066B3] text-white"
+                    ? "bg-foreground text-background"
                     : s === step
-                    ? "bg-[#0066B3]/20 text-[#0066B3]"
+                    ? "bg-muted text-foreground"
                     : "bg-muted text-muted-foreground"
                 }`}
               >
@@ -119,7 +119,7 @@ export function DocumentUploadModal({ open, onClose, onSuccess }: Props) {
                 Choose a PDF to upload to the retrieval library.
               </p>
               <div
-                className="flex cursor-pointer flex-col items-center gap-3 rounded-2xl border-2 border-dashed border-border/60 bg-background px-4 py-10 transition-colors hover:border-[#0066B3]/40 hover:bg-[#0066B3]/5"
+                className="flex cursor-pointer flex-col items-center gap-3 rounded-2xl border-2 border-dashed border-border/60 bg-background px-4 py-10 transition-colors hover:border-border hover:bg-muted/30"
                 onClick={() => inputRef.current?.click()}
                 onDrop={(e) => { e.preventDefault(); const f = e.dataTransfer.files[0]; if (f) handleFile(f); }}
                 onDragOver={(e) => e.preventDefault()}
@@ -169,7 +169,7 @@ export function DocumentUploadModal({ open, onClose, onSuccess }: Props) {
                       onClick={() => setScope(s)}
                       className={`rounded-xl px-3 py-1.5 text-[13px] transition-colors ${
                         scope === s
-                          ? "bg-[#0066B3]/10 text-[#0066B3]"
+                          ? "bg-muted text-foreground"
                           : "bg-muted text-muted-foreground hover:bg-muted/80"
                       }`}
                     >
@@ -256,7 +256,7 @@ export function DocumentUploadModal({ open, onClose, onSuccess }: Props) {
                 <div className="space-y-2">
                   <div className="h-1.5 w-full overflow-hidden rounded-full bg-muted">
                     <div
-                      className="h-full rounded-full bg-[#0066B3] transition-all duration-700"
+                      className="h-full rounded-full bg-foreground transition-all duration-700"
                       style={{ width: progressWidth }}
                     />
                   </div>

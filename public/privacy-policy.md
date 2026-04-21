@@ -1,7 +1,7 @@
 # Privacy Policy
 
 **Curator — FRC AI Assistant**
-**Last updated: April 18, 2026**
+**Last updated: April 20, 2026**
 
 ## 1. Overview
 
@@ -22,8 +22,10 @@ This Privacy Policy explains how Curator ("the Service", "we", "us") collects, u
 
 ### 2c. All users
 - **Chat messages:** message content is sent to OpenRouter (our LLM provider) for processing. See OpenRouter's privacy policy at openrouter.ai/privacy.
+- **Event and team lookup queries:** when Curator checks live FRC event, match, ranking, or team data, the relevant query parameters are sent to The Blue Alliance API.
 - **Public shared chats:** if an authenticated user chooses to make a chat public, that conversation becomes accessible to anyone with the chat URL until the owner turns sharing off or deletes the chat.
 - **Search queries:** if web search is triggered, your query is sent to LangSearch. See LangSearch's privacy policy for details.
+- **Analytics usage data:** we use Google Analytics 4 to collect aggregated usage data (for example, page views, device/browser information, approximate region, and interaction events) to understand and improve the Service.
 - **Server logs:** standard web server request logs (IP address, timestamp, user agent) retained for up to 30 days.
 
 ## 3. How We Use Your Information
@@ -33,6 +35,7 @@ This Privacy Policy explains how Curator ("the Service", "we", "us") collects, u
 - To honor your choice to publish or unpublish shared chat links
 - To enforce the guest message limit and Terms of Service acceptance
 - To generate AI responses grounded in FRC documentation
+- To monitor performance and usage trends through aggregate analytics
 
 We do **not** sell your data, use it for advertising, or share it with third parties except as described in Section 4.
 
@@ -42,7 +45,9 @@ We do **not** sell your data, use it for advertising, or share it with third par
 |---------|---------|---------------------|
 | Google OAuth | Authentication | policies.google.com/privacy |
 | OpenRouter | LLM inference | openrouter.ai/privacy |
+| The Blue Alliance | Live FRC team, event, match, and rankings data | thebluealliance.com/apidocs |
 | LangSearch | Web search | (see LangSearch docs) |
+| Google Analytics | Aggregated usage analytics and performance insights | policies.google.com/privacy |
 | MinIO (self-hosted) | Document storage | Self-hosted, no third party |
 
 ## 5. Data Storage
@@ -59,6 +64,7 @@ We do **not** sell your data, use it for advertising, or share it with third par
 - **Authenticated user data:** retained for as long as your account exists. You may delete your account and all associated data at any time from the Settings page.
 - **Public shared chats:** remain publicly accessible until you make the chat private again or delete it.
 - **Server logs:** retained for 30 days, then deleted.
+- **Analytics data:** retained according to Google Analytics property retention settings configured by the operator.
 
 ## 7. Cookies
 
@@ -66,8 +72,9 @@ We use the following cookies:
 - `tos_accepted` — records that you have accepted the Terms of Service (session cookie)
 - `guest_message_count` — tracks number of guest messages sent
 - `authjs.session-token` — Auth.js session JWT (authenticated users only)
+- `_ga`, `_ga_*` — Google Analytics cookies used to distinguish users/sessions and measure site usage
 
-We do not use tracking, advertising, or analytics cookies.
+We do not use advertising cookies.
 
 ## 8. Children's Privacy
 

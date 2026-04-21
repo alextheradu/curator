@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { Search, Shield, ShieldOff, Ban, Trash2, MessageSquare, LockOpen, Lock } from "lucide-react";
+import { Search, Shield, ShieldOff, Ban, Trash2, MessageSquare, LockOpen } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { ConfirmDialog } from "@/components/admin/ConfirmDialog";
@@ -84,7 +84,7 @@ export default function AdminUsersPage() {
   return (
     <div className="relative min-h-svh">
       <div className="pointer-events-none absolute inset-x-0 top-0 h-64 bg-[radial-gradient(circle_at_top,_color-mix(in_oklab,_#0066B3_10%,_transparent)_0%,_transparent_70%)]" />
-      <div className="relative mx-auto max-w-5xl space-y-6 px-6 py-8">
+      <div className="relative mx-auto max-w-5xl space-y-6 px-4 py-6 sm:px-6 sm:py-8">
         <div>
           <h1 className="text-2xl font-semibold tracking-tight text-foreground">Users</h1>
           <p className="mt-1 text-[13px] text-muted-foreground">{users.length} total</p>
@@ -113,102 +113,104 @@ export default function AdminUsersPage() {
           ))}
         </div>
 
-        <div className="rounded-[1.75rem] border border-border/60 bg-card shadow-[var(--shadow-card)]">
+        <div className="overflow-hidden rounded-[1.75rem] border border-border/60 bg-card shadow-[var(--shadow-card)]">
           {users.length === 0 ? (
             <p className="px-5 py-10 text-center text-[13px] text-muted-foreground">No users found.</p>
           ) : (
-            <table className="w-full text-[13px]">
-              <thead>
-                <tr className="border-b border-border/60">
-                  <th className="px-5 py-3 text-left font-medium text-muted-foreground">User</th>
-                  <th className="px-5 py-3 text-left font-medium text-muted-foreground">Joined</th>
-                  <th className="px-5 py-3 text-right font-medium text-muted-foreground">Messages</th>
-                  <th className="px-5 py-3 text-right font-medium text-muted-foreground">Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {users.map((u) => (
-                  <tr key={u.id} className="border-b border-border/40 last:border-0">
-                    <td className="px-5 py-3">
-                      <div className="flex items-center gap-2.5">
-                        <div className="h-6 w-6 shrink-0 rounded-full bg-muted" />
-                        <div>
-                          <p className="font-medium text-foreground">{u.name ?? "—"}</p>
-                          <p className="text-muted-foreground">{u.email}</p>
-                        </div>
-                        {u.isAdmin && (
-                          <span className="rounded-full bg-[#0066B3]/10 px-2 py-0.5 text-[10px] font-semibold text-[#0066B3]">
-                            Admin
-                          </span>
-                        )}
-                        {u.ipBanned && (
-                          <span className="rounded-full bg-red-500/10 px-2 py-0.5 text-[10px] font-semibold text-red-500">
-                            Banned
-                          </span>
-                        )}
-                      </div>
-                    </td>
-                    <td className="px-5 py-3 text-muted-foreground">
-                      {new Date(u.createdAt).toLocaleDateString()}
-                    </td>
-                    <td className="px-5 py-3 text-right tabular-nums text-muted-foreground">
-                      {u.msgCount}
-                    </td>
-                    <td className="px-5 py-3">
-                      <div className="flex items-center justify-end gap-1">
-                        <Link href={`/admin/chats?userId=${u.id}`}>
-                          <Button variant="ghost" size="icon" className="h-7 w-7 rounded-lg" title="View chats">
-                            <MessageSquare className="size-3.5" />
-                          </Button>
-                        </Link>
-                        {u.isAdmin ? (
-                          <Button
-                            variant="ghost" size="icon" className="h-7 w-7 rounded-lg"
-                            title="Revoke admin"
-                            onClick={() => setDialog({ type: "demote", user: u })}
-                          >
-                            <ShieldOff className="size-3.5" />
-                          </Button>
-                        ) : (
-                          <Button
-                            variant="ghost" size="icon" className="h-7 w-7 rounded-lg"
-                            title="Promote to admin"
-                            onClick={() => setDialog({ type: "promote", user: u })}
-                          >
-                            <Shield className="size-3.5" />
-                          </Button>
-                        )}
-                        {u.ipBanned ? (
-                          <Button
-                            variant="ghost" size="icon" className="h-7 w-7 rounded-lg"
-                            title="Unban"
-                            onClick={() => setDialog({ type: "unban", user: u })}
-                          >
-                            <LockOpen className="size-3.5 text-red-500" />
-                          </Button>
-                        ) : (
-                          <Button
-                            variant="ghost" size="icon" className="h-7 w-7 rounded-lg"
-                            title="IP ban"
-                            onClick={() => { setBanIp(""); setBanReason(""); setDialog({ type: "ban", user: u }); }}
-                          >
-                            <Ban className="size-3.5" />
-                          </Button>
-                        )}
-                        <Button
-                          variant="ghost" size="icon"
-                          className="h-7 w-7 rounded-lg text-red-500 hover:text-red-600"
-                          title="Delete user"
-                          onClick={() => setDialog({ type: "delete", user: u })}
-                        >
-                          <Trash2 className="size-3.5" />
-                        </Button>
-                      </div>
-                    </td>
+            <div className="overflow-x-auto">
+              <table className="min-w-[760px] w-full text-[13px]">
+                <thead>
+                  <tr className="border-b border-border/60">
+                    <th className="px-5 py-3 text-left font-medium text-muted-foreground">User</th>
+                    <th className="px-5 py-3 text-left font-medium text-muted-foreground">Joined</th>
+                    <th className="px-5 py-3 text-right font-medium text-muted-foreground">Messages</th>
+                    <th className="px-5 py-3 text-right font-medium text-muted-foreground">Actions</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
+                </thead>
+                <tbody>
+                  {users.map((u) => (
+                    <tr key={u.id} className="border-b border-border/40 last:border-0">
+                      <td className="px-5 py-3">
+                        <div className="flex items-center gap-2.5">
+                          <div className="h-6 w-6 shrink-0 rounded-full bg-muted" />
+                          <div>
+                            <p className="font-medium text-foreground">{u.name ?? "—"}</p>
+                            <p className="text-muted-foreground">{u.email}</p>
+                          </div>
+                          {u.isAdmin && (
+                            <span className="rounded-full bg-[#0066B3]/10 px-2 py-0.5 text-[10px] font-semibold text-[#0066B3]">
+                              Admin
+                            </span>
+                          )}
+                          {u.ipBanned && (
+                            <span className="rounded-full bg-red-500/10 px-2 py-0.5 text-[10px] font-semibold text-red-500">
+                              Banned
+                            </span>
+                          )}
+                        </div>
+                      </td>
+                      <td className="px-5 py-3 text-muted-foreground">
+                        {new Date(u.createdAt).toLocaleDateString()}
+                      </td>
+                      <td className="px-5 py-3 text-right tabular-nums text-muted-foreground">
+                        {u.msgCount}
+                      </td>
+                      <td className="px-5 py-3">
+                        <div className="flex items-center justify-end gap-1">
+                          <Link href={`/admin/chats?userId=${u.id}`}>
+                            <Button variant="ghost" size="icon" className="h-7 w-7 rounded-lg" title="View chats">
+                              <MessageSquare className="size-3.5" />
+                            </Button>
+                          </Link>
+                          {u.isAdmin ? (
+                            <Button
+                              variant="ghost" size="icon" className="h-7 w-7 rounded-lg"
+                              title="Revoke admin"
+                              onClick={() => setDialog({ type: "demote", user: u })}
+                            >
+                              <ShieldOff className="size-3.5" />
+                            </Button>
+                          ) : (
+                            <Button
+                              variant="ghost" size="icon" className="h-7 w-7 rounded-lg"
+                              title="Promote to admin"
+                              onClick={() => setDialog({ type: "promote", user: u })}
+                            >
+                              <Shield className="size-3.5" />
+                            </Button>
+                          )}
+                          {u.ipBanned ? (
+                            <Button
+                              variant="ghost" size="icon" className="h-7 w-7 rounded-lg"
+                              title="Unban"
+                              onClick={() => setDialog({ type: "unban", user: u })}
+                            >
+                              <LockOpen className="size-3.5 text-red-500" />
+                            </Button>
+                          ) : (
+                            <Button
+                              variant="ghost" size="icon" className="h-7 w-7 rounded-lg"
+                              title="IP ban"
+                              onClick={() => { setBanIp(""); setBanReason(""); setDialog({ type: "ban", user: u }); }}
+                            >
+                              <Ban className="size-3.5" />
+                            </Button>
+                          )}
+                          <Button
+                            variant="ghost" size="icon"
+                            className="h-7 w-7 rounded-lg text-red-500 hover:text-red-600"
+                            title="Delete user"
+                            onClick={() => setDialog({ type: "delete", user: u })}
+                          >
+                            <Trash2 className="size-3.5" />
+                          </Button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           )}
         </div>
       </div>

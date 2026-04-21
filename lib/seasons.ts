@@ -1,7 +1,8 @@
 const FIRST_FRC_SEASON_YEAR = 2002;
+export const DEFAULT_SEASON_YEAR = 2026;
 
 export function getSeasonYears() {
-  const currentYear = new Date().getFullYear();
+  const currentYear = Math.max(new Date().getFullYear(), DEFAULT_SEASON_YEAR);
   return Array.from(
     { length: currentYear - FIRST_FRC_SEASON_YEAR + 1 },
     (_, index) => currentYear - index,
@@ -9,7 +10,7 @@ export function getSeasonYears() {
 }
 
 export function getDefaultSeasonYear() {
-  return getSeasonYears()[0];
+  return DEFAULT_SEASON_YEAR;
 }
 
 export function isValidSeasonYear(year: number) {

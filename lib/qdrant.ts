@@ -1,6 +1,6 @@
 import { QdrantClient } from "@qdrant/js-client-rest";
 
-const COLLECTION = "frc_docs";
+const COLLECTION = process.env.QDRANT_COLLECTION ?? "frc_docs";
 const VECTOR_SIZE = 1536;
 
 let _client: QdrantClient | null = null;
@@ -15,6 +15,10 @@ export async function ensureCollection() {
   if (!collections.some((c) => c.name === COLLECTION)) {
     await client.createCollection(COLLECTION, { vectors: { size: VECTOR_SIZE, distance: "Cosine" } });
   }
+}
+
+export async function getCollectionInfo() {
+  return getClient().getCollection(COLLECTION);
 }
 
 export type DocChunkPayload = {

@@ -1,9 +1,10 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
-import { ExternalLink, FileText, Loader2 } from "lucide-react";
+import { useMemo } from "react";
+import { ExternalLink, FileText } from "lucide-react";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import type { Citation } from "@/lib/db/schema";
+import { buildDocumentViewHref } from "@/lib/utils";
 
 interface Props {
   citation: Citation | null;
@@ -12,123 +13,41 @@ interface Props {
 }
 
 export function DocumentViewerModal({ citation, open, onOpenChange }: Props) {
-  const [signedUrl, setSignedUrl] = useState<string | null>(null);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-
-  useEffect(() => {
-    if (!open || !citation || citation.type !== "doc") {
-      setSignedUrl(null);
-      setError(null);
-      setLoading(false);
-      return;
+  const viewerUrl = useMemo(() => {
+    if (!citation || citation.type !== "doc") {
+      return null;
     }
 
     if (citation.url) {
-      setSignedUrl(citation.url);
-      setError(null);
-      setLoading(false);
-      return;
+      return citation.url;
     }
 
-    if (!citation.minioKey) {
-      setSignedUrl(null);
-      setError("This citation does not include a document reference.");
-      setLoading(false);
-      return;
+    if (citation.minioKey) {
+      return buildDocumentViewHref(citation.minioKey, citation.pageNumber);
     }
 
-    const minioKey = citation.minioKey;
-
-    let cancelled = false;
-
-    async function loadSignedUrl() {
-      setLoading(true);
-      setError(null);
-
-      try {
-        const response = await fetch(`/api/documents/presign?key=${encodeURIComponent(minioKey)}`);
-        const data = await response.json();
-
-        if (!response.ok) {
-          throw new Error(data.error ?? "Unable to open document");
-        }
-
-        if (!cancelled) {
-          setSignedUrl(data.url);
-        }
-      } catch (err) {
-        if (!cancelled) {
-          setError(err instanceof Error ? err.message : "Unable to open document");
-        }
-      } finally {
-        if (!cancelled) {
-          setLoading(false);
-        }
-      }
-    }
-
-    void loadSignedUrl();
-    return () => {
-      cancelled = true;
-    };
-  }, [citation, open]);
-
-  const viewerUrl = useMemo(() => {
-    if (!signedUrl) return null;
-    return citation?.pageNumber ? `${signedUrl}#page=${citation.pageNumber}` : signedUrl;
-  }, [citation?.pageNumber, signedUrl]);
+    return null;
+  }, [citation]);
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="grid h-[92vh] w-[min(96vw,84rem)] max-w-none grid-rows-[auto,minmax(0,1fr)] overflow-hidden gap-0 border border-border/70 bg-background p-0 shadow-[var(--shadow-float)]">
+      <DialogContent className="flex h-[92vh] w-[min(96vw,84rem)] max-w-none flex-col overflow-hidden gap-0 border border-border/70 bg-background p-0 shadow-[var(--shadow-float)]">
         <DialogHeader className="border-b border-border/60 bg-background px-6 py-4">
           <DialogTitle className="flex items-center gap-2 text-base text-foreground">
             <FileText className="size-4 text-[#0066B3]" />
-            <span className="truncate">{citation?.label ?? "Document viewer"}</span>
+            <span className="truncate">{citation?.documentName ?? citation?.label ?? "Document viewer"}</span>
           </DialogTitle>
           <DialogDescription className="text-xs text-muted-foreground">
             {citation?.pageNumber ? `Opening at page ${citation.pageNumber}.` : "Opening source document."}
           </DialogDescription>
         </DialogHeader>
 
-        <div className="flex min-h-0 flex-col px-4 py-4">
-          <div className="min-h-0 flex-1 overflow-hidden rounded-2xl border border-border/60 bg-card shadow-[var(--shadow-card)]">
-            {loading ? (
-              <div className="flex h-full items-center justify-center gap-3 text-sm text-muted-foreground">
-                <Loader2 className="size-4 animate-spin" />
-                Loading document preview...
-              </div>
-            ) : error ? (
-              <div className="flex h-full flex-col items-center justify-center gap-4 px-6 text-center">
-                <p className="text-sm text-muted-foreground">{error}</p>
-                {signedUrl && (
-                  <a
-                    href={viewerUrl ?? signedUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="inline-flex h-8 items-center justify-center rounded-lg border border-border bg-background px-3 text-sm font-medium text-foreground transition-colors hover:bg-muted"
-                  >
-                    Open in new tab
-                  </a>
-                )}
-              </div>
-            ) : viewerUrl ? (
-              <iframe
-                key={viewerUrl}
-                src={viewerUrl}
-                title={citation?.label ?? "Document preview"}
-                className="h-full min-h-0 w-full bg-background"
-              />
-            ) : (
-              <div className="flex h-full items-center justify-center text-sm text-muted-foreground">
-                Select a document citation to preview it here.
-              </div>
-            )}
-          </div>
-
-          {viewerUrl && (
-            <div className="flex justify-end pt-3">
+        <div className="border-b border-border/60 bg-card/40 px-6 py-3">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div className="text-xs text-muted-foreground">
+              {citation?.pageNumber ? `Fact-check this answer against page ${citation.pageNumber}.` : "Fact-check this answer against the source PDF."}
+            </div>
+            {viewerUrl ? (
               <a
                 href={viewerUrl}
                 target="_blank"
@@ -138,8 +57,33 @@ export function DocumentViewerModal({ citation, open, onOpenChange }: Props) {
                 <ExternalLink className="size-4" />
                 Open in new tab
               </a>
-            </div>
-          )}
+            ) : null}
+          </div>
+
+          {citation?.quote ? (
+            <p className="mt-2 text-sm leading-6 text-muted-foreground">
+              <span aria-hidden="true">&ldquo;</span>
+              {citation.quote}
+              <span aria-hidden="true">&rdquo;</span>
+            </p>
+          ) : null}
+        </div>
+
+        <div className="min-h-0 flex-1 bg-card/30 p-4">
+          <div className="h-full overflow-hidden rounded-2xl border border-border/60 bg-card shadow-[var(--shadow-card)]">
+            {viewerUrl ? (
+              <iframe
+                key={viewerUrl}
+                src={viewerUrl}
+                title={citation?.documentName ?? citation?.label ?? "Document preview"}
+                className="h-full w-full bg-background"
+              />
+            ) : (
+              <div className="flex h-full items-center justify-center text-sm text-muted-foreground">
+                Select a document citation to preview it here.
+              </div>
+            )}
+          </div>
         </div>
       </DialogContent>
     </Dialog>

@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { Flag } from "lucide-react";
 import { ReportDetailModal } from "@/components/admin/ReportDetailModal";
 import { ChatViewerModal } from "@/components/admin/ChatViewerModal";
@@ -28,71 +28,102 @@ export default function AdminReportsPage() {
   const [allReports, setAllReports] = useState<ReportRow[]>([]);
   const [selected, setSelected] = useState<ReportRow | null>(null);
   const [chatId, setChatId] = useState<string | null>(null);
+  const [filter, setFilter] = useState<"all" | "pending" | "reviewed" | "dismissed">("pending");
 
   const fetchReports = useCallback(async () => {
     const res = await fetch("/api/admin/reports");
     setAllReports(await res.json());
   }, []);
 
-  useEffect(() => { void fetchReports(); }, [fetchReports]);
+  useEffect(() => {
+    let cancelled = false;
+
+    void (async () => {
+      const res = await fetch("/api/admin/reports");
+      const data = await res.json();
+      if (!cancelled) {
+        setAllReports(data);
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   const pending = allReports.filter((r) => r.status === "pending").length;
+  const filteredReports = useMemo(() => {
+    if (filter === "all") return allReports;
+    return allReports.filter((report) => report.status === filter);
+  }, [allReports, filter]);
 
   return (
-    <div className="relative min-h-svh">
-      <div className="pointer-events-none absolute inset-x-0 top-0 h-64 bg-[radial-gradient(circle_at_top,_color-mix(in_oklab,_#0066B3_10%,_transparent)_0%,_transparent_70%)]" />
-      <div className="relative mx-auto max-w-5xl space-y-6 px-6 py-8">
-        <div>
+    <div className="min-h-svh bg-background">
+      <div className="mx-auto flex w-full max-w-3xl flex-col gap-6 px-4 py-6 sm:px-6 sm:py-8">
+        <div className="space-y-2">
           <h1 className="text-2xl font-semibold tracking-tight text-foreground">Reports</h1>
-          <p className="mt-1 text-[13px] text-muted-foreground">
-            {pending > 0 ? `${pending} pending` : "All caught up"}
+          <p className="text-[13px] leading-6 text-muted-foreground">
+            Review flagged assistant replies, inspect chat context, and resolve the moderation queue.
           </p>
         </div>
 
-        <div className="rounded-[1.75rem] border border-border/60 bg-card shadow-[var(--shadow-card)]">
-          {allReports.length === 0 ? (
+        <div className="flex flex-wrap gap-2">
+          {(["pending", "all", "reviewed", "dismissed"] as const).map((value) => (
+            <button
+              key={value}
+              type="button"
+              onClick={() => setFilter(value)}
+              className={cn(
+                "rounded-full border px-3 py-1.5 text-[12px] transition-colors",
+                filter === value
+                  ? "border-foreground/15 bg-foreground text-background"
+                  : "border-border/60 bg-card/70 text-muted-foreground hover:text-foreground"
+              )}
+            >
+              {value === "pending" ? `${pending} pending` : value}
+            </button>
+          ))}
+        </div>
+
+        <div className="space-y-3 rounded-[1.75rem] border border-border/60 bg-card/55 p-4 shadow-[var(--shadow-card)]">
+          {filteredReports.length === 0 ? (
             <div className="flex flex-col items-center gap-2 py-16">
               <Flag className="size-8 text-muted-foreground/40" />
-              <p className="text-[13px] text-muted-foreground">No reports yet.</p>
+              <p className="text-[13px] text-muted-foreground">No reports in this view.</p>
             </div>
           ) : (
-            <table className="w-full text-[13px]">
-              <thead>
-                <tr className="border-b border-border/60">
-                  <th className="px-5 py-3 text-left font-medium text-muted-foreground">Reporter</th>
-                  <th className="px-5 py-3 text-left font-medium text-muted-foreground">Conversation</th>
-                  <th className="px-5 py-3 text-left font-medium text-muted-foreground">Reason</th>
-                  <th className="px-5 py-3 text-left font-medium text-muted-foreground">Status</th>
-                  <th className="px-5 py-3 text-right font-medium text-muted-foreground">Date</th>
-                </tr>
-              </thead>
-              <tbody>
-                {allReports.map((r) => (
-                  <tr
-                    key={r.id}
-                    className="cursor-pointer border-b border-border/40 last:border-0 transition-colors hover:bg-muted/40"
-                    onClick={() => setSelected(r)}
-                  >
-                    <td className="px-5 py-3 text-muted-foreground">
-                      {r.reporterName ?? r.reporterEmail}
-                    </td>
-                    <td className="px-5 py-3 font-medium text-foreground">{r.conversationTitle}</td>
-                    <td className="max-w-[200px] truncate px-5 py-3 text-muted-foreground">{r.reason}</td>
-                    <td className="px-5 py-3">
-                      <span className={cn(
-                        "rounded-full px-2 py-0.5 text-[11px] font-semibold",
-                        STATUS_STYLES[r.status]
-                      )}>
-                        {r.status}
-                      </span>
-                    </td>
-                    <td className="px-5 py-3 text-right text-muted-foreground">
-                      {new Date(r.createdAt).toLocaleDateString()}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+            filteredReports.map((report) => (
+              <button
+                key={report.id}
+                type="button"
+                className="flex w-full flex-col gap-3 rounded-2xl border border-border/60 bg-background/80 px-4 py-4 text-left transition-colors hover:bg-background"
+                onClick={() => setSelected(report)}
+              >
+                <div className="flex flex-wrap items-center justify-between gap-3">
+                  <div className="min-w-0">
+                    <p className="truncate text-sm font-medium text-foreground">{report.conversationTitle}</p>
+                    <p className="mt-1 text-[12px] text-muted-foreground">
+                      Reported by {report.reporterName ?? report.reporterEmail}
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className={cn(
+                      "rounded-full px-2 py-0.5 text-[11px] font-semibold",
+                      STATUS_STYLES[report.status]
+                    )}>
+                      {report.status}
+                    </span>
+                    <span className="text-[12px] text-muted-foreground">
+                      {new Date(report.createdAt).toLocaleDateString()}
+                    </span>
+                  </div>
+                </div>
+
+                <p className="text-[13px] leading-6 text-muted-foreground">
+                  {report.reason}
+                </p>
+              </button>
+            ))
           )}
         </div>
       </div>

@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState, Suspense } from "react";
+import { useEffect, useState, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import { Search, Flag } from "lucide-react";
 import { Input } from "@/components/ui/input";
@@ -24,22 +24,32 @@ function ChatsContent() {
   const [search, setSearch] = useState("");
   const [openId, setOpenId] = useState<string | null>(null);
 
-  const fetchConvs = useCallback(async () => {
+  useEffect(() => {
+    let cancelled = false;
     const params = new URLSearchParams();
     const userId = searchParams.get("userId");
+
     if (userId) params.set("userId", userId);
     if (search) params.set("q", search);
-    const res = await fetch(`/api/admin/chats?${params}`);
-    setConvs(await res.json());
-  }, [search, searchParams]);
 
-  useEffect(() => { void fetchConvs(); }, [fetchConvs]);
+    void fetch(`/api/admin/chats?${params}`)
+      .then((res) => res.json())
+      .then((data: ConvRow[]) => {
+        if (!cancelled) {
+          setConvs(data);
+        }
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [search, searchParams]);
 
   return (
     <>
       <div className="relative min-h-svh">
         <div className="pointer-events-none absolute inset-x-0 top-0 h-64 bg-[radial-gradient(circle_at_top,_color-mix(in_oklab,_#0066B3_10%,_transparent)_0%,_transparent_70%)]" />
-        <div className="relative mx-auto max-w-5xl space-y-6 px-6 py-8">
+        <div className="relative mx-auto max-w-5xl space-y-6 px-4 py-6 sm:px-6 sm:py-8">
           <div>
             <h1 className="text-2xl font-semibold tracking-tight text-foreground">Chats</h1>
             {searchParams.get("userId") && (
@@ -57,45 +67,47 @@ function ChatsContent() {
             />
           </div>
 
-          <div className="rounded-[1.75rem] border border-border/60 bg-card shadow-[var(--shadow-card)]">
+          <div className="overflow-hidden rounded-[1.75rem] border border-border/60 bg-card shadow-[var(--shadow-card)]">
             {convs.length === 0 ? (
               <p className="px-5 py-10 text-center text-[13px] text-muted-foreground">
                 No conversations found.
               </p>
             ) : (
-              <table className="w-full text-[13px]">
-                <thead>
-                  <tr className="border-b border-border/60">
-                    <th className="px-5 py-3 text-left font-medium text-muted-foreground">Title</th>
-                    <th className="px-5 py-3 text-left font-medium text-muted-foreground">User</th>
-                    <th className="px-5 py-3 text-left font-medium text-muted-foreground">Season</th>
-                    <th className="px-5 py-3 text-right font-medium text-muted-foreground">Msgs</th>
-                    <th className="px-5 py-3 text-right font-medium text-muted-foreground">Updated</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {convs.map((c) => (
-                    <tr
-                      key={c.id}
-                      className="cursor-pointer border-b border-border/40 last:border-0 transition-colors hover:bg-muted/40"
-                      onClick={() => setOpenId(c.id)}
-                    >
-                      <td className="px-5 py-3">
-                        <div className="flex items-center gap-2">
-                          <span className="font-medium text-foreground">{c.title}</span>
-                          {c.hasPendingReport && <Flag className="size-3.5 shrink-0 text-red-500" />}
-                        </div>
-                      </td>
-                      <td className="px-5 py-3 text-muted-foreground">{c.userName ?? c.userEmail}</td>
-                      <td className="px-5 py-3 text-muted-foreground">{c.seasonYear}</td>
-                      <td className="px-5 py-3 text-right tabular-nums text-muted-foreground">{c.msgCount}</td>
-                      <td className="px-5 py-3 text-right text-muted-foreground">
-                        {new Date(c.updatedAt).toLocaleDateString()}
-                      </td>
+              <div className="overflow-x-auto">
+                <table className="min-w-[680px] w-full text-[13px]">
+                  <thead>
+                    <tr className="border-b border-border/60">
+                      <th className="px-5 py-3 text-left font-medium text-muted-foreground">Title</th>
+                      <th className="px-5 py-3 text-left font-medium text-muted-foreground">User</th>
+                      <th className="px-5 py-3 text-left font-medium text-muted-foreground">Season</th>
+                      <th className="px-5 py-3 text-right font-medium text-muted-foreground">Msgs</th>
+                      <th className="px-5 py-3 text-right font-medium text-muted-foreground">Updated</th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
+                  </thead>
+                  <tbody>
+                    {convs.map((c) => (
+                      <tr
+                        key={c.id}
+                        className="cursor-pointer border-b border-border/40 last:border-0 transition-colors hover:bg-muted/40"
+                        onClick={() => setOpenId(c.id)}
+                      >
+                        <td className="px-5 py-3">
+                          <div className="flex items-center gap-2">
+                            <span className="font-medium text-foreground">{c.title}</span>
+                            {c.hasPendingReport && <Flag className="size-3.5 shrink-0 text-red-500" />}
+                          </div>
+                        </td>
+                        <td className="px-5 py-3 text-muted-foreground">{c.userName ?? c.userEmail}</td>
+                        <td className="px-5 py-3 text-muted-foreground">{c.seasonYear}</td>
+                        <td className="px-5 py-3 text-right tabular-nums text-muted-foreground">{c.msgCount}</td>
+                        <td className="px-5 py-3 text-right text-muted-foreground">
+                          {new Date(c.updatedAt).toLocaleDateString()}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
             )}
           </div>
         </div>
