@@ -73,6 +73,10 @@ export async function enforceRateLimit({
 }: RateLimitOptions): Promise<RateLimitResult> {
   const now = new Date();
   const resetThreshold = new Date(now.getTime() - windowMs);
+  const staleThreshold = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+  const nowIso = now.toISOString();
+  const resetThresholdIso = resetThreshold.toISOString();
+  const staleThresholdIso = staleThreshold.toISOString();
   const bucketKey = `${scope}:${key}`;
 
   let result: RateLimitBucketRow[];
@@ -80,17 +84,24 @@ export async function enforceRateLimit({
   try {
     result = await withSystemDbAccess((tx) => tx.execute(sql`
       insert into ${rateLimitBuckets} ("key", "scope", "count", "window_start", "updated_at")
-      values (${bucketKey}, ${scope}, 1, ${now}, ${now})
+      values (
+        ${bucketKey},
+        ${scope},
+        1,
+        ${nowIso},
+        ${nowIso}
+      )
       on conflict ("key") do update set
         "count" = case
-          when ${rateLimitBuckets.windowStart} <= ${resetThreshold} then 1
+          when ${rateLimitBuckets.windowStart} <= ${resetThresholdIso} then 1
           else ${rateLimitBuckets.count} + 1
         end,
         "window_start" = case
-          when ${rateLimitBuckets.windowStart} <= ${resetThreshold} then ${now}
+          when ${rateLimitBuckets.windowStart} <= ${resetThresholdIso}
+            then ${nowIso}
           else ${rateLimitBuckets.windowStart}
         end,
-        "updated_at" = ${now}
+        "updated_at" = ${nowIso}
       returning "count", "window_start"
     `)) as RateLimitBucketRow[];
   } catch (error) {
@@ -111,7 +122,13 @@ export async function enforceRateLimit({
       if (existingRows.length === 0) {
         return tx.execute(sql`
           insert into ${rateLimitBuckets} ("key", "scope", "count", "window_start", "updated_at")
-          values (${bucketKey}, ${scope}, 1, ${now}, ${now})
+          values (
+            ${bucketKey},
+            ${scope},
+            1,
+            ${nowIso},
+            ${nowIso}
+          )
           returning "count", "window_start"
         `) as Promise<RateLimitBucketRow[]>;
       }
@@ -134,8 +151,8 @@ export async function enforceRateLimit({
         update ${rateLimitBuckets}
         set
           "count" = ${nextCount},
-          "window_start" = ${nextWindowStart},
-          "updated_at" = ${now}
+          "window_start" = ${nextWindowStart.toISOString()},
+          "updated_at" = ${nowIso}
         where ctid = ${currentRow.ctid}::tid
         returning "count", "window_start"
       `) as Promise<RateLimitBucketRow[]>;
@@ -151,7 +168,7 @@ export async function enforceRateLimit({
   if (Math.random() < 0.02) {
     void withSystemDbAccess((tx) => tx
       .delete(rateLimitBuckets)
-      .where(sql`${rateLimitBuckets.updatedAt} < ${new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000).toISOString()}`));
+      .where(sql`${rateLimitBuckets.updatedAt} < ${staleThresholdIso}`));
   }
 
   return {
