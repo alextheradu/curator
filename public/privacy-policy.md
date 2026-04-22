@@ -19,13 +19,15 @@ This Privacy Policy explains how Curator ("the Service", "we", "us") collects, u
 
 ### 2b. Authenticated users (Google sign-in)
 - **From Google OAuth:** your name, email address, and profile picture URL
+- **Onboarding profile:** your preferred name and optional FRC team number
 - **Conversation history:** all messages you send and receive, stored in our database so they persist across devices
 - **Sharing preferences:** whether a conversation has been marked public by you
-- **Account settings:** your saved default chat style preference (`Veteran` or `Rookie`)
+- **Account settings:** your saved default chat style preference (`Veteran` or `Rookie`) and onboarding completion timestamp
 - **Account metadata:** account creation date, last active date
 
 ### 2c. All users
 - **Chat messages:** message content is sent to OpenRouter (our LLM provider) for processing. See OpenRouter's privacy policy at openrouter.ai/privacy.
+- **Team context lookups:** if your saved team number is available and a chat needs live event context, relevant query data is sent to The Blue Alliance through our server-side integration.
 - **Public shared chats:** if an authenticated user chooses to make a chat public, that conversation becomes accessible to anyone with the chat URL until the owner turns sharing off or deletes the chat.
 - **Search queries:** if web search is triggered, your query is sent to LangSearch. See LangSearch's privacy policy for details.
 - **Support requests:** if you use the support form, we collect the details you submit, which may include your name, email address, subject, message, current page path, browser user agent, IP address, and your account ID if signed in.
@@ -40,11 +42,12 @@ This Privacy Policy explains how Curator ("the Service", "we", "us") collects, u
 
 - To provide and improve the Service
 - To authenticate you and persist your conversation history
-- To store and apply your saved account-level chat style preference
+- To store and apply your saved preferred name, optional team number, onboarding status, and account-level chat style preference
 - To honor your choice to publish or unpublish shared chat links
 - To enforce the guest message limit and Terms of Service acceptance
 - To record, honor, and later update your cookie-consent preference
 - To generate AI responses grounded in FRC documentation
+- To enrich applicable answers with live event context from The Blue Alliance when your saved team number is available
 - To respond to support requests and account/privacy questions
 - To generate on-demand account data exports when you request them from Settings
 - To enforce rate limits and investigate abuse or reliability issues
@@ -59,6 +62,7 @@ We do **not** sell your data, use it for advertising, or share it with third par
 |---------|---------|---------------------|
 | Google OAuth | Authentication | policies.google.com/privacy |
 | OpenRouter | LLM inference | openrouter.ai/privacy |
+| The Blue Alliance | Live team, event, rankings, and match context | thebluealliance.com/privacy |
 | LangSearch | Web search | (see LangSearch docs) |
 | Sentry | Error monitoring, performance tracing, logs, and Session Replay | sentry.io/privacy/ |
 | Google Analytics | Aggregated usage analytics and performance insights | policies.google.com/privacy |
@@ -68,6 +72,7 @@ We do **not** sell your data, use it for advertising, or share it with third par
 ## 5. Data Storage
 
 - User data and conversation history are stored in a self-hosted PostgreSQL database.
+- Saved onboarding fields, including preferred name, optional team number, and onboarding completion time, are stored in the same PostgreSQL account record.
 - Public/private sharing status for authenticated conversations is stored alongside the conversation record in PostgreSQL.
 - Support requests, application logs, and rate-limit counters are stored in PostgreSQL.
 - The installable web app stores a browser-managed offline cache of selected app shell files, icons, and a small set of public pages on your device.
@@ -80,7 +85,7 @@ We do **not** sell your data, use it for advertising, or share it with third par
 
 - **Guest data:** stored only in your browser's `localStorage`. Cleared when you clear your browser data.
 - **Offline app cache:** stored in your browser until the browser clears site data, the service worker replaces the cache during an update, or you manually remove the site's stored data.
-- **Authenticated user data:** retained for as long as your account exists. You may delete your account and all associated data at any time from the Settings page.
+- **Authenticated user data:** retained for as long as your account exists. This includes saved onboarding profile fields, chat-mode preference, and conversation history. You may delete your account and all associated data at any time from the Settings page.
 - **Account export packages:** generated on demand from your current account data when you request an export from Settings and not stored by the Service after the response is delivered.
 - **Public shared chats:** remain publicly accessible until you make the chat private again or delete it.
 - **Support requests and application logs:** retained until they are manually deleted or no longer needed for support, security, or operational debugging.
@@ -117,7 +122,7 @@ You have the right to:
 - Access the data we hold about you
 - Delete your account and all associated data
 - Make a shared chat private again or delete it to remove public access
-- Export your account data, including chats, saved account settings, and support requests associated with your signed-in account
+- Export your account data, including chats, saved onboarding/account settings, and support requests associated with your signed-in account
 
 These actions are available from the Settings page once logged in.
 

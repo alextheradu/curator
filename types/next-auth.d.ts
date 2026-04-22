@@ -7,6 +7,9 @@ declare module "next-auth" {
       isAdmin: boolean;
       isSuperAdmin: boolean;
       defaultChatMode: "rookie" | "veteran";
+      preferredName: string | null;
+      teamNumber: number | null;
+      onboardedAt: Date | null;
       name?: string | null;
       email?: string | null;
       image?: string | null;
@@ -20,5 +23,8 @@ declare module "next-auth/jwt" {
     isAdmin?: boolean;
     isSuperAdmin?: boolean;
     defaultChatMode?: "rookie" | "veteran";
+    preferredName?: string | null;
+    teamNumber?: number | null;
+    onboardedAt?: Date | null;
   }
 }

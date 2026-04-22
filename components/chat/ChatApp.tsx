@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
+import { OnboardingModal } from "@/components/auth/OnboardingModal";
 import { SidebarProvider } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/sidebar/Sidebar";
 import { ChatWindow } from "@/components/chat/ChatWindow";
@@ -13,6 +14,7 @@ import {
   fetchConversation,
   fetchConversationList,
   fetchConversationMessages,
+  transferGuestConversation,
   updateConversation as updateConversationRequest,
 } from "@/lib/conversation-api";
 import { normalizeConversation, normalizeMessage } from "@/lib/conversations";
@@ -115,6 +117,7 @@ export function ChatApp({ requestedConversationId }: ChatAppProps) {
       return;
     }
 
+    const wasAuthenticated = previousAuthRef.current;
     if (previousAuthRef.current && !isAuthenticated) {
       clearAllConversations();
     }
@@ -127,6 +130,25 @@ export function ChatApp({ requestedConversationId }: ChatAppProps) {
 
       if (isAuthenticated) {
         try {
+          const guestConversations = useChatStore.getState().conversations;
+          const guestConversationIds = new Set(guestConversations.map((conversation) => conversation.id));
+          let transferredConversationId: string | null = null;
+
+          if (!wasAuthenticated) {
+            const activeConversationId = useChatStore.getState().activeConversationId;
+            const activeGuestConversation = guestConversations.find((conversation) => conversation.id === activeConversationId);
+
+            if (activeGuestConversation && activeGuestConversation.messages.length > 0) {
+              try {
+                const transferred = await transferGuestConversation(activeGuestConversation);
+                transferredConversationId = transferred.id;
+              } catch (error) {
+                console.error(error);
+                toast.error("Couldn't transfer your guest chat.");
+              }
+            }
+          }
+
           const rows = await fetchConversationList();
           if (cancelled) return;
 
@@ -136,27 +158,42 @@ export function ChatApp({ requestedConversationId }: ChatAppProps) {
             )
           );
 
-          if (requestedConversationId) {
-            const loaded = await readConversation(requestedConversationId);
+          const requestedGuestConversation = Boolean(
+            requestedConversationId
+            && !wasAuthenticated
+            && guestConversationIds.has(requestedConversationId)
+          );
+          const effectiveConversationId = transferredConversationId
+            ?? (requestedGuestConversation ? undefined : requestedConversationId);
+
+          if (effectiveConversationId) {
+            const loaded = await readConversation(effectiveConversationId);
             if (cancelled) return;
 
             if (!loaded) {
               setPublicConversation(null);
-              setViewMode("not-found");
-              return;
+              if (!requestedGuestConversation) {
+                setViewMode("not-found");
+                return;
+              }
             }
 
-            if (loaded.access === "owner") {
+            if (loaded?.access === "owner") {
               upsertConversation(loaded.conversation);
               setActiveConversation(loaded.conversation.id);
               setPublicConversation(null);
               setViewMode("owner");
+              if (transferredConversationId) {
+                navigateToConversation(transferredConversationId, true);
+              }
               return;
             }
 
-            setPublicConversation(loaded.conversation);
-            setViewMode("public");
-            return;
+            if (loaded?.access === "public") {
+              setPublicConversation(loaded.conversation);
+              setViewMode("public");
+              return;
+            }
           }
 
           setActiveConversation(null);
@@ -221,6 +258,7 @@ export function ChatApp({ requestedConversationId }: ChatAppProps) {
   }, [
     clearAllConversations,
     isAuthenticated,
+    navigateToConversation,
     readConversation,
     replaceConversations,
     requestedConversationId,
@@ -409,27 +447,36 @@ export function ChatApp({ requestedConversationId }: ChatAppProps) {
   }
 
   return (
-    <SidebarProvider defaultOpen={viewMode !== "public"}>
-      <div className="flex h-svh w-full overflow-hidden bg-[var(--background)] text-[var(--foreground)]">
-        {viewMode !== "public" && (
-          <AppSidebar
-            onCreateConversation={handleCreateConversation}
-            onOpenConversation={handleOpenConversation}
-            onRenameConversation={handleRenameConversation}
-            onShareConversation={handleShareConversation}
-            onDeleteConversation={handleDeleteConversation}
+    <>
+      <OnboardingModal
+        open={status === "authenticated" && session?.user?.onboardedAt == null}
+        initialName={session?.user?.name}
+        initialPreferredName={session?.user?.preferredName}
+        initialTeamNumber={session?.user?.teamNumber}
+        initialChatMode={session?.user?.defaultChatMode}
+      />
+      <SidebarProvider defaultOpen={viewMode !== "public"}>
+        <div className="flex h-svh w-full overflow-hidden bg-[var(--background)] text-[var(--foreground)]">
+          {viewMode !== "public" && (
+            <AppSidebar
+              onCreateConversation={handleCreateConversation}
+              onOpenConversation={handleOpenConversation}
+              onRenameConversation={handleRenameConversation}
+              onShareConversation={handleShareConversation}
+              onDeleteConversation={handleDeleteConversation}
+            />
+          )}
+          <ChatWindow
+            conversationOverride={viewMode === "public" ? publicConversation : null}
+            readOnly={viewMode === "public"}
+            canShare={viewMode === "owner" && isAuthenticated}
+            onShareChange={handleShareChange}
+            isShareUpdating={isShareUpdating}
+            shareDialogConversationId={shareDialogConversationId}
+            onShareDialogHandled={() => setShareDialogConversationId(null)}
           />
-        )}
-        <ChatWindow
-          conversationOverride={viewMode === "public" ? publicConversation : null}
-          readOnly={viewMode === "public"}
-          canShare={viewMode === "owner" && isAuthenticated}
-          onShareChange={handleShareChange}
-          isShareUpdating={isShareUpdating}
-          shareDialogConversationId={shareDialogConversationId}
-          onShareDialogHandled={() => setShareDialogConversationId(null)}
-        />
-      </div>
-    </SidebarProvider>
+        </div>
+      </SidebarProvider>
+    </>
   );
 }
