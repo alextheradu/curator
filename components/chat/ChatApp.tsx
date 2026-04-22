@@ -58,7 +58,6 @@ export function ChatApp({ requestedConversationId }: ChatAppProps) {
   const isAuthenticated = !!session?.user?.id;
 
   const {
-    defaultChatMode,
     setActiveConversation,
     setDefaultChatMode,
     deleteConversation,
@@ -79,10 +78,10 @@ export function ChatApp({ requestedConversationId }: ChatAppProps) {
     }
 
     const accountChatMode = session?.user?.defaultChatMode ?? "veteran";
-    if (defaultChatMode !== accountChatMode) {
+    if (useChatStore.getState().defaultChatMode !== accountChatMode) {
       setDefaultChatMode(accountChatMode);
     }
-  }, [defaultChatMode, isAuthenticated, session?.user?.defaultChatMode, setDefaultChatMode]);
+  }, [isAuthenticated, session?.user?.defaultChatMode, setDefaultChatMode]);
 
   const navigateToConversation = useCallback((conversationId: string, replace = false) => {
     const href = `/c/${conversationId}`;
@@ -221,15 +220,12 @@ export function ChatApp({ requestedConversationId }: ChatAppProps) {
     };
   }, [
     clearAllConversations,
-    defaultChatMode,
     isAuthenticated,
-    navigateToConversation,
     readConversation,
     replaceConversations,
     requestedConversationId,
     router,
     setActiveConversation,
-    setDefaultChatMode,
     status,
     upsertConversation,
   ]);

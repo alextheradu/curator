@@ -149,11 +149,15 @@
 @layer base {
   body {
     overflow-x: hidden;
+    overflow-y: hidden;
+    overscroll-behavior: none;
     position: relative;
   }
 
   html {
     overflow-x: hidden;
+    overflow-y: hidden;
+    overscroll-behavior: none;
   }
 
   h1, h2, h3, h4, h5, h6 {

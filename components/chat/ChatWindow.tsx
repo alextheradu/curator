@@ -23,7 +23,7 @@ const AuthModal = lazy(() =>
 const SettingsModal = lazy(() =>
   import("@/components/ui/SettingsModal").then((m) => ({ default: m.SettingsModal }))
 );
-import { SidebarInset, SidebarTrigger } from "@/components/ui/sidebar";
+import { SidebarInset, SidebarTrigger, useSidebar } from "@/components/ui/sidebar";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -100,12 +100,60 @@ export function ChatWindow({
     consumeGuestTurn,
   } = useGuestLimit(isAuthenticated);
 
+  const { setOpenMobile: setSidebarOpenMobile } = useSidebar();
+
   const abortRef = useRef<AbortController | null>(null);
   const pendingMessageRef = useRef<string | null>(null);
+  const swipeTouchRef = useRef<{ x: number; y: number } | null>(null);
+  const swipeContainerRef = useRef<HTMLDivElement>(null);
   const [viewerCitation, setViewerCitation] = useState<Citation | null>(null);
   const [shareDialogOpen, setShareDialogOpen] = useState(false);
   const [streamStatus, setStreamStatus] = useState("");
   const [origin] = useState(() => (typeof window !== "undefined" ? window.location.origin : ""));
+
+  useEffect(() => {
+    const el = swipeContainerRef.current;
+    if (!el) return;
+
+    const onTouchStart = (e: TouchEvent) => {
+      const touch = e.touches[0];
+      if (touch && touch.clientX < window.innerWidth / 2) {
+        swipeTouchRef.current = { x: touch.clientX, y: touch.clientY };
+      }
+    };
+
+    const onTouchMove = (e: TouchEvent) => {
+      if (!swipeTouchRef.current) return;
+      const touch = e.touches[0];
+      if (!touch) return;
+      const dx = touch.clientX - swipeTouchRef.current.x;
+      const dy = Math.abs(touch.clientY - swipeTouchRef.current.y);
+      if (dx > 8 && dx > dy) {
+        e.preventDefault();
+      }
+    };
+
+    const onTouchEnd = (e: TouchEvent) => {
+      if (!swipeTouchRef.current) return;
+      const touch = e.changedTouches[0];
+      if (!touch) return;
+      const dx = touch.clientX - swipeTouchRef.current.x;
+      const dy = Math.abs(touch.clientY - swipeTouchRef.current.y);
+      swipeTouchRef.current = null;
+      if (dx > 60 && dy < dx) {
+        setSidebarOpenMobile(true);
+      }
+    };
+
+    el.addEventListener("touchstart", onTouchStart, { passive: true });
+    el.addEventListener("touchmove", onTouchMove, { passive: false });
+    el.addEventListener("touchend", onTouchEnd, { passive: true });
+    return () => {
+      el.removeEventListener("touchstart", onTouchStart);
+      el.removeEventListener("touchmove", onTouchMove);
+      el.removeEventListener("touchend", onTouchEnd);
+    };
+  }, [setSidebarOpenMobile]);
 
   const conversation = conversationOverride ?? activeConversation();
   const { containerRef, scrollToBottom } = useAutoScroll([
@@ -387,6 +435,7 @@ export function ChatWindow({
 
   return (
     <SidebarInset className="flex min-h-svh max-h-svh flex-col overflow-hidden bg-background">
+      <div ref={swipeContainerRef} className="contents">
       <Suspense>
         <TosModal open={showTosModal} onAccept={handleAcceptTos} />
         <AuthModal open={showAuthModal} onOpenChange={setShowAuthModal} />
@@ -456,7 +505,7 @@ export function ChatWindow({
         </DialogContent>
       </Dialog>
 
-      <div className="border-b border-border/40 bg-background/92 px-3 py-2.5 backdrop-blur md:px-6">
+      <div className="border-b border-border/40 bg-background/92 px-3 py-2 backdrop-blur md:px-6 md:py-2.5">
         <div className="flex w-full items-center gap-2.5 sm:gap-3">
           <div className="flex shrink-0 items-center justify-center md:hidden">
             {!readOnly && <SidebarTrigger className="text-muted-foreground" />}
@@ -577,7 +626,7 @@ export function ChatWindow({
               animate={{ opacity: 1, y: 0, scale: 1 }}
               exit={{ opacity: 0, y: -8, scale: 0.992 }}
               transition={{ duration: 0.24, ease: [0.22, 1, 0.36, 1] }}
-              className="mx-auto flex w-full max-w-3xl flex-col gap-5 px-3 pb-32 pt-4 sm:gap-6 sm:px-4 sm:pb-40 sm:pt-8 md:px-6"
+              className="mx-auto flex w-full max-w-3xl flex-col gap-4 px-3 pb-24 pt-4 sm:gap-6 sm:px-4 sm:pb-40 sm:pt-8 md:px-6"
             >
               {messages.map((message) => (
                 <MessageBubble
@@ -621,9 +670,11 @@ export function ChatWindow({
               onStop={() => void stopStreaming()}
               disabled={false}
               isStreaming={isStreaming}
+              compact={isEmpty}
             />
           )}
         </div>
+      </div>
       </div>
     </SidebarInset>
   );

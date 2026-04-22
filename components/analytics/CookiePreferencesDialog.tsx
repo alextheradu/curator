@@ -61,10 +61,10 @@ export function CookiePreferencesDialog({ open, onOpenChange }: CookiePreference
           <button
             type="button"
             onClick={() => persistCookieConsent("necessary")}
-            className={`w-full rounded-2xl border px-4 py-4 text-left transition-colors ${
+            className={`w-full rounded-xl border px-4 py-4 text-left transition-colors ${
               selectedConsent === "necessary"
-                ? "border-[#0066B3] bg-[#0066B3]/10"
-                : "border-border/60 bg-background/50 hover:bg-background/70"
+                ? "border-foreground bg-muted"
+                : "border-border/60 bg-background/50 hover:bg-muted/40"
             }`}
           >
             <p className="text-sm font-semibold text-foreground">Necessary only</p>
@@ -76,10 +76,10 @@ export function CookiePreferencesDialog({ open, onOpenChange }: CookiePreference
           <button
             type="button"
             onClick={() => persistCookieConsent("accepted")}
-            className={`w-full rounded-2xl border px-4 py-4 text-left transition-colors ${
+            className={`w-full rounded-xl border px-4 py-4 text-left transition-colors ${
               selectedConsent === "accepted"
-                ? "border-[#0066B3] bg-[#0066B3]/10"
-                : "border-border/60 bg-background/50 hover:bg-background/70"
+                ? "border-foreground bg-muted"
+                : "border-border/60 bg-background/50 hover:bg-muted/40"
             }`}
           >
             <p className="text-sm font-semibold text-foreground">Accept analytics</p>
@@ -90,7 +90,7 @@ export function CookiePreferencesDialog({ open, onOpenChange }: CookiePreference
 
           <p className="text-[12px] leading-5 text-muted-foreground">
             Details about each cookie live in the{" "}
-            <Link href="/privacy-policy" className="text-[#0066B3] underline underline-offset-2">
+            <Link href="/privacy-policy" className="underline underline-offset-2 hover:text-foreground">
               Privacy Policy
             </Link>.
           </p>
