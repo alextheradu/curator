@@ -36,6 +36,8 @@ export function ConversationItem({
   const [draftTitle, setDraftTitle] = useState(conversation.title);
   const rowRef = useRef<HTMLDivElement | null>(null);
   const inputRef = useRef<HTMLInputElement | null>(null);
+  const touchStartRef = useRef<{ x: number; y: number } | null>(null);
+  const didScrollRef = useRef(false);
   const isTyping = typingTitleConversationId === conversation.id;
   const displayTitle = isTyping ? typingTitle : conversation.title;
 
@@ -84,8 +86,20 @@ export function ConversationItem({
     >
       <SidebarMenuButton
         isActive={isActive}
+        onTouchStart={(e) => {
+          const t = e.touches[0];
+          if (t) touchStartRef.current = { x: t.clientX, y: t.clientY };
+          didScrollRef.current = false;
+        }}
+        onTouchMove={(e) => {
+          if (!touchStartRef.current) return;
+          const t = e.touches[0];
+          if (t && Math.abs(t.clientY - touchStartRef.current.y) > 6) {
+            didScrollRef.current = true;
+          }
+        }}
         onClick={() => {
-          if (!isEditing) {
+          if (!isEditing && !didScrollRef.current) {
             onClick();
           }
         }}

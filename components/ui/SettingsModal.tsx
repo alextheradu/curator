@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useMemo, useState, useSyncExternalStore, type ComponentType } from "react";
 import { signIn, signOut, useSession } from "next-auth/react";
 import { useTheme } from "next-themes";
@@ -8,15 +9,13 @@ import {
   CircleHelpIcon,
   DatabaseBackupIcon,
   DownloadIcon,
+  ExternalLinkIcon,
   LogInIcon,
   LogOutIcon,
-  MonitorIcon,
-  MoonIcon,
   PaletteIcon,
   RefreshCcwIcon,
   Settings2Icon,
   ShieldCheckIcon,
-  SunIcon,
 } from "lucide-react";
 import { toast } from "sonner";
 import { SupportForm } from "@/components/support/SupportForm";
@@ -149,7 +148,7 @@ function SegmentedControl<T extends string>({
   onChange: (v: T) => void;
 }) {
   return (
-    <div className="flex overflow-hidden rounded-lg border border-border bg-muted/40 text-sm">
+    <div className="flex w-full overflow-hidden rounded-lg border border-border bg-muted/40 text-sm">
       {options.map((opt) => (
         <button
           key={opt.value}
@@ -178,6 +177,7 @@ function SectionHeading({ children }: { children: React.ReactNode }) {
 }
 
 export function SettingsModal() {
+  const router = useRouter();
   const { data: session, update } = useSession();
   const { theme = "system", setTheme } = useTheme();
   const {
@@ -311,9 +311,9 @@ export function SettingsModal() {
 
   return (
     <Dialog open={settingsOpen} onOpenChange={setSettingsOpen}>
-      <DialogContent className="overflow-hidden rounded-2xl border-border/60 bg-card p-0 shadow-[var(--shadow-float)] max-w-[calc(100vw-2rem)] sm:max-w-4xl">
+      <DialogContent className="overflow-hidden rounded-2xl border-border/60 bg-card p-0 shadow-[var(--shadow-float)] max-w-[calc(100vw-2rem)] sm:max-w-4xl max-h-[calc(100dvh-2rem)]">
         <DialogTitle className="sr-only">Settings</DialogTitle>
-        <div className="flex max-h-[88vh] flex-col md:h-[76vh] md:flex-row">
+        <div className="flex h-[min(88dvh,calc(100dvh-2rem))] flex-col md:h-[76dvh] md:flex-row">
 
           {/* Nav sidebar */}
           <div className="border-b border-border/50 bg-card md:flex md:w-52 md:shrink-0 md:flex-col md:border-b-0 md:border-r">
@@ -394,6 +394,7 @@ export function SettingsModal() {
                     ) : (
                       <SettingRow label="Sign in" description="Sync chat history and preferences across devices.">
                         <Button
+                          type="button"
                           size="sm"
                           className="rounded-lg"
                           onClick={() => signIn("google", { callbackUrl: "/" })}
@@ -477,6 +478,7 @@ export function SettingsModal() {
                       description="Chats, settings, and account records as JSON."
                     >
                       <Button
+                        type="button"
                         variant="outline"
                         size="sm"
                         className="rounded-lg"
@@ -496,6 +498,7 @@ export function SettingsModal() {
                       description="Restores theme, cookies, temperature, and chat style to defaults."
                     >
                       <Button
+                        type="button"
                         variant="outline"
                         size="sm"
                         className="rounded-lg"
@@ -513,10 +516,15 @@ export function SettingsModal() {
                     {session?.user?.id ? (
                       <SettingRow label="Sign out" description="Remove session from this browser.">
                         <Button
+                          type="button"
                           variant="outline"
                           size="sm"
                           className="rounded-lg"
-                          onClick={() => signOut({ callbackUrl: "/" })}
+                          onClick={async () => {
+                            await signOut({ redirect: false });
+                            setSettingsOpen(false);
+                            router.push("/");
+                          }}
                         >
                           <LogOutIcon className="size-3.5" />
                           Sign out
@@ -525,6 +533,7 @@ export function SettingsModal() {
                     ) : (
                       <SettingRow label="Sign in" description="Sync chats and account-level preferences.">
                         <Button
+                          type="button"
                           size="sm"
                           className="rounded-lg"
                           onClick={() => signIn("google", { callbackUrl: "/" })}
@@ -537,10 +546,14 @@ export function SettingsModal() {
                     {session?.user?.isAdmin ? (
                       <SettingRow label="Admin panel" description="Manage documents, users, and reports.">
                         <Button
+                          type="button"
                           variant="outline"
                           size="sm"
                           className="rounded-lg"
-                          onClick={() => { window.location.href = "/admin/documents"; }}
+                          onClick={() => {
+                            setSettingsOpen(false);
+                            router.push("/admin/documents");
+                          }}
                         >
                           Admin Panel
                         </Button>
@@ -566,11 +579,34 @@ export function SettingsModal() {
                   <div>
                     <SectionHeading>About Curator</SectionHeading>
                     <p className="text-sm leading-7 text-muted-foreground">
-                      Curator is an FRC-focused AI assistant built for rule lookup, team context, and grounded answers across uploaded references and live data.
+                      Curator is built specifically for FRC. It helps teams work through rules questions, game manuals, scouting, rankings, event updates, team research, and robot programming topics without drifting into unrelated subjects.
                     </p>
-                    <p className="mt-3 rounded-xl border border-border/50 bg-muted/30 px-4 py-3 text-sm leading-7 text-muted-foreground">
-                      It can still be wrong. Verify important rulings and competition decisions against official FIRST documentation.
-                    </p>
+                    <div className="mt-3 rounded-xl border border-border/50 bg-muted/30 px-4 py-3">
+                      <p className="text-[11px] font-semibold uppercase tracking-[0.13em] text-[#0066B3]">Mission</p>
+                      <p className="mt-2 text-sm leading-6 text-muted-foreground">
+                        Give every FRC team fast, trustworthy, season-aware help while keeping the work fair, grounded, and easy to verify.
+                      </p>
+                    </div>
+                  </div>
+
+                  <div>
+                    <SectionHeading>How it operates</SectionHeading>
+                    <div className="space-y-2">
+                      {[
+                        "Stays focused on FIRST Robotics Competition rather than acting as a general-purpose chatbot.",
+                        "Avoids guessing — when something can't be verified, the right step is to check the official FIRST source.",
+                        "Grounds answers in official documents and live event data so teams can verify what they read.",
+                        "Helps all teams equally without favoring one team or offering an unfair competitive edge.",
+                        "Gives feedback and guidance on strategy, code, and outreach rather than doing the work directly.",
+                      ].map((principle) => (
+                        <div
+                          key={principle}
+                          className="rounded-xl border border-border/50 bg-muted/20 px-4 py-3 text-sm leading-6 text-muted-foreground"
+                        >
+                          {principle}
+                        </div>
+                      ))}
+                    </div>
                   </div>
 
                   <div>
@@ -595,6 +631,18 @@ export function SettingsModal() {
                         Standalone support page
                       </Link>
                     </div>
+                    <p className="mt-3 text-xs leading-5 text-muted-foreground/70">
+                      Curator is not affiliated with FIRST<sup>®</sup>. For authoritative rules and official program information, check{" "}
+                      <a
+                        href="https://www.firstinspires.org"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center gap-1 font-medium text-[#0066B3] underline underline-offset-4"
+                      >
+                        firstinspires.org <ExternalLinkIcon className="size-3" />
+                      </a>
+                      .
+                    </p>
                   </div>
                 </div>
               ) : null}
