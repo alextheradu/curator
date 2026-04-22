@@ -1,8 +1,10 @@
-import { auth } from "@/auth";
-import { db } from "@/lib/db";
+import { NextRequest, NextResponse } from "next/server";
+import { requireAdmin } from "@/lib/admin-auth";
+import { revalidateDocumentDerivedCaches } from "@/lib/cache-tags";
+import { withAdminDbAccess } from "@/lib/db/access";
 import { documents, docChunks } from "@/lib/db/schema";
+import { applyRateLimitHeaders, enforceRequestRateLimit } from "@/lib/rate-limit";
 import { eq, asc } from "drizzle-orm";
-import { NextResponse } from "next/server";
 
 const DESCRIPTION_MODELS = (
   process.env.OPENROUTER_DESCRIPTION_MODELS
@@ -13,10 +15,6 @@ const DESCRIPTION_MODELS = (
   .filter(Boolean);
 
 const MAX_CHUNK_CHARS = 2_000;
-
-function isAdmin(email?: string | null) {
-  return (process.env.ADMIN_EMAILS ?? "").split(",").map((e) => e.trim()).includes(email ?? "");
-}
 
 function sanitizeForLlm(text: string) {
   return text
@@ -92,26 +90,32 @@ async function generateDescription(prompt: string) {
 }
 
 export async function POST(
-  _req: Request,
+  req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  const session = await auth();
-  if (!isAdmin(session?.user?.email)) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  const adminAuth = await requireAdmin(req);
+  if (!adminAuth.ok) return adminAuth.response;
+  const rateLimit = await enforceRequestRateLimit(req, "adminDocumentDescribe", adminAuth.userId);
+  const headers = new Headers();
+  applyRateLimitHeaders(headers, rateLimit);
+  if (!rateLimit.ok) {
+    return NextResponse.json({ error: "Too many description requests. Please slow down." }, { status: 429, headers });
+  }
 
   const { id } = await params;
 
-  const [doc] = await db.select().from(documents).where(eq(documents.id, id));
-  if (!doc) return NextResponse.json({ error: "Not found" }, { status: 404 });
+  const [doc] = await withAdminDbAccess(adminAuth.userId, (tx) => tx.select().from(documents).where(eq(documents.id, id)).limit(1));
+  if (!doc) return NextResponse.json({ error: "Not found" }, { status: 404, headers });
 
-  const chunks = await db
+  const chunks = await withAdminDbAccess(adminAuth.userId, (tx) => tx
     .select({ content: docChunks.content })
     .from(docChunks)
     .where(eq(docChunks.documentId, id))
     .orderBy(asc(docChunks.chunkIndex))
-    .limit(4);
+    .limit(4));
 
   if (chunks.length === 0) {
-    return NextResponse.json({ error: "No chunks available for this document" }, { status: 400 });
+    return NextResponse.json({ error: "No chunks available for this document" }, { status: 400, headers });
   }
 
   const excerpts = chunks
@@ -129,5 +133,6 @@ export async function POST(
     description = buildFallbackDescription(doc.name, excerpts);
   }
 
-  return NextResponse.json({ description });
+  revalidateDocumentDerivedCaches();
+  return NextResponse.json({ description }, { headers });
 }

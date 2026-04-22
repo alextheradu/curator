@@ -1,7 +1,7 @@
 # Privacy Policy
 
 **Curator — FRC AI Assistant**
-**Last updated: April 20, 2026**
+**Last updated: April 22, 2026**
 
 ## 1. Overview
 
@@ -12,29 +12,43 @@ This Privacy Policy explains how Curator ("the Service", "we", "us") collects, u
 ### 2a. Guests (unauthenticated users)
 - A session cookie tracking whether you have accepted the Terms of Service
 - A cookie counting the number of messages sent in the current session (used to enforce the guest message limit)
+- A cookie recording your cookie-consent choice (`necessary` or `accepted`)
+- Optional sidebar preference cookies recording whether the sidebar is open and what width you chose
+- Browser cache entries created by the app's installable web-app/service-worker layer for offline support and faster reloads
 - Your chat messages (held in browser `localStorage` only — never sent to our servers beyond the API call to generate a response)
 
 ### 2b. Authenticated users (Google sign-in)
 - **From Google OAuth:** your name, email address, and profile picture URL
 - **Conversation history:** all messages you send and receive, stored in our database so they persist across devices
 - **Sharing preferences:** whether a conversation has been marked public by you
+- **Account settings:** your saved default chat style preference (`Veteran` or `Rookie`)
 - **Account metadata:** account creation date, last active date
 
 ### 2c. All users
 - **Chat messages:** message content is sent to OpenRouter (our LLM provider) for processing. See OpenRouter's privacy policy at openrouter.ai/privacy.
-- **Event and team lookup queries:** when Curator checks live FRC event, match, ranking, or team data, the relevant query parameters are sent to The Blue Alliance API.
 - **Public shared chats:** if an authenticated user chooses to make a chat public, that conversation becomes accessible to anyone with the chat URL until the owner turns sharing off or deletes the chat.
 - **Search queries:** if web search is triggered, your query is sent to LangSearch. See LangSearch's privacy policy for details.
-- **Analytics usage data:** we use Google Analytics 4 to collect aggregated usage data (for example, page views, device/browser information, approximate region, and interaction events) to understand and improve the Service.
+- **Support requests:** if you use the support form, we collect the details you submit, which may include your name, email address, subject, message, current page path, browser user agent, IP address, and your account ID if signed in.
+- **Error and performance telemetry:** we use Sentry to capture application errors, request context, performance traces, diagnostic metadata such as URLs, browser/device information, and account identifiers when available, and browser Session Replay data for debugging. Replay traffic is tunneled through our own app domain to reduce losses caused by browser blocking of direct Sentry ingestion requests.
+- **Operational logs:** we store application logs for support, abuse prevention, debugging, and reliability work. These logs can include request paths, IP address, account ID, and error details.
+- **Rate-limit metadata:** we store per-scope counters keyed to your account ID or network metadata so we can slow abusive traffic and protect the Service.
+- **Search indexing notifications:** when public Curator pages are added or updated, we may send the affected page URLs to IndexNow-participating search engines so they can recrawl those pages faster.
+- **Analytics usage data:** if you accept analytics cookies, we use Google Analytics 4 to collect aggregated usage data (for example, page views, device/browser information, approximate region, and interaction events) to understand and improve the Service.
 - **Server logs:** standard web server request logs (IP address, timestamp, user agent) retained for up to 30 days.
 
 ## 3. How We Use Your Information
 
 - To provide and improve the Service
 - To authenticate you and persist your conversation history
+- To store and apply your saved account-level chat style preference
 - To honor your choice to publish or unpublish shared chat links
 - To enforce the guest message limit and Terms of Service acceptance
+- To record, honor, and later update your cookie-consent preference
 - To generate AI responses grounded in FRC documentation
+- To respond to support requests and account/privacy questions
+- To generate on-demand account data exports when you request them from Settings
+- To enforce rate limits and investigate abuse or reliability issues
+- To monitor application errors, reliability, and performance
 - To monitor performance and usage trends through aggregate analytics
 
 We do **not** sell your data, use it for advertising, or share it with third parties except as described in Section 4.
@@ -45,24 +59,32 @@ We do **not** sell your data, use it for advertising, or share it with third par
 |---------|---------|---------------------|
 | Google OAuth | Authentication | policies.google.com/privacy |
 | OpenRouter | LLM inference | openrouter.ai/privacy |
-| The Blue Alliance | Live FRC team, event, match, and rankings data | thebluealliance.com/apidocs |
 | LangSearch | Web search | (see LangSearch docs) |
+| Sentry | Error monitoring, performance tracing, logs, and Session Replay | sentry.io/privacy/ |
 | Google Analytics | Aggregated usage analytics and performance insights | policies.google.com/privacy |
+| IndexNow | Search engine change notifications for public page URLs | indexnow.org/documentation |
 | MinIO (self-hosted) | Document storage | Self-hosted, no third party |
 
 ## 5. Data Storage
 
 - User data and conversation history are stored in a self-hosted PostgreSQL database.
 - Public/private sharing status for authenticated conversations is stored alongside the conversation record in PostgreSQL.
+- Support requests, application logs, and rate-limit counters are stored in PostgreSQL.
+- The installable web app stores a browser-managed offline cache of selected app shell files, icons, and a small set of public pages on your device.
 - PDF documents, including season-specific references and general team reference files, are stored in a self-hosted MinIO instance.
 - Vector embeddings are stored in a self-hosted Qdrant instance.
+- Short-lived server caches may hold copies of public pages and admin read responses for performance until those caches expire or are invalidated.
 - No user data is stored on third-party cloud storage.
 
 ## 6. Data Retention
 
 - **Guest data:** stored only in your browser's `localStorage`. Cleared when you clear your browser data.
+- **Offline app cache:** stored in your browser until the browser clears site data, the service worker replaces the cache during an update, or you manually remove the site's stored data.
 - **Authenticated user data:** retained for as long as your account exists. You may delete your account and all associated data at any time from the Settings page.
+- **Account export packages:** generated on demand from your current account data when you request an export from Settings and not stored by the Service after the response is delivered.
 - **Public shared chats:** remain publicly accessible until you make the chat private again or delete it.
+- **Support requests and application logs:** retained until they are manually deleted or no longer needed for support, security, or operational debugging.
+- **Rate-limit counters:** retained for up to 7 days before cleanup.
 - **Server logs:** retained for 30 days, then deleted.
 - **Analytics data:** retained according to Google Analytics property retention settings configured by the operator.
 
@@ -71,10 +93,19 @@ We do **not** sell your data, use it for advertising, or share it with third par
 We use the following cookies:
 - `tos_accepted` — records that you have accepted the Terms of Service (session cookie)
 - `guest_message_count` — tracks number of guest messages sent
-- `authjs.session-token` — Auth.js session JWT (authenticated users only)
-- `_ga`, `_ga_*` — Google Analytics cookies used to distinguish users/sessions and measure site usage
+- `cookie_consent` — records whether you chose necessary-only cookies or accepted analytics cookies
+- `sidebar_state` — stores whether the app sidebar is expanded or collapsed
+- `sidebar_width` — stores your chosen sidebar width
+- `authjs.session-token` or `__Secure-authjs.session-token` — Auth.js session JWT (authenticated users only)
+- `authjs.csrf-token` — protects the Google sign-in flow from cross-site request forgery
+- `authjs.callback-url` — remembers where to return you after sign-in
+- `_ga`, `_ga_*` — Google Analytics cookies used to distinguish users/sessions and measure site usage, but only after you accept analytics cookies
 
 We do not use advertising cookies.
+
+Curator also stores a local browser value (`curator:cookie-consent`) to keep the cookie banner state in sync with your preference.
+
+You can change your analytics choice later from the in-app cookie preferences control.
 
 ## 8. Children's Privacy
 
@@ -86,7 +117,7 @@ You have the right to:
 - Access the data we hold about you
 - Delete your account and all associated data
 - Make a shared chat private again or delete it to remove public access
-- Export your conversation history
+- Export your account data, including chats, saved account settings, and support requests associated with your signed-in account
 
 These actions are available from the Settings page once logged in.
 
@@ -96,4 +127,4 @@ We may update this Privacy Policy from time to time. The "Last updated" date at 
 
 ## 11. Contact
 
-For privacy questions or data deletion requests, open an issue on the project repository or contact the operator directly.
+For privacy questions or data deletion requests, use the Support section in Settings, the [Support page](/support), open an issue on the project repository, or contact the operator directly.

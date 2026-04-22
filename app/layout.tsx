@@ -2,7 +2,6 @@ import type { Metadata, Viewport } from "next";
 import { readFileSync } from "node:fs";
 import path from "node:path";
 import { Inter, JetBrains_Mono } from "next/font/google";
-import Script from "next/script";
 import { Providers } from "@/components/Providers";
 import { SITE_DESCRIPTION, SITE_NAME, SITE_OG_IMAGE, SITE_TITLE, SITE_URL } from "@/lib/site";
 import "./globals.css";
@@ -11,7 +10,6 @@ const inter = Inter({ subsets: ["latin"], variable: "--font-sans" });
 const jetbrainsMono = JetBrains_Mono({ subsets: ["latin"], variable: "--font-mono" });
 const faviconSvg = readFileSync(path.join(process.cwd(), "app", "favicon.svg"), "utf-8");
 const faviconSvgDataUrl = `data:image/svg+xml,${encodeURIComponent(faviconSvg)}`;
-const GOOGLE_ANALYTICS_MEASUREMENT_ID = "G-RHVZBWPE6R";
 const googleSiteVerification = process.env.NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION?.trim();
 
 export const metadata: Metadata = {
@@ -23,6 +21,11 @@ export const metadata: Metadata = {
   description: SITE_DESCRIPTION,
   generator: "Next.js",
   applicationName: SITE_NAME,
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "black-translucent",
+    title: SITE_NAME,
+  },
   referrer: "origin-when-cross-origin",
   formatDetection: {
     email: false,
@@ -37,7 +40,10 @@ export const metadata: Metadata = {
     "FRC rules",
     "FRC game manual",
     "FRC scouting",
-    "The Blue Alliance",
+    "FRC support",
+    "FRC chatbot",
+    "FIRST Robotics Competition AI",
+    "robotics rules assistant",
     "FRC event results",
     "FRC rankings",
     "robotics assistant",
@@ -55,6 +61,7 @@ export const metadata: Metadata = {
   icons: {
     icon: [{ url: faviconSvgDataUrl, type: "image/svg+xml" }],
     shortcut: [{ url: faviconSvgDataUrl, type: "image/svg+xml" }],
+    apple: [{ url: "/apple-icon.png", sizes: "180x180", type: "image/png" }],
   },
   openGraph: {
     title: SITE_TITLE,
@@ -101,6 +108,10 @@ export const metadata: Metadata = {
 export const viewport: Viewport = {
   colorScheme: "dark light",
   interactiveWidget: "resizes-visual",
+  themeColor: [
+    { media: "(prefers-color-scheme: light)", color: "#f6f5f2" },
+    { media: "(prefers-color-scheme: dark)", color: "#262626" },
+  ],
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
@@ -138,16 +149,6 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="en" className={`${inter.variable} ${jetbrainsMono.variable}`} suppressHydrationWarning>
       <body>
-        <Script
-          src={`https://www.googletagmanager.com/gtag/js?id=${GOOGLE_ANALYTICS_MEASUREMENT_ID}`}
-          strategy="afterInteractive"
-        />
-        <Script id="google-analytics" strategy="afterInteractive">
-          {`window.dataLayer = window.dataLayer || [];
-function gtag(){dataLayer.push(arguments);}
-gtag('js', new Date());
-gtag('config', '${GOOGLE_ANALYTICS_MEASUREMENT_ID}');`}
-        </Script>
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData) }}

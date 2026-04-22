@@ -1,0 +1,758 @@
+- generic [ref=e1]:
+  - banner [ref=e2]:
+    - link "PageSpeed Insights logo PageSpeed Insights" [ref=e3] [cursor=pointer]:
+      - /url: ./
+      - img "PageSpeed Insights logo" [ref=e4]
+      - generic [ref=e5]: PageSpeed Insights
+    - generic [ref=e6]:
+      - button "Copy Link" [ref=e8]:
+        - img [ref=e11]
+        - generic [ref=e14]: Copy Link
+      - generic [ref=e16]:
+        - generic [ref=e18]: Docs
+        - link "Docs" [ref=e19] [cursor=pointer]:
+          - /url: https://developers.google.com/speed/docs/insights/v5/about
+  - generic [ref=e26]:
+    - generic [ref=e27]:
+      - generic [ref=e28]: This site uses cookies from Google to deliver its services and to analyze traffic.
+      - generic [ref=e29]:
+        - generic [ref=e31]:
+          - generic [ref=e33]: Learn More.
+          - link "Learn More." [ref=e34] [cursor=pointer]:
+            - /url: https://policies.google.com/technologies/cookies
+        - button "Ok, Got it." [ref=e36]:
+          - generic [ref=e39]: Ok, Got it.
+    - generic [ref=e40]: Report from Apr 21, 2026, 6:14:00 PM
+    - generic [ref=e41]:
+      - generic [ref=e42]:
+        - textbox [ref=e44]:
+          - /placeholder: Enter a web page URL
+          - text: https://curator.team1676.org/
+        - paragraph [ref=e46]: Enter a valid URL
+      - button "Analyze" [ref=e48]:
+        - generic [ref=e51]: Analyze
+    - generic [ref=e54]:
+      - tablist [ref=e55]:
+        - generic [ref=e58]:
+          - tab "Mobile" [selected] [ref=e59] [cursor=pointer]:
+            - generic:
+              - generic: smartphone
+              - generic: Mobile
+          - tab "Desktop" [ref=e61] [cursor=pointer]:
+            - generic:
+              - generic: computer
+              - generic: Desktop
+      - tabpanel "Mobile" [ref=e63]:
+        - generic [ref=e65]:
+          - generic [ref=e67]:
+            - generic [ref=e68]:
+              - generic [ref=e69]: Discover what your real users are experiencing
+              - generic [ref=e71]:
+                - button "button" [ref=e73] [cursor=pointer]:
+                  - img [ref=e75]
+                - generic [ref=e77]: No Data
+            - separator [ref=e78]
+          - generic [ref=e79]:
+            - generic [ref=e82]: Diagnose performance issues
+            - article [ref=e86]:
+              - generic [ref=e87]:
+                - generic [ref=e92]:
+                  - link "47 Performance" [ref=e93] [cursor=pointer]:
+                    - /url: "#performance"
+                    - img [ref=e95]
+                    - generic [ref=e98]: "47"
+                    - generic [ref=e99]: Performance
+                  - link "87 Accessibility" [ref=e100] [cursor=pointer]:
+                    - /url: "#accessibility"
+                    - img [ref=e102]
+                    - generic [ref=e105]: "87"
+                    - generic [ref=e106]: Accessibility
+                  - link "100 Best Practices" [ref=e107] [cursor=pointer]:
+                    - /url: "#best-practices"
+                    - img [ref=e109]
+                    - generic [ref=e112]: "100"
+                    - generic [ref=e113]: Best Practices
+                  - link "100 SEO" [ref=e114] [cursor=pointer]:
+                    - /url: "#seo"
+                    - img [ref=e116]
+                    - generic [ref=e119]: "100"
+                    - generic [ref=e120]: SEO
+                - generic [ref=e122]:
+                  - generic [ref=e124]:
+                    - generic [ref=e125]:
+                      - generic [ref=e126]:
+                        - img [ref=e130]:
+                          - generic [ref=e135]: "47"
+                          - generic [ref=e136]:
+                            - generic:
+                              - generic: FCP
+                              - generic: "+10"
+                            - generic:
+                              - generic: LCP
+                              - generic: "+4"
+                            - generic:
+                              - generic: TBT
+                              - generic: "+3"
+                            - generic:
+                              - generic: CLS
+                              - generic: "+25"
+                            - generic:
+                              - generic: SI
+                              - generic: "+5"
+                          - generic [ref=e138]: Performance
+                        - generic [ref=e140]:
+                          - generic [ref=e141]:
+                            - text: Values are estimated and may vary. The
+                            - link "performance score is calculated" [ref=e142] [cursor=pointer]:
+                              - /url: https://developer.chrome.com/docs/lighthouse/performance/performance-scoring/?utm_source=lighthouse&utm_medium=lr
+                            - text: directly from these metrics.
+                          - link "See calculator." [ref=e143] [cursor=pointer]:
+                            - /url: https://googlechrome.github.io/lighthouse/scorecalc/#FCP=1052&LCP=5927&TBT=1674&CLS=0&SI=5682&TTI=5935&device=mobile&version=13.1.0
+                        - generic [ref=e145]:
+                          - generic [ref=e146]: 0–49
+                          - generic [ref=e147]: 50–89
+                          - generic [ref=e148]: 90–100
+                      - img "Final Screenshot" [ref=e150]
+                    - generic [ref=e151]:
+                      - checkbox "Toggle the display of metric descriptions" [ref=e152]
+                      - generic [ref=e153]:
+                        - generic [ref=e154]: Metrics
+                        - generic [ref=e155] [cursor=pointer]: Expand view
+                      - generic [ref=e156]:
+                        - generic [ref=e158]:
+                          - generic [ref=e160]: First Contentful Paint
+                          - generic [ref=e161]: 1.1 s
+                        - generic [ref=e163]:
+                          - generic [ref=e165]: Largest Contentful Paint
+                          - generic [ref=e166]: 5.9 s
+                        - generic [ref=e168]:
+                          - generic [ref=e170]: Total Blocking Time
+                          - generic [ref=e171]: 1,670 ms
+                        - generic [ref=e173]:
+                          - generic [ref=e175]: Cumulative Layout Shift
+                          - generic [ref=e176]: "0"
+                        - generic [ref=e178]:
+                          - generic [ref=e180]: Speed Index
+                          - generic [ref=e181]: 5.7 s
+                      - list [ref=e182]:
+                        - listitem [ref=e183]: Captured at Apr 21, 2026, 6:14 PM EDT
+                        - listitem [ref=e184]: Emulated Moto G Power with Lighthouse 13.1.0
+                        - listitem [ref=e185]: Single page session
+                        - listitem [ref=e186]: Initial page load
+                        - listitem [ref=e187]: Slow 4G throttling
+                        - listitem [ref=e188]: Using HeadlessChromium 146.0.7680.177 with lr
+                      - button "View Treemap" [ref=e190] [cursor=pointer]
+                    - generic [ref=e192]:
+                      - img "Screenshot" [ref=e194]
+                      - img "Screenshot" [ref=e196]
+                      - img "Screenshot" [ref=e198]
+                      - img "Screenshot" [ref=e200]
+                      - img "Screenshot" [ref=e202]
+                      - img "Screenshot" [ref=e204]
+                      - img "Screenshot" [ref=e206]
+                      - img "Screenshot" [ref=e208]
+                    - generic [ref=e209]:
+                      - generic [ref=e210]:
+                        - generic [ref=e211]: "Show audits relevant to:"
+                        - radio "All" [checked] [ref=e212]
+                        - generic [ref=e213] [cursor=pointer]: All
+                        - radio "FCP" [ref=e214]
+                        - generic "First Contentful Paint" [ref=e215] [cursor=pointer]: FCP
+                        - radio "LCP" [ref=e216]
+                        - generic "Largest Contentful Paint" [ref=e217] [cursor=pointer]: LCP
+                        - radio "TBT" [ref=e218]
+                        - generic "Total Blocking Time" [ref=e219] [cursor=pointer]: TBT
+                      - generic [ref=e220]:
+                        - generic [ref=e221]: Insights
+                        - group [ref=e223]:
+                          - generic "Render blocking requests —Est savings of 620 ms" [ref=e224] [cursor=pointer]:
+                            - generic [ref=e225]:
+                              - generic [ref=e227]:
+                                - generic [ref=e228]: Render blocking requests
+                                - text: —Est savings of 620 ms
+                              - img [ref=e230]
+                        - group [ref=e235]:
+                          - generic "Legacy JavaScript —Est savings of 14 KiB" [ref=e236] [cursor=pointer]:
+                            - generic [ref=e237]:
+                              - generic [ref=e239]:
+                                - generic [ref=e240]: Legacy JavaScript
+                                - text: —Est savings of 14 KiB
+                              - img [ref=e242]
+                        - group [ref=e247]:
+                          - generic "Forced reflow" [ref=e248] [cursor=pointer]:
+                            - generic [ref=e249]:
+                              - generic [ref=e252]: Forced reflow
+                              - img [ref=e254]
+                          - generic [ref=e892]:
+                            - generic [ref=e893]:
+                              - text: A forced reflow occurs when JavaScript queries geometric properties (such as offsetWidth) after styles have been invalidated by a change to the DOM state. This can result in poor performance. Learn more about
+                              - link "forced reflows" [ref=e894] [cursor=pointer]:
+                                - /url: https://developer.chrome.com/docs/performance/insights/forced-reflow?utm_source=lighthouse&utm_medium=lr
+                              - text: and possible mitigations.
+                            - generic "This audit does not contribute to the overall category score." [ref=e895]: Unscored
+                          - generic [ref=e896]:
+                            - table [ref=e897]:
+                              - rowgroup [ref=e898]:
+                                - row "Top function call Total reflow time" [ref=e899]:
+                                  - columnheader "Top function call" [ref=e900]:
+                                    - generic [ref=e901]: Top function call
+                                  - columnheader "Total reflow time" [ref=e902]:
+                                    - generic [ref=e903]: Total reflow time
+                              - rowgroup [ref=e904]:
+                                - row "…chunks/0b.gkh3-.r79r.js:22:79893(curator.team1676.org) 35 ms" [ref=e905]:
+                                  - cell "…chunks/0b.gkh3-.r79r.js:22:79893(curator.team1676.org)" [ref=e906]:
+                                    - generic "https://curator.team1676.org/_next/static/chunks/0b.gkh3-.r79r.js" [ref=e907]:
+                                      - link "…chunks/0b.gkh3-.r79r.js:22:79893" [ref=e908] [cursor=pointer]:
+                                        - /url: https://curator.team1676.org/_next/static/chunks/0b.gkh3-.r79r.js
+                                      - text: (curator.team1676.org)
+                                  - cell "35 ms" [ref=e909]:
+                                    - generic [ref=e910]: 35 ms
+                            - table [ref=e911]:
+                              - rowgroup [ref=e912]:
+                                - row "Source Total reflow time" [ref=e913]:
+                                  - columnheader "Source" [ref=e914]:
+                                    - generic [ref=e915]: Source
+                                  - columnheader "Total reflow time" [ref=e916]:
+                                    - generic [ref=e917]: Total reflow time
+                              - rowgroup [ref=e918]:
+                                - row "…chunks/0jxdto04pifn4.js:12:13845(curator.team1676.org) 31 ms" [ref=e919]:
+                                  - cell "…chunks/0jxdto04pifn4.js:12:13845(curator.team1676.org)" [ref=e920]:
+                                    - generic "https://curator.team1676.org/_next/static/chunks/0jxdto04pifn4.js" [ref=e921]:
+                                      - link "…chunks/0jxdto04pifn4.js:12:13845" [ref=e922] [cursor=pointer]:
+                                        - /url: https://curator.team1676.org/_next/static/chunks/0jxdto04pifn4.js
+                                      - text: (curator.team1676.org)
+                                  - cell "31 ms" [ref=e923]:
+                                    - generic [ref=e924]: 31 ms
+                                - row "…chunks/0jxdto04pifn4.js:12:47737(curator.team1676.org) 4 ms" [ref=e925]:
+                                  - cell "…chunks/0jxdto04pifn4.js:12:47737(curator.team1676.org)" [ref=e926]:
+                                    - generic "https://curator.team1676.org/_next/static/chunks/0jxdto04pifn4.js" [ref=e927]:
+                                      - link "…chunks/0jxdto04pifn4.js:12:47737" [ref=e928] [cursor=pointer]:
+                                        - /url: https://curator.team1676.org/_next/static/chunks/0jxdto04pifn4.js
+                                      - text: (curator.team1676.org)
+                                  - cell "4 ms" [ref=e929]:
+                                    - generic [ref=e930]: 4 ms
+                                - row "…chunks/0b.gkh3-.r79r.js:20:26913(curator.team1676.org) 11 ms" [ref=e931]:
+                                  - cell "…chunks/0b.gkh3-.r79r.js:20:26913(curator.team1676.org)" [ref=e932]:
+                                    - generic "https://curator.team1676.org/_next/static/chunks/0b.gkh3-.r79r.js" [ref=e933]:
+                                      - link "…chunks/0b.gkh3-.r79r.js:20:26913" [ref=e934] [cursor=pointer]:
+                                        - /url: https://curator.team1676.org/_next/static/chunks/0b.gkh3-.r79r.js
+                                      - text: (curator.team1676.org)
+                                  - cell "11 ms" [ref=e935]:
+                                    - generic [ref=e936]: 11 ms
+                                - row "…chunks/0b.gkh3-.r79r.js:20:49782(curator.team1676.org) 0 ms" [ref=e937]:
+                                  - cell "…chunks/0b.gkh3-.r79r.js:20:49782(curator.team1676.org)" [ref=e938]:
+                                    - generic "https://curator.team1676.org/_next/static/chunks/0b.gkh3-.r79r.js" [ref=e939]:
+                                      - link "…chunks/0b.gkh3-.r79r.js:20:49782" [ref=e940] [cursor=pointer]:
+                                        - /url: https://curator.team1676.org/_next/static/chunks/0b.gkh3-.r79r.js
+                                      - text: (curator.team1676.org)
+                                  - cell "0 ms" [ref=e941]:
+                                    - generic [ref=e942]: 0 ms
+                                - row "[unattributed] 2 ms" [ref=e943]:
+                                  - cell "[unattributed]" [ref=e944]:
+                                    - generic [ref=e945]: "[unattributed]"
+                                  - cell "2 ms" [ref=e946]:
+                                    - generic [ref=e947]: 2 ms
+                                - row "…chunks/0jxdto04pifn4.js:12:47843(curator.team1676.org) 1 ms" [ref=e948]:
+                                  - cell "…chunks/0jxdto04pifn4.js:12:47843(curator.team1676.org)" [ref=e949]:
+                                    - generic "https://curator.team1676.org/_next/static/chunks/0jxdto04pifn4.js" [ref=e950]:
+                                      - link "…chunks/0jxdto04pifn4.js:12:47843" [ref=e951] [cursor=pointer]:
+                                        - /url: https://curator.team1676.org/_next/static/chunks/0jxdto04pifn4.js
+                                      - text: (curator.team1676.org)
+                                  - cell "1 ms" [ref=e952]:
+                                    - generic [ref=e953]: 1 ms
+                        - group [ref=e259]:
+                          - generic "Network dependency tree" [ref=e260] [cursor=pointer]:
+                            - generic [ref=e261]:
+                              - generic [ref=e264]: Network dependency tree
+                              - img [ref=e266]
+                        - group [ref=e271]:
+                          - generic "Use efficient cache lifetimes —Est savings of 4 KiB" [ref=e272] [cursor=pointer]:
+                            - generic [ref=e273]:
+                              - generic [ref=e275]:
+                                - generic [ref=e276]: Use efficient cache lifetimes
+                                - text: —Est savings of 4 KiB
+                              - img [ref=e278]
+                        - group [ref=e283]:
+                          - generic "LCP breakdown" [ref=e284] [cursor=pointer]:
+                            - generic [ref=e285]:
+                              - generic [ref=e288]: LCP breakdown
+                              - img [ref=e290]
+                        - group [ref=e295]:
+                          - generic "3rd parties" [ref=e296] [cursor=pointer]:
+                            - generic [ref=e297]:
+                              - generic [ref=e300]: 3rd parties
+                              - img [ref=e302]
+                        - generic [ref=e306]:
+                          - text: These insights are also available in the Chrome DevTools Performance Panel -
+                          - link "record a trace" [ref=e307] [cursor=pointer]:
+                            - /url: https://developer.chrome.com/docs/devtools/performance/reference?utm_source=lighthouse&utm_medium=lr
+                          - text: to view more detailed information.
+                      - generic [ref=e308]:
+                        - generic [ref=e309]: Diagnostics
+                        - group [ref=e311]:
+                          - generic "Minimize main-thread work —3.2 s" [ref=e312] [cursor=pointer]:
+                            - generic [ref=e313]:
+                              - generic [ref=e315]:
+                                - generic [ref=e316]: Minimize main-thread work
+                                - text: —3.2 s
+                              - img [ref=e318]
+                        - group [ref=e323]:
+                          - generic "Reduce JavaScript execution time —2.4 s" [ref=e324] [cursor=pointer]:
+                            - generic [ref=e325]:
+                              - generic [ref=e327]:
+                                - generic [ref=e328]: Reduce JavaScript execution time
+                                - text: —2.4 s
+                              - img [ref=e330]
+                        - group [ref=e335]:
+                          - generic "Reduce unused JavaScript —Est savings of 165 KiB" [active] [ref=e336] [cursor=pointer]:
+                            - generic [ref=e337]:
+                              - generic [ref=e339]:
+                                - generic [ref=e340]: Reduce unused JavaScript
+                                - text: —Est savings of 165 KiB
+                              - img [ref=e342]
+                          - generic [ref=e954]:
+                            - generic [ref=e955]:
+                              - text: Reduce unused JavaScript and defer loading scripts until they are required to decrease bytes consumed by network activity.
+                              - link "Learn how to reduce unused JavaScript" [ref=e956] [cursor=pointer]:
+                                - /url: https://developer.chrome.com/docs/lighthouse/performance/unused-javascript/?utm_source=lighthouse&utm_medium=lr
+                              - text: .
+                            - generic "Relevant to Largest Contentful Paint" [ref=e957]: LCP
+                            - generic "Relevant to First Contentful Paint" [ref=e958]: FCP
+                            - generic "This audit does not contribute to the overall category score." [ref=e959]: Unscored
+                          - table [ref=e960]:
+                            - rowgroup [ref=e961]:
+                              - row "URL Transfer Size Est Savings" [ref=e962]:
+                                - columnheader "URL" [ref=e963]:
+                                  - generic [ref=e964]: URL
+                                - columnheader "Transfer Size" [ref=e965]:
+                                  - generic [ref=e966]: Transfer Size
+                                - columnheader "Est Savings" [ref=e967]:
+                                  - generic [ref=e968]: Est Savings
+                            - rowgroup [ref=e969]:
+                              - row "team1676.org 1st party 506.8 KiB 165.4 KiB" [ref=e970]:
+                                - cell "team1676.org 1st party" [ref=e971]:
+                                  - generic [ref=e972]: team1676.org
+                                  - generic [ref=e973]: 1st party
+                                - cell "506.8 KiB" [ref=e974]:
+                                  - generic "518,924 bytes" [ref=e975]: 506.8 KiB
+                                - cell "165.4 KiB" [ref=e976]:
+                                  - generic "169,417 bytes" [ref=e977]: 165.4 KiB
+                              - row "…chunks/0b.gkh3-.r79r.js(curator.team1676.org) 165.3 KiB 70.1 KiB" [ref=e978]:
+                                - cell "…chunks/0b.gkh3-.r79r.js(curator.team1676.org)" [ref=e979]:
+                                  - generic "https://curator.team1676.org/_next/static/chunks/0b.gkh3-.r79r.js" [ref=e980]:
+                                    - link "…chunks/0b.gkh3-.r79r.js" [ref=e981] [cursor=pointer]:
+                                      - /url: https://curator.team1676.org/_next/static/chunks/0b.gkh3-.r79r.js
+                                    - text: (curator.team1676.org)
+                                - cell "165.3 KiB" [ref=e982]:
+                                  - generic "169,233 bytes" [ref=e983]: 165.3 KiB
+                                - cell "70.1 KiB" [ref=e984]:
+                                  - generic "71,750 bytes" [ref=e985]: 70.1 KiB
+                              - row "…chunks/087_a6ksj0i6-.js(curator.team1676.org) 258.1 KiB 50.0 KiB" [ref=e986]:
+                                - cell "…chunks/087_a6ksj0i6-.js(curator.team1676.org)" [ref=e987]:
+                                  - generic "https://curator.team1676.org/_next/static/chunks/087_a6ksj0i6-.js" [ref=e988]:
+                                    - link "…chunks/087_a6ksj0i6-.js" [ref=e989] [cursor=pointer]:
+                                      - /url: https://curator.team1676.org/_next/static/chunks/087_a6ksj0i6-.js
+                                    - text: (curator.team1676.org)
+                                - cell "258.1 KiB" [ref=e990]:
+                                  - generic "264,259 bytes" [ref=e991]: 258.1 KiB
+                                - cell "50.0 KiB" [ref=e992]:
+                                  - generic "51,236 bytes" [ref=e993]: 50.0 KiB
+                              - row "…chunks/0jxdto04pifn4.js(curator.team1676.org) 83.4 KiB 45.3 KiB" [ref=e994]:
+                                - cell "…chunks/0jxdto04pifn4.js(curator.team1676.org)" [ref=e995]:
+                                  - generic "https://curator.team1676.org/_next/static/chunks/0jxdto04pifn4.js" [ref=e996]:
+                                    - link "…chunks/0jxdto04pifn4.js" [ref=e997] [cursor=pointer]:
+                                      - /url: https://curator.team1676.org/_next/static/chunks/0jxdto04pifn4.js
+                                    - text: (curator.team1676.org)
+                                - cell "83.4 KiB" [ref=e998]:
+                                  - generic "85,432 bytes" [ref=e999]: 83.4 KiB
+                                - cell "45.3 KiB" [ref=e1000]:
+                                  - generic "46,431 bytes" [ref=e1001]: 45.3 KiB
+                        - group [ref=e347]:
+                          - generic "Avoid long main-thread tasks —7 long tasks found" [ref=e348] [cursor=pointer]:
+                            - generic [ref=e349]:
+                              - generic [ref=e351]:
+                                - generic [ref=e352]: Avoid long main-thread tasks
+                                - text: —7 long tasks found
+                              - img [ref=e354]
+                        - group [ref=e359]:
+                          - generic "User Timing marks and measures —1 user timing" [ref=e360] [cursor=pointer]:
+                            - generic [ref=e361]:
+                              - generic [ref=e363]:
+                                - generic [ref=e364]: User Timing marks and measures
+                                - text: —1 user timing
+                              - img [ref=e366]
+                        - generic [ref=e370]:
+                          - text: More information about the performance of your application. These numbers don't
+                          - link "directly affect" [ref=e371] [cursor=pointer]:
+                            - /url: https://developer.chrome.com/docs/lighthouse/performance/performance-scoring/?utm_source=lighthouse&utm_medium=lr
+                          - text: the Performance score.
+                      - group [ref=e373]:
+                        - generic "Passed audits (15) Show" [ref=e374] [cursor=pointer]:
+                          - generic [ref=e375]:
+                            - generic [ref=e376]: Passed audits (15)
+                            - generic [ref=e377]: Show
+                        - text: —
+                  - generic [ref=e379]:
+                    - generic [ref=e380]:
+                      - heading "87 Accessibility" [level=2] [ref=e381]:
+                        - generic [ref=e382]:
+                          - img [ref=e384]
+                          - generic [ref=e387]: "87"
+                          - generic [ref=e388]: Accessibility
+                      - generic [ref=e390]:
+                        - text: These checks highlight opportunities to
+                        - link "improve the accessibility of your web app" [ref=e391] [cursor=pointer]:
+                          - /url: https://developer.chrome.com/docs/lighthouse/accessibility/?utm_source=lighthouse&utm_medium=lr
+                        - text: . Automatic detection can only detect a subset of issues and does not guarantee the accessibility of your web app, so
+                        - link "manual testing" [ref=e392] [cursor=pointer]:
+                          - /url: https://web.dev/articles/how-to-review?utm_source=lighthouse&utm_medium=lr
+                        - text: is also encouraged.
+                    - generic [ref=e393]:
+                      - generic [ref=e394]:
+                        - generic [ref=e395]: Names and labels
+                        - group [ref=e397]:
+                          - generic "Buttons do not have an accessible name" [ref=e398] [cursor=pointer]:
+                            - generic [ref=e399]:
+                              - generic [ref=e402]: Buttons do not have an accessible name
+                              - img [ref=e404]
+                          - generic [ref=e676]:
+                            - text: When a button doesn't have an accessible name, screen readers announce it as "button", making it unusable for users who rely on screen readers.
+                            - link "Learn how to make buttons more accessible" [ref=e677] [cursor=pointer]:
+                              - /url: https://dequeuniversity.com/rules/axe/4.11/button-name
+                            - text: .
+                          - table [ref=e678]:
+                            - rowgroup [ref=e679]:
+                              - row "Failing Elements" [ref=e680]:
+                                - columnheader "Failing Elements" [ref=e681]:
+                                  - generic [ref=e682]: Failing Elements
+                            - rowgroup [ref=e683]:
+                              - row "div.border-b > div.flex > div.flex > button.group/button <button type=\"button\" data-disabled=\"\" tabindex=\"0\" disabled=\"\" data-slot=\"button\" class=\"group/button inline-flex items-center justify-center rounded-lg border bg-…\">" [ref=e684]:
+                                - cell "div.border-b > div.flex > div.flex > button.group/button <button type=\"button\" data-disabled=\"\" tabindex=\"0\" disabled=\"\" data-slot=\"button\" class=\"group/button inline-flex items-center justify-center rounded-lg border bg-…\">" [ref=e685]:
+                                  - generic "div.border-b > div.flex > div.flex > button.group/button" [ref=e686]:
+                                    - generic [ref=e690]:
+                                      - img
+                                    - generic [ref=e692]: div.border-b > div.flex > div.flex > button.group/button
+                                    - generic [ref=e693]: <button type="button" data-disabled="" tabindex="0" disabled="" data-slot="button" class="group/button inline-flex items-center justify-center rounded-lg border bg-…">
+                        - generic [ref=e408]: These are opportunities to improve the semantics of the controls in your application. This may enhance the experience for users of assistive technology, like a screen reader.
+                      - generic [ref=e409]:
+                        - generic [ref=e410]: Contrast
+                        - group [ref=e412]:
+                          - generic "Background and foreground colors do not have a sufficient contrast ratio." [ref=e413] [cursor=pointer]:
+                            - generic [ref=e414]:
+                              - generic [ref=e417]: Background and foreground colors do not have a sufficient contrast ratio.
+                              - img [ref=e419]
+                          - generic [ref=e695]:
+                            - text: Low-contrast text is difficult or impossible for many users to read.
+                            - link "Learn how to provide sufficient color contrast" [ref=e696] [cursor=pointer]:
+                              - /url: https://dequeuniversity.com/rules/axe/4.11/color-contrast
+                            - text: .
+                          - table [ref=e697]:
+                            - rowgroup [ref=e698]:
+                              - row "Failing Elements" [ref=e699]:
+                                - columnheader "Failing Elements" [ref=e700]:
+                                  - generic [ref=e701]: Failing Elements
+                            - rowgroup [ref=e702]:
+                              - row "Private <span class=\"inline-flex shrink-0 items-center gap-1 rounded-full border border-border/…\">" [ref=e703]:
+                                - cell "Private <span class=\"inline-flex shrink-0 items-center gap-1 rounded-full border border-border/…\">" [ref=e704]:
+                                  - generic "div.border-b > div.flex > div.mx-auto > span.inline-flex" [ref=e705]:
+                                    - generic [ref=e709]:
+                                      - img
+                                    - generic [ref=e711]: Private
+                                    - generic [ref=e712]: <span class="inline-flex shrink-0 items-center gap-1 rounded-full border border-border/…">
+                              - row "Toggle Sidebar Veteran New Chat Private <div class=\"border-b border-border/40 bg-background/90 px-3 py-2.5 backdrop-blur md:px…\">" [ref=e713]:
+                                - cell "Toggle Sidebar Veteran New Chat Private <div class=\"border-b border-border/40 bg-background/90 px-3 py-2.5 backdrop-blur md:px…\">" [ref=e714]:
+                                  - generic "div.group/sidebar-wrapper > div.flex > main.relative > div.border-b" [ref=e715]:
+                                    - generic [ref=e719]:
+                                      - img
+                                    - generic [ref=e721]: Toggle Sidebar Veteran New Chat Private
+                                    - generic [ref=e722]: <div class="border-b border-border/40 bg-background/90 px-3 py-2.5 backdrop-blur md:px…">
+                              - row "Toggle Sidebar Veteran New Chat Private What can I help with? Ask about FRC rul… <main data-slot=\"sidebar-inset\" class=\"relative w-full flex-1 md:peer-data-[variant=inset]:m-2 md:peer-data-[vari…\">" [ref=e723]:
+                                - cell "Toggle Sidebar Veteran New Chat Private What can I help with? Ask about FRC rul… <main data-slot=\"sidebar-inset\" class=\"relative w-full flex-1 md:peer-data-[variant=inset]:m-2 md:peer-data-[vari…\">" [ref=e724]:
+                                  - generic "body > div.group/sidebar-wrapper > div.flex > main.relative" [ref=e725]:
+                                    - generic [ref=e729]:
+                                      - img
+                                    - generic [ref=e731]: Toggle Sidebar Veteran New Chat Private What can I help with? Ask about FRC rul…
+                                    - generic [ref=e732]: <main data-slot="sidebar-inset" class="relative w-full flex-1 md:peer-data-[variant=inset]:m-2 md:peer-data-[vari…">
+                              - 'row "Ask about FRC rules, strategy, programming, or game documentation. <div class=\"text-center text-sm text-muted-foreground/80\" style=\"opacity: 1; transform: none;\">" [ref=e733]':
+                                - 'cell "Ask about FRC rules, strategy, programming, or game documentation. <div class=\"text-center text-sm text-muted-foreground/80\" style=\"opacity: 1; transform: none;\">" [ref=e734]':
+                                  - generic "div.flex > div.flex > div.flex > div.text-center" [ref=e735]:
+                                    - generic [ref=e739]:
+                                      - img
+                                    - generic [ref=e741]: Ask about FRC rules, strategy, programming, or game documentation.
+                                    - generic [ref=e742]: "<div class=\"text-center text-sm text-muted-foreground/80\" style=\"opacity: 1; transform: none;\">"
+                              - row "Toggle Sidebar Veteran New Chat Private What can I help with? Ask about FRC rul… <main data-slot=\"sidebar-inset\" class=\"relative w-full flex-1 md:peer-data-[variant=inset]:m-2 md:peer-data-[vari…\">" [ref=e743]:
+                                - cell "Toggle Sidebar Veteran New Chat Private What can I help with? Ask about FRC rul… <main data-slot=\"sidebar-inset\" class=\"relative w-full flex-1 md:peer-data-[variant=inset]:m-2 md:peer-data-[vari…\">" [ref=e744]:
+                                  - generic "body > div.group/sidebar-wrapper > div.flex > main.relative" [ref=e745]:
+                                    - generic [ref=e749]:
+                                      - img
+                                    - generic [ref=e751]: Toggle Sidebar Veteran New Chat Private What can I help with? Ask about FRC rul…
+                                    - generic [ref=e752]: <main data-slot="sidebar-inset" class="relative w-full flex-1 md:peer-data-[variant=inset]:m-2 md:peer-data-[vari…">
+                              - row "Review our scouting sheet if I paste it below. <button type=\"button\" class=\"flex w-full cursor-pointer items-center rounded-xl border border-border/50…\">" [ref=e753]:
+                                - cell "Review our scouting sheet if I paste it below. <button type=\"button\" class=\"flex w-full cursor-pointer items-center rounded-xl border border-border/50…\">" [ref=e754]:
+                                  - generic "div.mx-auto > div.grid > div.min-w-0 > button.flex" [ref=e755]:
+                                    - generic [ref=e759]:
+                                      - img
+                                    - generic [ref=e761]: Review our scouting sheet if I paste it below.
+                                    - generic [ref=e762]: <button type="button" class="flex w-full cursor-pointer items-center rounded-xl border border-border/50…">
+                              - row "Toggle Sidebar Veteran New Chat Private What can I help with? Ask about FRC rul… <main data-slot=\"sidebar-inset\" class=\"relative w-full flex-1 md:peer-data-[variant=inset]:m-2 md:peer-data-[vari…\">" [ref=e763]:
+                                - cell "Toggle Sidebar Veteran New Chat Private What can I help with? Ask about FRC rul… <main data-slot=\"sidebar-inset\" class=\"relative w-full flex-1 md:peer-data-[variant=inset]:m-2 md:peer-data-[vari…\">" [ref=e764]:
+                                  - generic "body > div.group/sidebar-wrapper > div.flex > main.relative" [ref=e765]:
+                                    - generic [ref=e769]:
+                                      - img
+                                    - generic [ref=e771]: Toggle Sidebar Veteran New Chat Private What can I help with? Ask about FRC rul…
+                                    - generic [ref=e772]: <main data-slot="sidebar-inset" class="relative w-full flex-1 md:peer-data-[variant=inset]:m-2 md:peer-data-[vari…">
+                              - row "Compare two teams fairly from their event results. <button type=\"button\" class=\"flex w-full cursor-pointer items-center rounded-xl border border-border/50…\">" [ref=e773]:
+                                - cell "Compare two teams fairly from their event results. <button type=\"button\" class=\"flex w-full cursor-pointer items-center rounded-xl border border-border/50…\">" [ref=e774]:
+                                  - generic "div.mx-auto > div.grid > div.min-w-0 > button.flex" [ref=e775]:
+                                    - generic [ref=e779]:
+                                      - img
+                                    - generic [ref=e781]: Compare two teams fairly from their event results.
+                                    - generic [ref=e782]: <button type="button" class="flex w-full cursor-pointer items-center rounded-xl border border-border/50…">
+                              - row "Toggle Sidebar Veteran New Chat Private What can I help with? Ask about FRC rul… <main data-slot=\"sidebar-inset\" class=\"relative w-full flex-1 md:peer-data-[variant=inset]:m-2 md:peer-data-[vari…\">" [ref=e783]:
+                                - cell "Toggle Sidebar Veteran New Chat Private What can I help with? Ask about FRC rul… <main data-slot=\"sidebar-inset\" class=\"relative w-full flex-1 md:peer-data-[variant=inset]:m-2 md:peer-data-[vari…\">" [ref=e784]:
+                                  - generic "body > div.group/sidebar-wrapper > div.flex > main.relative" [ref=e785]:
+                                    - generic [ref=e789]:
+                                      - img
+                                    - generic [ref=e791]: Toggle Sidebar Veteran New Chat Private What can I help with? Ask about FRC rul…
+                                    - generic [ref=e792]: <main data-slot="sidebar-inset" class="relative w-full flex-1 md:peer-data-[variant=inset]:m-2 md:peer-data-[vari…">
+                              - row "Break down how ranking points are earned at 2026 events. <button type=\"button\" class=\"flex w-full cursor-pointer items-center rounded-xl border border-border/50…\">" [ref=e793]:
+                                - cell "Break down how ranking points are earned at 2026 events. <button type=\"button\" class=\"flex w-full cursor-pointer items-center rounded-xl border border-border/50…\">" [ref=e794]:
+                                  - generic "div.mx-auto > div.grid > div.min-w-0 > button.flex" [ref=e795]:
+                                    - generic [ref=e799]:
+                                      - img
+                                    - generic [ref=e801]: Break down how ranking points are earned at 2026 events.
+                                    - generic [ref=e802]: <button type="button" class="flex w-full cursor-pointer items-center rounded-xl border border-border/50…">
+                              - row "Toggle Sidebar Veteran New Chat Private What can I help with? Ask about FRC rul… <main data-slot=\"sidebar-inset\" class=\"relative w-full flex-1 md:peer-data-[variant=inset]:m-2 md:peer-data-[vari…\">" [ref=e803]:
+                                - cell "Toggle Sidebar Veteran New Chat Private What can I help with? Ask about FRC rul… <main data-slot=\"sidebar-inset\" class=\"relative w-full flex-1 md:peer-data-[variant=inset]:m-2 md:peer-data-[vari…\">" [ref=e804]:
+                                  - generic "body > div.group/sidebar-wrapper > div.flex > main.relative" [ref=e805]:
+                                    - generic [ref=e809]:
+                                      - img
+                                    - generic [ref=e811]: Toggle Sidebar Veteran New Chat Private What can I help with? Ask about FRC rul…
+                                    - generic [ref=e812]: <main data-slot="sidebar-inset" class="relative w-full flex-1 md:peer-data-[variant=inset]:m-2 md:peer-data-[vari…">
+                              - row "Summarize common wiring mistakes on FRC robots. <button type=\"button\" class=\"flex w-full cursor-pointer items-center rounded-xl border border-border/50…\">" [ref=e813]:
+                                - cell "Summarize common wiring mistakes on FRC robots. <button type=\"button\" class=\"flex w-full cursor-pointer items-center rounded-xl border border-border/50…\">" [ref=e814]:
+                                  - generic "div.mx-auto > div.grid > div.min-w-0 > button.flex" [ref=e815]:
+                                    - generic [ref=e819]:
+                                      - img
+                                    - generic [ref=e821]: Summarize common wiring mistakes on FRC robots.
+                                    - generic [ref=e822]: <button type="button" class="flex w-full cursor-pointer items-center rounded-xl border border-border/50…">
+                              - row "Toggle Sidebar Veteran New Chat Private What can I help with? Ask about FRC rul… <main data-slot=\"sidebar-inset\" class=\"relative w-full flex-1 md:peer-data-[variant=inset]:m-2 md:peer-data-[vari…\">" [ref=e823]:
+                                - cell "Toggle Sidebar Veteran New Chat Private What can I help with? Ask about FRC rul… <main data-slot=\"sidebar-inset\" class=\"relative w-full flex-1 md:peer-data-[variant=inset]:m-2 md:peer-data-[vari…\">" [ref=e824]:
+                                  - generic "body > div.group/sidebar-wrapper > div.flex > main.relative" [ref=e825]:
+                                    - generic [ref=e829]:
+                                      - img
+                                    - generic [ref=e831]: Toggle Sidebar Veteran New Chat Private What can I help with? Ask about FRC rul…
+                                    - generic [ref=e832]: <main data-slot="sidebar-inset" class="relative w-full flex-1 md:peer-data-[variant=inset]:m-2 md:peer-data-[vari…">
+                              - row "Details live in the Privacy Policy. <p class=\"text-[12px] leading-5 text-muted-foreground\">" [ref=e833]:
+                                - cell "Details live in the Privacy Policy. <p class=\"text-[12px] leading-5 text-muted-foreground\">" [ref=e834]:
+                                  - generic "div.fixed > div.mx-auto > div.max-w-3xl > p.text-[12px]" [ref=e835]:
+                                    - generic [ref=e839]:
+                                      - img
+                                    - generic [ref=e841]: Details live in the Privacy Policy.
+                                    - generic [ref=e842]: <p class="text-[12px] leading-5 text-muted-foreground">
+                              - row "COOKIE CONSENT Curator uses necessary cookies for sessions and product functio… <div class=\"fixed inset-x-0 bottom-0 z-50 border-t border-border/60 bg-background/95 p…\">" [ref=e843]:
+                                - cell "COOKIE CONSENT Curator uses necessary cookies for sessions and product functio… <div class=\"fixed inset-x-0 bottom-0 z-50 border-t border-border/60 bg-background/95 p…\">" [ref=e844]:
+                                  - generic "body > div.fixed" [ref=e845]:
+                                    - generic [ref=e849]:
+                                      - img
+                                    - generic [ref=e851]: COOKIE CONSENT Curator uses necessary cookies for sessions and product functio…
+                                    - generic [ref=e852]: <div class="fixed inset-x-0 bottom-0 z-50 border-t border-border/60 bg-background/95 p…">
+                              - row "Send <div class=\"rounded-2xl border border-border/40 bg-card shadow-[var(--shadow-composer)…\">" [ref=e853]:
+                                - cell "Send <div class=\"rounded-2xl border border-border/40 bg-card shadow-[var(--shadow-composer)…\">" [ref=e854]:
+                                  - generic "div.sticky > div.mx-auto > div.flex > div.rounded-2xl" [ref=e855]:
+                                    - generic [ref=e859]:
+                                      - img
+                                    - generic [ref=e861]: Send
+                                    - generic [ref=e862]: <div class="rounded-2xl border border-border/40 bg-card shadow-[var(--shadow-composer)…">
+                        - group [ref=e424]:
+                          - generic "Links rely on color to be distinguishable." [ref=e425] [cursor=pointer]:
+                            - generic [ref=e426]:
+                              - generic [ref=e429]: Links rely on color to be distinguishable.
+                              - img [ref=e431]
+                          - generic [ref=e864]:
+                            - text: Low-contrast text is difficult or impossible for many users to read. Link text that is discernible improves the experience for users with low vision.
+                            - link "Learn how to make links distinguishable" [ref=e865] [cursor=pointer]:
+                              - /url: https://dequeuniversity.com/rules/axe/4.11/link-in-text-block
+                            - text: .
+                          - table [ref=e866]:
+                            - rowgroup [ref=e867]:
+                              - row "Failing Elements" [ref=e868]:
+                                - columnheader "Failing Elements" [ref=e869]:
+                                  - generic [ref=e870]: Failing Elements
+                            - rowgroup [ref=e871]:
+                              - row "Privacy Policy <a class=\"text-[#0066B3] hover:underline\" href=\"/privacy-policy\">" [ref=e872]:
+                                - cell "Privacy Policy <a class=\"text-[#0066B3] hover:underline\" href=\"/privacy-policy\">" [ref=e873]:
+                                  - generic "div.mx-auto > div.max-w-3xl > p.text-[12px] > a.text-[#0066B3]" [ref=e874]:
+                                    - generic [ref=e878]:
+                                      - img
+                                    - generic [ref=e880]: Privacy Policy
+                                    - generic [ref=e881]: <a class="text-[#0066B3] hover:underline" href="/privacy-policy">
+                              - row "Details live in the Privacy Policy. <p class=\"text-[12px] leading-5 text-muted-foreground\">" [ref=e882]:
+                                - cell "Details live in the Privacy Policy. <p class=\"text-[12px] leading-5 text-muted-foreground\">" [ref=e883]:
+                                  - generic "div.fixed > div.mx-auto > div.max-w-3xl > p.text-[12px]" [ref=e884]:
+                                    - generic [ref=e888]:
+                                      - img
+                                    - generic [ref=e890]: Details live in the Privacy Policy.
+                                    - generic [ref=e891]: <p class="text-[12px] leading-5 text-muted-foreground">
+                        - generic [ref=e435]: These are opportunities to improve the legibility of your content.
+                    - generic [ref=e436]:
+                      - group [ref=e437]:
+                        - generic "Additional items to manually check (10) Show" [ref=e438] [cursor=pointer]:
+                          - generic [ref=e439]:
+                            - generic [ref=e440]: Additional items to manually check (10)
+                            - generic [ref=e441]: Show
+                      - generic [ref=e442]:
+                        - text: These items address areas which an automated testing tool cannot cover. Learn more in our guide on
+                        - link "conducting an accessibility review" [ref=e443] [cursor=pointer]:
+                          - /url: https://web.dev/articles/how-to-review?utm_source=lighthouse&utm_medium=lr
+                        - text: .
+                    - group [ref=e445]:
+                      - generic "Passed audits (20) Show" [ref=e446] [cursor=pointer]:
+                        - generic [ref=e447]:
+                          - generic [ref=e448]: Passed audits (20)
+                          - generic [ref=e449]: Show
+                    - group [ref=e451]:
+                      - generic "Not applicable (37) Show" [ref=e452] [cursor=pointer]:
+                        - generic [ref=e453]:
+                          - generic [ref=e454]: Not applicable (37)
+                          - generic [ref=e455]: Show
+                  - generic [ref=e457]:
+                    - heading "100 Best Practices" [level=2] [ref=e459]:
+                      - generic [ref=e460]:
+                        - img [ref=e462]
+                        - generic [ref=e465]: "100"
+                        - generic [ref=e466]: Best Practices
+                    - generic [ref=e467]:
+                      - generic [ref=e468]:
+                        - generic [ref=e469]: Trust and Safety
+                        - group [ref=e471]:
+                          - generic "Ensure CSP is effective against XSS attacks" [ref=e472] [cursor=pointer]:
+                            - generic [ref=e473]:
+                              - generic [ref=e476]: Ensure CSP is effective against XSS attacks
+                              - img [ref=e478]
+                        - group [ref=e483]:
+                          - generic "Use a strong HSTS policy" [ref=e484] [cursor=pointer]:
+                            - generic [ref=e485]:
+                              - generic [ref=e488]: Use a strong HSTS policy
+                              - img [ref=e490]
+                        - group [ref=e495]:
+                          - generic "Ensure proper origin isolation with COOP" [ref=e496] [cursor=pointer]:
+                            - generic [ref=e497]:
+                              - generic [ref=e500]: Ensure proper origin isolation with COOP
+                              - img [ref=e502]
+                        - group [ref=e507]:
+                          - generic "Mitigate clickjacking with XFO or CSP" [ref=e508] [cursor=pointer]:
+                            - generic [ref=e509]:
+                              - generic [ref=e512]: Mitigate clickjacking with XFO or CSP
+                              - img [ref=e514]
+                        - group [ref=e519]:
+                          - generic "Mitigate DOM-based XSS with Trusted Types" [ref=e520] [cursor=pointer]:
+                            - generic [ref=e521]:
+                              - generic [ref=e524]: Mitigate DOM-based XSS with Trusted Types
+                              - img [ref=e526]
+                      - generic [ref=e530]:
+                        - generic [ref=e531]: Browser Compatibility
+                        - group [ref=e533]:
+                          - generic "Baseline Features" [ref=e534] [cursor=pointer]:
+                            - generic [ref=e535]:
+                              - generic [ref=e538]: Baseline Features
+                              - img [ref=e540]
+                      - generic [ref=e544]:
+                        - generic [ref=e545]: General
+                        - group [ref=e547]:
+                          - generic "Missing source maps for large first-party JavaScript" [ref=e548] [cursor=pointer]:
+                            - generic [ref=e549]:
+                              - generic [ref=e552]: Missing source maps for large first-party JavaScript
+                              - img [ref=e554]
+                    - group [ref=e559]:
+                      - generic "Passed audits (12) Show" [ref=e560] [cursor=pointer]:
+                        - generic [ref=e561]:
+                          - generic [ref=e562]: Passed audits (12)
+                          - generic [ref=e563]: Show
+                    - group [ref=e565]:
+                      - generic "Not applicable (2) Show" [ref=e566] [cursor=pointer]:
+                        - generic [ref=e567]:
+                          - generic [ref=e568]: Not applicable (2)
+                          - generic [ref=e569]: Show
+                  - generic [ref=e571]:
+                    - generic [ref=e572]:
+                      - heading "100 SEO" [level=2] [ref=e573]:
+                        - generic [ref=e574]:
+                          - img [ref=e576]
+                          - generic [ref=e579]: "100"
+                          - generic [ref=e580]: SEO
+                      - generic [ref=e582]:
+                        - text: These checks ensure that your page is following basic search engine optimization advice. There are many additional factors Lighthouse does not score here that may affect your search ranking, including performance on
+                        - link "Core Web Vitals" [ref=e583] [cursor=pointer]:
+                          - /url: https://web.dev/explore/vitals?utm_source=lighthouse&utm_medium=lr
+                        - text: .
+                        - link "Learn more about Google Search Essentials" [ref=e584] [cursor=pointer]:
+                          - /url: https://support.google.com/webmasters/answer/35769
+                        - text: .
+                    - generic [ref=e585]:
+                      - group [ref=e586]:
+                        - generic "Additional items to manually check (1) Hide" [ref=e587] [cursor=pointer]:
+                          - generic [ref=e588]:
+                            - generic [ref=e589]: Additional items to manually check (1)
+                            - generic [ref=e591]: Hide
+                        - group [ref=e593]:
+                          - generic "Structured data is valid" [ref=e594] [cursor=pointer]:
+                            - generic [ref=e595]:
+                              - generic [ref=e598]: Structured data is valid
+                              - img [ref=e600]
+                      - generic [ref=e604]: Run these additional validators on your site to check additional SEO best practices.
+                    - group [ref=e606]:
+                      - generic "Passed audits (10) Show" [ref=e607] [cursor=pointer]:
+                        - generic [ref=e608]:
+                          - generic [ref=e609]: Passed audits (10)
+                          - generic [ref=e610]: Show
+      - text: — — — — — — — — — —
+  - contentinfo [ref=e611]:
+    - generic [ref=e612]:
+      - generic [ref=e613]:
+        - generic [ref=e614]:
+          - generic [ref=e615]: More on PageSpeed Insights
+          - link "What's new" [ref=e617] [cursor=pointer]:
+            - /url: https://developers.google.com/speed/docs/insights/release_notes
+          - link "Documentation" [ref=e619] [cursor=pointer]:
+            - /url: https://developers.google.com/speed/docs/insights/v5/about
+          - link "Learn about Web Performance" [ref=e621] [cursor=pointer]:
+            - /url: https://developers.google.com/speed
+          - link "Ask questions on Stack Overflow" [ref=e623] [cursor=pointer]:
+            - /url: https://stackoverflow.com/questions/tagged/pagespeed-insights
+          - link "Mailing list" [ref=e625] [cursor=pointer]:
+            - /url: https://groups.google.com/g/pagespeed-insights-discuss
+        - generic [ref=e626]:
+          - generic [ref=e627]: Related Content
+          - link "Updates" [ref=e629] [cursor=pointer]:
+            - /url: https://developer.chrome.com/blog
+          - link "Web Fundamentals" [ref=e631] [cursor=pointer]:
+            - /url: https://developers.google.com/focus/web-development
+          - link "Case Studies" [ref=e633] [cursor=pointer]:
+            - /url: https://web.dev/case-studies
+          - link "Podcasts" [ref=e635] [cursor=pointer]:
+            - /url: https://web.dev/shows
+        - generic [ref=e636]:
+          - generic [ref=e637]: Connect
+          - link "Twitter" [ref=e639] [cursor=pointer]:
+            - /url: https://twitter.com/ChromiumDev
+          - link "Youtube" [ref=e641] [cursor=pointer]:
+            - /url: https://www.youtube.com/user/ChromeDevelopers
+      - generic [ref=e642]:
+        - link "Google Developers Logo" [ref=e643] [cursor=pointer]:
+          - /url: https://developers.google.com/
+          - img "Google Developers Logo" [ref=e644]
+        - link "Chrome" [ref=e645] [cursor=pointer]:
+          - /url: https://developer.chrome.com/
+        - link "Firebase" [ref=e646] [cursor=pointer]:
+          - /url: https://firebase.google.com/
+        - link "All products" [ref=e647] [cursor=pointer]:
+          - /url: https://developers.google.com/products/
+      - generic [ref=e648]:
+        - link "Terms and Privacy Policy" [ref=e650] [cursor=pointer]:
+          - /url: https://policies.google.com/
+        - generic [ref=e651]:
+          - text: For details, see the
+          - link "Google Developers Site Policies" [ref=e652] [cursor=pointer]:
+            - /url: https://developers.google.com/terms/site-policies
+          - text: .

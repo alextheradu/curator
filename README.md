@@ -1,36 +1,136 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+Curator is a Next.js 16 app for FIRST Robotics Competition teams. It combines chat, document-backed retrieval, live FRC data lookups, and an admin surface for managing indexed documents and reports.
 
-## Getting Started
+## Development
 
-First, run the development server:
+Install dependencies and start the dev server:
 
 ```bash
+npm install
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
 Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Production
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+Build and run:
 
-## Learn More
+```bash
+npm run build
+npm start
+```
 
-To learn more about Next.js, take a look at the following resources:
+`npm start` uses `scripts/start-next.js` so it can normalize the port handling used by PM2 and similar process managers.
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## Analytics and Consent
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+Curator loads Google Analytics only after the visitor accepts analytics cookies from the consent banner.
 
-## Deploy on Vercel
+Required env if you want analytics enabled:
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+```bash
+NEXT_PUBLIC_GOOGLE_ANALYTICS_ID=G-XXXXXXXXXX
+```
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## Sentry
+
+Curator uses `@sentry/nextjs` for browser/server error monitoring, tracing, logs, and Session Replay.
+
+Required runtime env:
+
+```bash
+NEXT_PUBLIC_SENTRY_DSN=https://...
+```
+
+Recommended server env:
+
+```bash
+SENTRY_DSN=https://...
+SENTRY_ENVIRONMENT=production
+SENTRY_TRACES_SAMPLE_RATE=0.1
+NEXT_PUBLIC_SENTRY_TRACES_SAMPLE_RATE=0.1
+```
+
+Optional Session Replay env overrides:
+
+```bash
+NEXT_PUBLIC_SENTRY_REPLAY_SESSION_SAMPLE_RATE=1
+NEXT_PUBLIC_SENTRY_REPLAY_ON_ERROR_SAMPLE_RATE=1
+```
+
+By default, when `NEXT_PUBLIC_SENTRY_DSN` is configured, Curator records full browser sessions and error-triggered replays, and sends them through the app's `/monitoring` tunnel route to reduce ad-blocker loss.
+
+Optional build-time source map upload:
+
+```bash
+SENTRY_AUTH_TOKEN=sntrys_...
+SENTRY_ORG=your-org-slug
+SENTRY_PROJECT=your-project-slug
+```
+
+If those three build-time vars are missing, Curator still builds and runs, but source map upload is disabled.
+
+Quick verification:
+
+1. Start the app with a DSN configured.
+2. Trigger a client error from the UI or call `throw new Error("Sentry test error")` in a browser click handler.
+3. Confirm the issue appears in Sentry with the correct environment.
+
+## Search Indexing
+
+Curator now exposes:
+
+- `robots.txt` via `app/robots.ts`
+- `sitemap.xml` via `app/sitemap.ts`
+- Open Graph metadata and share image routes
+- an IndexNow key file at `/indexnow-key.txt`
+
+Required env vars for IndexNow:
+
+```bash
+INDEXNOW_KEY=your-generated-key
+NEXT_PUBLIC_SITE_URL=https://curatorfrc.com
+```
+
+Manual submission:
+
+```bash
+npm run indexnow:submit
+```
+
+Custom URLs:
+
+```bash
+npm run indexnow:submit -- /privacy-policy /terms-of-service
+```
+
+Optional startup submission:
+
+```bash
+INDEXNOW_SUBMIT_ON_START=true
+INDEXNOW_SUBMIT_DELAY_MS=5000
+```
+
+That startup hook runs once per process start and is intended for deploy/restart workflows, not per-request notifications.
+
+## Google Search Console
+
+Curator supports Search Console verification through the App Router metadata API.
+
+Set:
+
+```bash
+NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION=google-site-verification-token
+```
+
+That value is emitted as the Google site verification meta tag from `app/layout.tsx`.
+
+## Notes
+
+- Admin pages, admin APIs, and shared chat pages are marked `noindex` and also emit `X-Robots-Tag` headers.
+- The support form writes to `support_requests`, and the admin ops page reads `support_requests` plus `app_logs`.
+- Database-enforced RLS is forced on app data tables that use policy-based access control, including conversations, messages, reports, support requests, app logs, documents, document chunks, banned IPs, and rate-limit buckets. Auth/account tables still rely on framework-level access control.
+- Admin stats are cached for 5 minutes through `lib/admin-stats.ts`, admin chats/users/reports are cached for 60 seconds through `lib/admin-cache.ts`, admin documents are cached for 5 minutes through `lib/admin-cache.ts`, public markdown pages are cached for 1 hour through `lib/markdown.ts`, and unauthenticated public shared-chat reads are cached for 5 minutes through `lib/public-conversations.ts`.
+- Rate limiting remains Postgres-backed through `lib/rate-limit.ts` and now covers mutating and high-cost routes across chat, conversations, reports, support, admin moderation, document operations, and document access. Convex is not configured in this repo.
+- Cookie preferences can be changed later from the in-app settings menu; revoking analytics consent clears GA cookies and disables future analytics collection.
+- If you change features that affect privacy, cookies, data retention, or third-party services, update `public/privacy-policy.md` and `public/terms-of-service.md` in the same change.

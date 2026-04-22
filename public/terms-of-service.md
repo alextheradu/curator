@@ -1,7 +1,7 @@
 # Terms of Service
 
 **Curator — FRC AI Assistant**
-**Last updated: April 20, 2026**
+**Last updated: April 22, 2026**
 
 ## 1. Acceptance of Terms
 
@@ -9,7 +9,13 @@ By accessing or using Curator ("the Service"), you agree to be bound by these Te
 
 ## 2. Description of Service
 
-Curator is an AI-powered assistant designed to help FRC teams find information from official game manuals, team updates, team reference material, awards documentation, live event data, and related FIRST Robotics Competition resources. The Service uses large language models, retrieval-augmented generation (RAG), and third-party FRC data APIs to provide answers grounded in uploaded documents and current competition data.
+Curator is an AI-powered assistant designed to help FRC teams find information from official game manuals, team updates, team reference material, awards documentation, and related FIRST Robotics Competition resources. The Service uses large language models, retrieval-augmented generation (RAG), and live web search when needed to provide answers grounded in uploaded documents and current competition data.
+
+The Service also includes a support channel for bug reports, account/privacy questions, and feature requests, and uses operational monitoring tools, including browser session replay for debugging, to detect errors, measure performance, and diagnose failures.
+
+The Service may also be installed to your device home screen as a web app. Installed/offline behavior is still subject to browser support and the limits described in the Privacy Policy.
+
+Public pages of the Service may also notify participating search engines when those public URLs are added, updated, or removed so that search results can refresh more quickly.
 
 ## 3. No Warranty — AI Limitations
 
@@ -23,11 +29,12 @@ You agree not to:
 - Upload content you do not have rights to (document uploads are admin-only)
 - Impersonate FIRST, its partners, or any event officials
 - Attempt to circumvent authentication or rate limiting
+- Submit sensitive credentials, secrets, or other highly confidential data through chat messages, shared chats, or support requests unless you are authorized to disclose that information and accept the associated risk
 - Publish or share chat links containing private, confidential, or sensitive information unless you are authorized to disclose that information
 
 ## 5. User Accounts
 
-You may use the Service as a guest for a limited number of messages. Creating an account via Google OAuth is required for continued use, to persist conversation history, and to use public chat sharing. If you choose to make a chat public, anyone with that link may view the conversation until you disable sharing or delete the chat. You are responsible for maintaining the security of your account and for any content you choose to share publicly.
+You may use the Service as a guest for a limited number of messages. Creating an account via Google OAuth is required for continued use, to persist conversation history, to save account-level defaults such as your preferred chat style, and to use public chat sharing. If you choose to make a chat public, anyone with that link may view the conversation until you disable sharing or delete the chat. You are responsible for maintaining the security of your account and for any content you choose to share publicly.
 
 ## 6. Intellectual Property
 
@@ -37,7 +44,9 @@ You may use the Service as a guest for a limited number of messages. Creating an
 
 ## 7. Privacy
 
-Your use of the Service is also governed by our [Privacy Policy](/privacy-policy). By using the Service, you consent to the data practices described therein, including the use of analytics technologies described in that policy.
+Your use of the Service is also governed by our [Privacy Policy](/privacy-policy). By using the Service, you consent to the necessary cookies and operational processing described there. Optional analytics cookies are used only if you choose to accept them through the cookie banner or equivalent controls.
+
+If you later change your analytics preference through the in-app cookie settings, we will honor that updated choice going forward.
 
 ## 8. Termination
 
@@ -53,4 +62,4 @@ We may update these Terms at any time. Continued use of the Service after change
 
 ## 11. Contact
 
-For questions about these Terms, open an issue on the project repository or contact the operator directly.
+For questions about these Terms, use the Support section in Settings, the [Support page](/support), open an issue on the project repository, or contact the operator directly.

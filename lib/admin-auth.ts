@@ -1,16 +1,9 @@
 import { auth } from "@/auth";
-import { db } from "@/lib/db";
+import { withSystemDbAccess } from "@/lib/db/access";
 import { bannedIps } from "@/lib/db/schema";
+import { getClientIp } from "@/lib/request-context";
 import { eq } from "drizzle-orm";
 import { NextRequest, NextResponse } from "next/server";
-
-function getClientIp(req: NextRequest): string {
-  return (
-    req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ??
-    req.headers.get("x-real-ip") ??
-    "unknown"
-  );
-}
 
 export async function requireAdmin(req: NextRequest): Promise<
   { ok: true; userId: string; isSuperAdmin: boolean } | { ok: false; response: NextResponse }
@@ -18,11 +11,11 @@ export async function requireAdmin(req: NextRequest): Promise<
   const ip = getClientIp(req);
 
   if (ip !== "unknown") {
-    const [ban] = await db
+    const [ban] = await withSystemDbAccess((tx) => tx
       .select({ ip: bannedIps.ip })
       .from(bannedIps)
       .where(eq(bannedIps.ip, ip))
-      .limit(1);
+      .limit(1));
     if (ban) {
       return { ok: false, response: NextResponse.json({ error: "Forbidden" }, { status: 403 }) };
     }
@@ -40,7 +33,7 @@ export async function requireAdmin(req: NextRequest): Promise<
   };
 }
 
-export async function requireAuth(req: NextRequest): Promise<
+export async function requireAuth(): Promise<
   { ok: true; userId: string } | { ok: false; response: NextResponse }
 > {
   const session = await auth();

@@ -47,27 +47,36 @@ function ChatsContent() {
 
   return (
     <>
-      <div className="relative min-h-svh">
-        <div className="pointer-events-none absolute inset-x-0 top-0 h-64 bg-[radial-gradient(circle_at_top,_color-mix(in_oklab,_#0066B3_10%,_transparent)_0%,_transparent_70%)]" />
+      <div className="relative">
         <div className="relative mx-auto max-w-5xl space-y-6 px-4 py-6 sm:px-6 sm:py-8">
-          <div>
-            <h1 className="text-2xl font-semibold tracking-tight text-foreground">Chats</h1>
+          <div className="space-y-2">
+            <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
+              Admin panel
+            </p>
+            <h1 className="text-3xl font-semibold tracking-tight text-foreground">Chats</h1>
             {searchParams.get("userId") && (
-              <p className="mt-1 text-[13px] text-muted-foreground">Filtered by user</p>
+              <p className="mt-1 text-[13px] leading-6 text-muted-foreground">Filtered by user.</p>
+            )}
+            {!searchParams.get("userId") && (
+              <p className="mt-1 text-[13px] leading-6 text-muted-foreground">
+                Inspect conversation history, jump into reported threads, and search by title.
+              </p>
             )}
           </div>
 
-          <div className="relative w-64">
+          <div className="rounded-[1.5rem] border border-border/60 bg-card/70 p-2 shadow-[var(--shadow-card)]">
+            <div className="relative w-full max-w-xs">
             <Search className="absolute left-3 top-1/2 size-3.5 -translate-y-1/2 text-muted-foreground" />
             <Input
-              className="h-8 rounded-xl pl-8 text-[13px]"
+              className="h-10 rounded-[1rem] border-white/6 bg-background/45 pl-8 text-[13px]"
               placeholder="Search titles..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
             />
+            </div>
           </div>
 
-          <div className="overflow-hidden rounded-[1.75rem] border border-border/60 bg-card shadow-[var(--shadow-card)]">
+          <div className="overflow-hidden rounded-[1.75rem] border border-border/60 bg-card/72 shadow-[var(--shadow-card)]">
             {convs.length === 0 ? (
               <p className="px-5 py-10 text-center text-[13px] text-muted-foreground">
                 No conversations found.

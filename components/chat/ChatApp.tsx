@@ -58,7 +58,9 @@ export function ChatApp({ requestedConversationId }: ChatAppProps) {
   const isAuthenticated = !!session?.user?.id;
 
   const {
+    defaultChatMode,
     setActiveConversation,
+    setDefaultChatMode,
     deleteConversation,
     replaceConversations,
     upsertConversation,
@@ -70,6 +72,17 @@ export function ChatApp({ requestedConversationId }: ChatAppProps) {
   const [isShareUpdating, setIsShareUpdating] = useState(false);
   const [shareDialogConversationId, setShareDialogConversationId] = useState<string | null>(null);
   const previousAuthRef = useRef(false);
+
+  useEffect(() => {
+    if (!isAuthenticated) {
+      return;
+    }
+
+    const accountChatMode = session?.user?.defaultChatMode ?? "veteran";
+    if (defaultChatMode !== accountChatMode) {
+      setDefaultChatMode(accountChatMode);
+    }
+  }, [defaultChatMode, isAuthenticated, session?.user?.defaultChatMode, setDefaultChatMode]);
 
   const navigateToConversation = useCallback((conversationId: string, replace = false) => {
     const href = `/c/${conversationId}`;
@@ -92,7 +105,8 @@ export function ChatApp({ requestedConversationId }: ChatAppProps) {
       access: detail.access,
       conversation: normalizeConversation(
         detail.conversation,
-        messageRows.map((message) => normalizeMessage(message))
+        messageRows.map((message) => normalizeMessage(message)),
+        useChatStore.getState().defaultChatMode,
       ),
     };
   }, []);
@@ -117,7 +131,11 @@ export function ChatApp({ requestedConversationId }: ChatAppProps) {
           const rows = await fetchConversationList();
           if (cancelled) return;
 
-          replaceConversations(rows.map((conversation) => normalizeConversation(conversation)));
+          replaceConversations(
+            rows.map((conversation) =>
+              normalizeConversation(conversation, [], useChatStore.getState().defaultChatMode)
+            )
+          );
 
           if (requestedConversationId) {
             const loaded = await readConversation(requestedConversationId);
@@ -203,6 +221,7 @@ export function ChatApp({ requestedConversationId }: ChatAppProps) {
     };
   }, [
     clearAllConversations,
+    defaultChatMode,
     isAuthenticated,
     navigateToConversation,
     readConversation,
@@ -210,6 +229,7 @@ export function ChatApp({ requestedConversationId }: ChatAppProps) {
     requestedConversationId,
     router,
     setActiveConversation,
+    setDefaultChatMode,
     status,
     upsertConversation,
   ]);
@@ -302,7 +322,11 @@ export function ChatApp({ requestedConversationId }: ChatAppProps) {
         .getState()
         .conversations
         .find((conversation) => conversation.id === conversationId);
-      const updated = normalizeConversation(await updateConversationRequest(conversationId, { isPublic: makePublic }));
+      const updated = normalizeConversation(
+        await updateConversationRequest(conversationId, { isPublic: makePublic }),
+        [],
+        useChatStore.getState().defaultChatMode,
+      );
 
       upsertConversation({
         ...updated,
@@ -343,6 +367,7 @@ export function ChatApp({ requestedConversationId }: ChatAppProps) {
         const updated = normalizeConversation(
           await updateConversationRequest(conversationId, { title: nextTitle }),
           currentConversation.messages,
+          useChatStore.getState().defaultChatMode,
         );
         upsertConversation(updated);
       }

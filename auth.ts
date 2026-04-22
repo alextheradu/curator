@@ -1,9 +1,10 @@
 import NextAuth from "next-auth";
 import Google from "next-auth/providers/google";
 import { DrizzleAdapter } from "@auth/drizzle-adapter";
+import { pgTable, text, timestamp } from "drizzle-orm/pg-core";
 import { db } from "@/lib/db";
-import { users, accounts, sessions, verificationTokens } from "@/lib/db/schema";
-import { eq } from "drizzle-orm";
+import { DEFAULT_CHAT_MODE, readUserAccountSettings } from "@/lib/account-settings";
+import { accounts, sessions, verificationTokens } from "@/lib/db/schema";
 
 type GoogleProfile = {
   sub: string;
@@ -20,9 +21,19 @@ function isAdminEmail(email?: string | null) {
     .includes((email ?? "").toLowerCase());
 }
 
+// Keep Auth.js compatible with live databases that have not applied newer
+// app-specific columns on `users` yet.
+const authAdapterUsers = pgTable("users", {
+  id: text("id").primaryKey(),
+  name: text("name"),
+  email: text("email").notNull(),
+  emailVerified: timestamp("email_verified", { mode: "date" }),
+  image: text("image"),
+});
+
 export const { handlers, auth, signIn, signOut } = NextAuth({
   adapter: DrizzleAdapter(db, {
-    usersTable: users,
+    usersTable: authAdapterUsers,
     accountsTable: accounts,
     sessionsTable: sessions,
     verificationTokensTable: verificationTokens,
@@ -49,24 +60,21 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       if (user) token.id = user.id;
       const email = user?.email ?? token.email;
 
-      // Superadmin always wins — no DB check needed
+      if ((user || trigger === "update") && token.id) {
+        const settings = await readUserAccountSettings(token.id as string);
+        token.isAdmin = settings.isAdmin;
+        token.defaultChatMode = settings.defaultChatMode;
+      }
+
       if (isAdminEmail(email)) {
         token.isAdmin = true;
         token.isSuperAdmin = true;
+        token.defaultChatMode ??= DEFAULT_CHAT_MODE;
         return token;
       }
 
-      // Check DB admin flag on sign-in or explicit update trigger
-      if ((user || trigger === "update") && token.id) {
-        const [row] = await db
-          .select({ isAdmin: users.isAdmin })
-          .from(users)
-          .where(eq(users.id, token.id as string))
-          .limit(1);
-        token.isAdmin = row?.isAdmin ?? false;
-      }
-
       token.isSuperAdmin = false;
+      token.defaultChatMode ??= DEFAULT_CHAT_MODE;
       return token;
     },
     session({ session, token }) {
@@ -74,6 +82,8 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         session.user.id = token.id as string;
         session.user.isAdmin = Boolean(token.isAdmin);
         session.user.isSuperAdmin = Boolean(token.isSuperAdmin);
+        session.user.defaultChatMode =
+          (token.defaultChatMode as "rookie" | "veteran" | undefined) ?? DEFAULT_CHAT_MODE;
       }
       return session;
     },

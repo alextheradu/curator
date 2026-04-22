@@ -1,0 +1,1 @@
+ALTER TABLE "users" ADD COLUMN "default_chat_mode" text DEFAULT 'veteran' NOT NULL;

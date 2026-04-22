@@ -1,10 +1,13 @@
 "use client";
 
+import { lazy, Suspense } from "react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
-import { Prism as SyntaxHighlighter } from "react-syntax-highlighter";
-import { oneDark } from "react-syntax-highlighter/dist/esm/styles/prism";
 import { cn, normalizeAssistantMarkdown } from "@/lib/utils";
+
+const LazyCodeBlock = lazy(() =>
+  import("./LazyCodeBlock").then((m) => ({ default: m.LazyCodeBlock }))
+);
 
 interface Props {
   content: string;
@@ -27,14 +30,17 @@ export function AssistantMarkdown({
             const isBlock = !!langMatch;
 
             return isBlock ? (
-              <SyntaxHighlighter
-                style={oneDark}
-                language={langMatch[1]}
-                PreTag="div"
-                className="!my-3 !rounded-xl !border !border-border/30 !text-xs"
+              <Suspense
+                fallback={
+                  <pre className="my-3 rounded-xl border border-border/30 bg-muted/30 p-3 text-xs overflow-x-auto">
+                    <code>{String(children).replace(/\n$/, "")}</code>
+                  </pre>
+                }
               >
-                {String(children).replace(/\n$/, "")}
-              </SyntaxHighlighter>
+                <LazyCodeBlock language={langMatch[1]}>
+                  {String(children).replace(/\n$/, "")}
+                </LazyCodeBlock>
+              </Suspense>
             ) : (
               <code
                 className="rounded-md bg-muted px-1.5 py-0.5 font-mono text-[12px]"

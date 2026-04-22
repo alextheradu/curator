@@ -19,8 +19,11 @@ export function InputBar({ onSend, onStop, disabled, isStreaming }: Props) {
   useEffect(() => {
     const textarea = textareaRef.current;
     if (!textarea) return;
-    textarea.style.height = "auto";
-    textarea.style.height = `${Math.min(textarea.scrollHeight, 200)}px`;
+    const id = requestAnimationFrame(() => {
+      textarea.style.height = "auto";
+      textarea.style.height = `${Math.min(textarea.scrollHeight, 200)}px`;
+    });
+    return () => cancelAnimationFrame(id);
   }, [value]);
 
   // Auto-focus on mount — desktop only (mobile would pop the keyboard immediately)
@@ -75,12 +78,10 @@ export function InputBar({ onSend, onStop, disabled, isStreaming }: Props) {
         />
 
         <div className="flex items-center justify-between px-3 pb-3 sm:pb-2">
-          {/* Left: hint — hidden on mobile */}
           <p className="hidden text-[11px] text-muted-foreground/50 select-none sm:block">
             Enter to send · Shift+Enter for newline
           </p>
 
-          {/* Right: stop or send */}
           {isStreaming ? (
             <button
               type="button"

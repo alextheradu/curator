@@ -60,9 +60,8 @@ export function MessageBubble({ message, isStreaming, onOpenCitation }: Props) {
           isUser ? "flex flex-col items-end gap-2" : "flex items-start gap-3"
         )}
       >
-        {/* Assistant icon */}
         {isAssistant && (
-          <div className="flex h-[calc(13px*1.65)] shrink-0 items-center">
+          <div className="hidden h-[calc(13px*1.65)] shrink-0 items-center sm:flex">
             <div className="flex size-7 items-center justify-center rounded-lg bg-muted/60 text-muted-foreground ring-1 ring-border/50">
               <SparklesIcon size={13} />
             </div>
@@ -74,7 +73,6 @@ export function MessageBubble({ message, isStreaming, onOpenCitation }: Props) {
           <div className="flex min-w-0 flex-1 flex-col gap-2">
             <AssistantMarkdown content={normalizedContent} isStreaming={isStreaming} />
 
-            {/* Citations */}
             {message.citations && message.citations.length > 0 && (
               <div className="flex flex-wrap gap-1.5 pt-1">
                 {message.citations.map((citation, index) => (
@@ -104,9 +102,8 @@ export function MessageBubble({ message, isStreaming, onOpenCitation }: Props) {
             )}
           </div>
         ) : (
-          /* User bubble */
           <div className="flex items-end gap-1.5">
-            <div className="w-fit max-w-[min(80vw,56ch)] overflow-hidden break-words rounded-2xl rounded-br-lg border border-border/50 bg-muted px-3.5 py-2.5 text-[13px] leading-[1.65]">
+            <div className="w-fit max-w-[min(88vw,56ch)] overflow-hidden break-words rounded-[1.35rem] rounded-br-lg border border-border/50 bg-muted px-3.5 py-2.5 text-[14px] leading-[1.65] sm:max-w-[min(80vw,56ch)] sm:rounded-2xl sm:text-[13px]">
               <p className="whitespace-pre-wrap">{normalizedContent}</p>
             </div>
             <button

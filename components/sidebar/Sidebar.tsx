@@ -1,29 +1,22 @@
 "use client";
 
+import Image from "next/image";
 import { isToday, isYesterday, subWeeks, subMonths } from "date-fns";
 import { useMemo, useState } from "react";
 import { motion } from "framer-motion";
 import {
-  ChevronUpIcon,
   MessageCircleIcon,
   MessageSquareIcon,
   PanelLeftIcon,
   PenSquareIcon,
   SearchIcon,
-  Shield,
+  Settings,
   XIcon,
 } from "lucide-react";
-import { useTheme } from "next-themes";
-import { signIn, signOut, useSession } from "next-auth/react";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
+import { signIn, useSession } from "next-auth/react";
 import {
   Dialog,
+  DialogClose,
   DialogContent,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
@@ -86,9 +79,9 @@ function groupConversationsByDate(conversations: Conversation[]) {
   );
 }
 
-function emailToHue(email: string): number {
+function stringToHue(value: string): number {
   let hash = 0;
-  for (const char of email) hash = char.charCodeAt(0) + ((hash << 5) - hash);
+  for (const char of value) hash = char.charCodeAt(0) + ((hash << 5) - hash);
   return Math.abs(hash) % 360;
 }
 
@@ -108,17 +101,19 @@ export function AppSidebar({
   onDeleteConversation,
 }: AppSidebarProps) {
   const { data: session } = useSession();
-  const { resolvedTheme, setTheme } = useTheme();
+  const userLabel = session?.user?.name?.trim() || session?.user?.email || "Signed in";
+  const avatarHueSource = session?.user?.name?.trim() || session?.user?.email || "";
+  const avatarUrl = session?.user?.image?.trim() || "";
   const { toggleSidebar, setOpenMobile } = useSidebar();
   const [searchOpen, setSearchOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [isSearchFocused, setIsSearchFocused] = useState(false);
+  const [avatarLoadFailed, setAvatarLoadFailed] = useState(false);
   const {
     conversations,
     activeConversationId,
+    setSettingsOpen,
   } = useChatStore();
-
-  const isAdmin = !!session?.user?.isAdmin;
 
   const grouped = groupConversationsByDate(conversations);
 
@@ -171,7 +166,7 @@ export function AppSidebar({
           }
         }}
       >
-        <DialogContent className="max-w-[580px] gap-0 overflow-hidden rounded-[1.6rem] border border-white/6 bg-[#2f2f2f] p-0 text-white shadow-[0_28px_90px_rgba(0,0,0,0.42)] sm:max-h-[430px]">
+        <DialogContent className="max-w-[calc(100vw-2rem)] gap-0 overflow-hidden rounded-[1.6rem] border border-white/6 bg-[#2f2f2f] p-0 text-white shadow-[0_28px_90px_rgba(0,0,0,0.42)] [&>button]:hidden sm:max-h-[430px] sm:max-w-[580px]">
           <div className="border-b border-white/8 px-5 py-4">
             <div className="flex items-center gap-3">
               <motion.div
@@ -196,14 +191,15 @@ export function AppSidebar({
                   className="h-auto border-0 bg-transparent px-3 py-2 text-[16px] font-medium text-white placeholder:text-white/55 focus-visible:ring-0"
                 />
               </motion.div>
-              <button
-                type="button"
-                onClick={() => setSearchOpen(false)}
-                className="flex size-8 shrink-0 items-center justify-center rounded-full text-white/60 transition-colors hover:bg-white/5 hover:text-white"
-                aria-label="Close search"
-              >
-                <XIcon className="size-4.5" />
-              </button>
+              <DialogClose asChild>
+                <button
+                  type="button"
+                  className="flex size-10 shrink-0 items-center justify-center rounded-full border border-white/8 bg-white/[0.04] text-white/70 transition-colors hover:bg-white/[0.08] hover:text-white focus:outline-none focus:ring-2 focus:ring-white/25"
+                  aria-label="Close search"
+                >
+                  <XIcon className="size-4" />
+                </button>
+              </DialogClose>
             </div>
           </div>
 
@@ -291,6 +287,7 @@ export function AppSidebar({
                   className="pointer-events-none absolute inset-0 flex size-8 items-center justify-center rounded-md opacity-0 group-data-[collapsible=icon]:pointer-events-auto group-data-[collapsible=icon]:group-hover/logo:opacity-100 hover:bg-sidebar-accent"
                   onClick={() => toggleSidebar()}
                   title="Open sidebar"
+                  aria-label="Open sidebar"
                 >
                   <PanelLeftIcon className="size-4" />
                 </button>
@@ -387,65 +384,63 @@ export function AppSidebar({
 
         {/* Footer — user nav */}
         <SidebarFooter className="border-t border-sidebar-border pt-2 pb-3">
-          {isAdmin && (
-            <SidebarMenu>
-              <SidebarMenuItem>
-                <SidebarMenuButton
-                  className="rounded-lg text-[13px] text-sidebar-foreground/50 hover:text-sidebar-foreground"
-                  onClick={() => window.location.href = "/admin/documents"}
-                >
-                  <Shield className="size-4" />
-                  <span>Admin Panel</span>
-                </SidebarMenuButton>
-              </SidebarMenuItem>
-            </SidebarMenu>
-          )}
-
           <SidebarMenu>
             <SidebarMenuItem>
               {session?.user ? (
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <SidebarMenuButton
-                      className="h-8 px-2 rounded-lg bg-transparent text-sidebar-foreground/70 transition-colors duration-150 hover:text-sidebar-foreground data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground"
-                    >
+                <div className="flex items-center gap-1">
+                  <SidebarMenuButton
+                    className="h-8 flex-1 rounded-lg bg-transparent px-2 text-sidebar-foreground/70 transition-colors duration-150 hover:text-sidebar-foreground"
+                  >
+                    {avatarUrl && !avatarLoadFailed ? (
+                      <Image
+                        src={avatarUrl}
+                        alt={userLabel}
+                        className="size-5 shrink-0 rounded-full object-cover ring-1 ring-sidebar-border/50"
+                        width={20}
+                        height={20}
+                        unoptimized
+                        onError={() => setAvatarLoadFailed(true)}
+                      />
+                    ) : (
                       <div
                         className="size-5 shrink-0 rounded-full ring-1 ring-sidebar-border/50"
                         style={{
-                          background: `linear-gradient(135deg, oklch(0.35 0.08 ${emailToHue(session.user.email ?? "")}), oklch(0.25 0.05 ${emailToHue(session.user.email ?? "") + 40}))`,
+                          background: `linear-gradient(135deg, oklch(0.35 0.08 ${stringToHue(avatarHueSource)}), oklch(0.25 0.05 ${stringToHue(avatarHueSource) + 40}))`,
                         }}
                       />
-                      <span className="truncate text-[13px]">{session.user.email}</span>
-                      <ChevronUpIcon className="ml-auto size-3.5 text-sidebar-foreground/50" />
-                    </SidebarMenuButton>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent
-                    className="w-[var(--radix-popper-anchor-width)] rounded-lg border border-border/60 bg-card/95 backdrop-blur-xl shadow-[var(--shadow-float)]"
-                    side="top"
+                    )}
+                    <span className="truncate text-[13px]">{userLabel}</span>
+                  </SidebarMenuButton>
+
+                  <button
+                    type="button"
+                    className="flex size-8 shrink-0 items-center justify-center rounded-lg text-sidebar-foreground/50 transition-colors duration-150 hover:bg-sidebar-accent hover:text-sidebar-foreground"
+                    title="Settings"
+                    aria-label="Settings"
+                    onClick={() => setSettingsOpen(true)}
                   >
-                    <DropdownMenuItem
-                      className="cursor-pointer text-[13px]"
-                      onSelect={() => setTheme(resolvedTheme === "dark" ? "light" : "dark")}
-                    >
-                      Toggle {resolvedTheme === "dark" ? "light" : "dark"} mode
-                    </DropdownMenuItem>
-                    <DropdownMenuSeparator />
-                    <DropdownMenuItem
-                      className="cursor-pointer text-[13px]"
-                      onSelect={() => signOut({ callbackUrl: "/" })}
-                    >
-                      Sign out
-                    </DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
+                    <Settings className="size-4" />
+                  </button>
+                </div>
               ) : (
-                <SidebarMenuButton
-                  className="h-8 rounded-lg border border-sidebar-border text-[13px] text-sidebar-foreground/60 transition-colors hover:bg-sidebar-accent/50 hover:text-sidebar-foreground"
-                  onClick={() => signIn("google", { callbackUrl: "/" })}
-                  tooltip="Sign in"
-                >
-                  <span className="font-medium">Sign in with Google</span>
-                </SidebarMenuButton>
+                <div className="flex items-center gap-1">
+                  <SidebarMenuButton
+                    className="h-8 flex-1 rounded-lg border border-sidebar-border text-[13px] text-sidebar-foreground/60 transition-colors hover:bg-sidebar-accent/50 hover:text-sidebar-foreground"
+                    onClick={() => signIn("google", { callbackUrl: "/" })}
+                    tooltip="Sign in"
+                  >
+                    <span className="font-medium">Sign in with Google</span>
+                  </SidebarMenuButton>
+                  <button
+                    type="button"
+                    className="flex size-8 shrink-0 items-center justify-center rounded-lg text-sidebar-foreground/50 transition-colors duration-150 hover:bg-sidebar-accent hover:text-sidebar-foreground"
+                    title="Settings"
+                    aria-label="Settings"
+                    onClick={() => setSettingsOpen(true)}
+                  >
+                    <Settings className="size-4" />
+                  </button>
+                </div>
               )}
             </SidebarMenuItem>
           </SidebarMenu>

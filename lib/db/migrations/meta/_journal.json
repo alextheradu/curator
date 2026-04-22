@@ -36,6 +36,34 @@
       "when": 1776613824772,
       "tag": "0004_chilly_marvel_zombies",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1776805814866,
+      "tag": "0005_organic_xavin",
+      "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1776819600000,
+      "tag": "0006_candid_sentry_lockdown",
+      "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1776828600000,
+      "tag": "0007_sturdy_lockjaw",
+      "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1776866197432,
+      "tag": "0008_unique_ultimatum",
+      "breakpoints": true
     }
   ]
 }
