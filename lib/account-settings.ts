@@ -9,9 +9,12 @@ export const DEFAULT_CHAT_MODE: ChatMode = "veteran";
 type UserAccountSettings = {
   isAdmin: boolean;
   defaultChatMode: ChatMode;
+  preferredName: string | null;
+  teamNumber: number | null;
+  onboardedAt: Date | null;
 };
 
-function isMissingDefaultChatModeColumn(error: unknown) {
+function isMissingColumn(error: unknown) {
   return (
     typeof error === "object" &&
     error !== null &&
@@ -26,6 +29,9 @@ export async function readUserAccountSettings(userId: string): Promise<UserAccou
       .select({
         isAdmin: users.isAdmin,
         defaultChatMode: users.defaultChatMode,
+        preferredName: users.preferredName,
+        teamNumber: users.teamNumber,
+        onboardedAt: users.onboardedAt,
       })
       .from(users)
       .where(eq(users.id, userId))
@@ -34,9 +40,12 @@ export async function readUserAccountSettings(userId: string): Promise<UserAccou
     return {
       isAdmin: row?.isAdmin ?? false,
       defaultChatMode: row?.defaultChatMode ?? DEFAULT_CHAT_MODE,
+      preferredName: row?.preferredName ?? null,
+      teamNumber: row?.teamNumber ?? null,
+      onboardedAt: row?.onboardedAt ?? null,
     };
   } catch (error) {
-    if (!isMissingDefaultChatModeColumn(error)) {
+    if (!isMissingColumn(error)) {
       throw error;
     }
 
@@ -51,6 +60,9 @@ export async function readUserAccountSettings(userId: string): Promise<UserAccou
     return {
       isAdmin: row?.isAdmin ?? false,
       defaultChatMode: DEFAULT_CHAT_MODE,
+      preferredName: null,
+      teamNumber: null,
+      onboardedAt: null,
     };
   }
 }
@@ -72,11 +84,10 @@ export async function readUserDefaultChatMode(
 
     return row?.defaultChatMode ?? DEFAULT_CHAT_MODE;
   } catch (error) {
-    if (!isMissingDefaultChatModeColumn(error)) {
+    if (!isMissingColumn(error)) {
       throw error;
     }
 
     return DEFAULT_CHAT_MODE;
   }
 }
-

@@ -64,6 +64,9 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         const settings = await readUserAccountSettings(token.id as string);
         token.isAdmin = settings.isAdmin;
         token.defaultChatMode = settings.defaultChatMode;
+        token.preferredName = settings.preferredName;
+        token.teamNumber = settings.teamNumber;
+        token.onboardedAt = settings.onboardedAt;
       }
 
       if (isAdminEmail(email)) {
@@ -84,6 +87,11 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         session.user.isSuperAdmin = Boolean(token.isSuperAdmin);
         session.user.defaultChatMode =
           (token.defaultChatMode as "rookie" | "veteran" | undefined) ?? DEFAULT_CHAT_MODE;
+        session.user.preferredName = typeof token.preferredName === "string" ? token.preferredName : null;
+        session.user.teamNumber = typeof token.teamNumber === "number" ? token.teamNumber : null;
+        session.user.onboardedAt = token.onboardedAt
+          ? new Date(token.onboardedAt as Date | string)
+          : null;
       }
       return session;
     },

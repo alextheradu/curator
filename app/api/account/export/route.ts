@@ -27,6 +27,9 @@ export async function GET() {
           image: users.image,
           createdAt: users.createdAt,
           defaultChatMode: users.defaultChatMode,
+          preferredName: users.preferredName,
+          teamNumber: users.teamNumber,
+          onboardedAt: users.onboardedAt,
         })
         .from(users)
         .where(eq(users.id, session.user.id))
@@ -50,7 +53,13 @@ export async function GET() {
           .from(users)
           .where(eq(users.id, session.user.id))
           .limit(1)
-          .then((rows) => rows[0] ? { ...rows[0], defaultChatMode: DEFAULT_CHAT_MODE } : null));
+          .then((rows) => rows[0] ? {
+            ...rows[0],
+            defaultChatMode: DEFAULT_CHAT_MODE,
+            preferredName: null,
+            teamNumber: null,
+            onboardedAt: null,
+          } : null));
       }
 
       throw error;
@@ -97,6 +106,9 @@ export async function GET() {
     user,
     settings: {
       defaultChatMode: user?.defaultChatMode ?? DEFAULT_CHAT_MODE,
+      preferredName: user?.preferredName ?? null,
+      teamNumber: user?.teamNumber ?? null,
+      onboardedAt: user?.onboardedAt ?? null,
     },
     conversations: conversationRows.map((conversation) => ({
       ...conversation,

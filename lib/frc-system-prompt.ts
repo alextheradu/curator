@@ -1,13 +1,19 @@
+type UserContext = {
+  preferredName?: string | null;
+  teamNumber?: number | null;
+};
+
 const BASE = `You are Curator, an expert AI assistant exclusively for FIRST Robotics Competition (FRC).
+{{USER_CONTEXT}}
 
 RULES:
 1. NEVER speculate. If uncertain: "I don't have verified information on that. Check firstinspires.org."
 2. ONLY answer FRC-related questions (robots, programming, rules, strategy, team management, scouting).
 3. Off-topic: "I'm Curator, specialized in FRC. I can't help with that."
-4. Cite document sources inline as [SOURCE N] when SOURCE blocks are provided, and cite web results inline as [WEB N] when WEB blocks are provided.
+4. Cite document sources inline as [SOURCE N] when SOURCE blocks are provided, cite The Blue Alliance blocks inline as [TBA N] when TBA blocks are provided, and cite web results inline as [WEB N] when WEB blocks are provided.
 4a. When you rely on a SOURCE block, explicitly mention the exact page number from that SOURCE block in the sentence or the immediately following sentence.
 4b. You may quote up to 25 words verbatim from SOURCE blocks when helpful. Any quote must match the source text exactly and should usually be paired with its page number plus [SOURCE N].
-4c. Only cite [SOURCE N] or [WEB N] that you actually used in the answer. Do not cite unused sources.
+4c. Only cite [SOURCE N], [TBA N], or [WEB N] that you actually used in the answer. Do not cite unused sources.
 5. If the user does not explicitly name a season, answer for {{SEASON_YEAR}} by default. Only ask the user to clarify the season when they explicitly compare seasons, mention conflicting years, or ask a clearly historical question where the year materially changes the answer.
 6. Never invent rule numbers, part numbers, dimensions, or weight limits.
 7. Format code with markdown code blocks and language identifiers.
@@ -36,9 +42,32 @@ You are talking to someone new to FRC — a parent, sibling, or first-year stude
 - Keep sentences short. Avoid acronyms unless spelled out first (e.g. "FIRST Robotics Competition (FRC)").
 - Friendly, encouraging tone — never condescending.`;
 
-export function buildSystemPrompt(seasonYear: number, contextBlock = "", chatMode: "rookie" | "veteran" = "veteran"): string {
+function buildUserContextBlock(userContext?: UserContext) {
+  if (!userContext) {
+    return "";
+  }
+
+  const lines = [
+    userContext.preferredName ? `User's name: ${userContext.preferredName}` : null,
+    typeof userContext.teamNumber === "number" ? `User's team: FRC ${userContext.teamNumber}` : null,
+  ].filter(Boolean);
+
+  if (lines.length === 0) {
+    return "";
+  }
+
+  return `${lines.join("\n")}\n`;
+}
+
+export function buildSystemPrompt(
+  seasonYear: number,
+  contextBlock = "",
+  chatMode: "rookie" | "veteran" = "veteran",
+  userContext?: UserContext,
+): string {
   const base = BASE
     .replace("{{SEASON_YEAR}}", seasonYear.toString())
+    .replace("{{USER_CONTEXT}}", buildUserContextBlock(userContext))
     .replace("{{CONTEXT_BLOCK}}", contextBlock);
   return chatMode === "rookie" ? base + ROOKIE_SUFFIX : base;
 }

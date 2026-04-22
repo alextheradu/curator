@@ -1,5 +1,6 @@
 import type { Citation } from "@/lib/db/schema";
 import type { ConversationRecord, MessageRecord } from "@/lib/conversations";
+import type { Conversation } from "@/lib/store";
 
 type ConversationAccess = "owner" | "public";
 
@@ -78,4 +79,26 @@ export async function createConversationMessage(
   });
 
   return readJson<MessageRecord>(response);
+}
+
+export async function transferGuestConversation(conversation: Conversation) {
+  const created = await createConversation({
+    title: conversation.title,
+    seasonYear: conversation.seasonYear,
+  });
+
+  for (const message of conversation.messages) {
+    if (message.role === "system") {
+      continue;
+    }
+
+    await createConversationMessage(created.id, {
+      id: message.id,
+      role: message.role,
+      content: message.content,
+      citations: message.citations,
+    });
+  }
+
+  return created;
 }

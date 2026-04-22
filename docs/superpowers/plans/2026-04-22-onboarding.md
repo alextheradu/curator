@@ -36,7 +36,7 @@
 **Files:**
 - Modify: `lib/db/schema.ts`
 
-- [ ] **Step 1: Add three columns to the users table**
+- [x] **Step 1: Add three columns to the users table**
 
 In `lib/db/schema.ts`, replace the users table definition with:
 
@@ -58,7 +58,7 @@ export const users = pgTable("users", {
 });
 ```
 
-- [ ] **Step 2: Commit**
+- [x] **Step 2: Commit**
 
 ```bash
 git add lib/db/schema.ts
@@ -74,7 +74,7 @@ git commit -m "feat: add preferred_name, team_number, onboarded_at to users sche
 - Modify: `lib/account-settings.ts`
 - Modify: `auth.ts`
 
-- [ ] **Step 1: Extend next-auth types**
+- [x] **Step 1: Extend next-auth types**
 
 Replace the full content of `types/next-auth.d.ts`:
 
@@ -111,7 +111,7 @@ declare module "next-auth/jwt" {
 }
 ```
 
-- [ ] **Step 2: Extend UserAccountSettings in account-settings.ts**
+- [x] **Step 2: Extend UserAccountSettings in account-settings.ts**
 
 Replace `lib/account-settings.ts` with:
 
@@ -202,7 +202,7 @@ export async function readUserDefaultChatMode(
 }
 ```
 
-- [ ] **Step 3: Update auth.ts JWT + session callbacks**
+- [x] **Step 3: Update auth.ts JWT + session callbacks**
 
 In `auth.ts`, replace the `callbacks` block with:
 
@@ -248,7 +248,7 @@ In `auth.ts`, replace the `callbacks` block with:
   },
 ```
 
-- [ ] **Step 4: Commit**
+- [x] **Step 4: Commit**
 
 ```bash
 git add types/next-auth.d.ts lib/account-settings.ts auth.ts
@@ -262,7 +262,7 @@ git commit -m "feat: extend session JWT with preferredName, teamNumber, onboarde
 **Files:**
 - Create: `app/api/account/onboarding/route.ts`
 
-- [ ] **Step 1: Create the route**
+- [x] **Step 1: Create the route**
 
 Create `app/api/account/onboarding/route.ts`:
 
@@ -326,7 +326,7 @@ export async function PATCH(request: Request) {
 }
 ```
 
-- [ ] **Step 2: Commit**
+- [x] **Step 2: Commit**
 
 ```bash
 git add app/api/account/onboarding/route.ts
@@ -340,7 +340,7 @@ git commit -m "feat: add PATCH /api/account/onboarding endpoint"
 **Files:**
 - Create: `components/auth/OnboardingModal.tsx`
 
-- [ ] **Step 1: Create the component**
+- [x] **Step 1: Create the component**
 
 Create `components/auth/OnboardingModal.tsx`:
 
@@ -578,7 +578,7 @@ export function OnboardingModal({ open }: Props) {
 }
 ```
 
-- [ ] **Step 2: Commit**
+- [x] **Step 2: Commit**
 
 ```bash
 git add components/auth/OnboardingModal.tsx
@@ -593,7 +593,7 @@ git commit -m "feat: OnboardingModal 3-step Dialog (name, team, chat mode)"
 - Modify: `lib/conversation-api.ts`
 - Modify: `components/chat/ChatApp.tsx`
 
-- [ ] **Step 1: Add transferGuestConversation to conversation-api.ts**
+- [x] **Step 1: Add transferGuestConversation to conversation-api.ts**
 
 At the bottom of `lib/conversation-api.ts`, add:
 
@@ -622,7 +622,7 @@ export async function transferGuestConversation(
 }
 ```
 
-- [ ] **Step 2: Update ChatApp imports**
+- [x] **Step 2: Update ChatApp imports**
 
 At the top of `components/chat/ChatApp.tsx`, add `OnboardingModal` to imports:
 
@@ -633,7 +633,7 @@ import { transferGuestConversation } from "@/lib/conversation-api";
 
 (Keep all existing imports.)
 
-- [ ] **Step 3: Capture wasAuthenticated before ref update in ChatApp**
+- [x] **Step 3: Capture wasAuthenticated before ref update in ChatApp**
 
 In the `useEffect` in `ChatApp.tsx`, change:
 
@@ -656,7 +656,7 @@ To:
   previousAuthRef.current = isAuthenticated;
 ```
 
-- [ ] **Step 4: Add guest transfer inside bootstrap**
+- [x] **Step 4: Add guest transfer inside bootstrap**
 
 Inside `bootstrap`, right before the `isAuthenticated` block that calls `replaceConversations`, add a guest transfer check. Find the line `if (isAuthenticated) {` and insert above it:
 
@@ -715,7 +715,7 @@ With:
           return;
 ```
 
-- [ ] **Step 5: Show OnboardingModal when onboardedAt is null**
+- [x] **Step 5: Show OnboardingModal when onboardedAt is null**
 
 Near the bottom of `ChatApp`, just before the `if (viewMode === "loading")` return, add:
 
@@ -737,7 +737,7 @@ Then in the JSX return (the `SidebarProvider` block), wrap the existing content 
   );
 ```
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add lib/conversation-api.ts components/chat/ChatApp.tsx
@@ -754,7 +754,7 @@ git commit -m "feat: guest→auth chat transfer and wire OnboardingModal into Ch
 - Restore: `scripts/tba-mcp-server.mjs`
 - Restore: `.mcp.json`
 
-- [ ] **Step 1: Restore files from git history**
+- [x] **Step 1: Restore files from git history**
 
 ```bash
 git show 9212ff2:lib/tba-mcp-client.ts > lib/tba-mcp-client.ts
@@ -763,7 +763,7 @@ git show 9212ff2:lib/tba.ts > lib/tba.ts
 git show 9212ff2:.mcp.json > .mcp.json
 ```
 
-- [ ] **Step 2: Add MY_TEAM_PATTERN and userTeamNumber to lib/tba.ts**
+- [x] **Step 2: Add MY_TEAM_PATTERN and userTeamNumber to lib/tba.ts**
 
 At the top of `lib/tba.ts`, after the existing `TEAM_PATTERN` line, add:
 
@@ -805,7 +805,7 @@ With:
   const teamKey = teamNumber ? getTeamKey(teamNumber) : null;
 ```
 
-- [ ] **Step 3: Commit**
+- [x] **Step 3: Commit**
 
 ```bash
 git add lib/tba-mcp-client.ts lib/tba.ts scripts/tba-mcp-server.mjs .mcp.json
@@ -819,7 +819,7 @@ git commit -m "feat: restore TBA files and extend buildTbaContext with userTeamN
 **Files:**
 - Modify: `lib/frc-system-prompt.ts`
 
-- [ ] **Step 1: Add {{USER_CONTEXT}} placeholder and userContext param**
+- [x] **Step 1: Add {{USER_CONTEXT}} placeholder and userContext param**
 
 In `lib/frc-system-prompt.ts`, change the end of the `BASE` template from:
 
@@ -871,7 +871,7 @@ export function buildSystemPrompt(
 }
 ```
 
-- [ ] **Step 2: Commit**
+- [x] **Step 2: Commit**
 
 ```bash
 git add lib/frc-system-prompt.ts
@@ -885,7 +885,7 @@ git commit -m "feat: inject preferred name and team number into system prompt"
 **Files:**
 - Modify: `app/api/chat/route.ts`
 
-- [ ] **Step 1: Add TBA imports**
+- [x] **Step 1: Add TBA imports**
 
 At the top of `app/api/chat/route.ts`, add after existing imports:
 
@@ -893,7 +893,7 @@ At the top of `app/api/chat/route.ts`, add after existing imports:
 import { buildTbaContext, isTbaMcpEnabled, shouldRunTbaLookup } from "@/lib/tba";
 ```
 
-- [ ] **Step 2: Extract userTeamNumber and preferredName from session**
+- [x] **Step 2: Extract userTeamNumber and preferredName from session**
 
 Inside the `POST` handler, after the `const { messages, temperature, seasonYear, chatMode } = await request.json();` line, add:
 
@@ -902,7 +902,7 @@ Inside the `POST` handler, after the `const { messages, temperature, seasonYear,
   const userPreferredName = session?.user?.preferredName ?? null;
 ```
 
-- [ ] **Step 3: Add TBA context fetch after RAG/web blocks**
+- [x] **Step 3: Add TBA context fetch after RAG/web blocks**
 
 Inside the `stream`'s `start` callback, after the web search block and before the `buildSystemPrompt` call, add a TBA lookup block. Find the comment / line where `answerInputs` is built and insert before it:
 
@@ -939,7 +939,7 @@ Inside the `stream`'s `start` callback, after the web search block and before th
           }
 ```
 
-- [ ] **Step 4: Pass userContext to buildSystemPrompt**
+- [x] **Step 4: Pass userContext to buildSystemPrompt**
 
 Replace the existing `buildSystemPrompt` call:
 
@@ -959,7 +959,7 @@ With:
           );
 ```
 
-- [ ] **Step 5: Include TBA citations in filterUsedCitations**
+- [x] **Step 5: Include TBA citations in filterUsedCitations**
 
 Replace the `filterUsedCitations` call:
 
@@ -984,7 +984,7 @@ With:
           });
 ```
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add app/api/chat/route.ts
@@ -995,7 +995,7 @@ git commit -m "feat: inject TBA live context and user identity into chat complet
 
 ## Task 9: Run database migration
 
-- [ ] **Step 1: Push schema to database**
+- [x] **Step 1: Push schema to database**
 
 ```bash
 npx drizzle-kit push
@@ -1003,7 +1003,7 @@ npx drizzle-kit push
 
 Expected output: confirmation that `preferred_name`, `team_number`, `onboarded_at` columns were added to the `users` table. If asked to confirm destructive changes, answer `yes` only for the column additions (no drops should be needed).
 
-- [ ] **Step 2: Verify columns exist**
+- [x] **Step 2: Verify columns exist**
 
 ```bash
 npx drizzle-kit studio
@@ -1017,7 +1017,7 @@ psql $DATABASE_URL -c "\d users"
 
 Expected: columns `preferred_name text`, `team_number integer`, `onboarded_at timestamp` visible in the table.
 
-- [ ] **Step 3: Commit**
+- [x] **Step 3: Commit**
 
 ```bash
 git add lib/db/migrations/

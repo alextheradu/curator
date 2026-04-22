@@ -3,6 +3,7 @@ import { buildSystemPrompt } from "@/lib/frc-system-prompt";
 import { buildRagContext } from "@/lib/rag";
 import { buildWebContext, webSearch } from "@/lib/langsearch";
 import { DEFAULT_SEASON_YEAR } from "@/lib/seasons";
+import { buildTbaContext, shouldRunTbaLookup } from "@/lib/tba";
 import { shouldRunWebSearch } from "@/lib/web-search-decision";
 import type { Citation } from "@/lib/db/schema";
 import { GUEST_MESSAGE_COUNT_COOKIE_NAME, GUEST_MESSAGE_LIMIT } from "@/lib/app-cookies";
@@ -59,6 +60,7 @@ function joinNaturalList(parts: string[]) {
 
 function describeAnswerInputs(
   ragCitations: Citation[],
+  tbaCitations: Citation[],
   webCitations: Citation[],
 ) {
   const parts: string[] = [];
@@ -69,6 +71,10 @@ function describeAnswerInputs(
 
   if (webCitations.length > 0) {
     parts.push(`${webCitations.length} web ${pluralize(webCitations.length, "result")}`);
+  }
+
+  if (tbaCitations.length > 0) {
+    parts.push(`${tbaCitations.length} TBA ${pluralize(tbaCitations.length, "result")}`);
   }
 
   return parts.length > 0 ? joinNaturalList(parts) : "";
@@ -208,19 +214,23 @@ async function streamChatCompletion({
 function filterUsedCitations(
   assistantText: string,
   docCitations: Citation[],
+  tbaCitations: Citation[],
   webCitations: Citation[],
 ) {
   const docMap = new Map(docCitations.map((citation, index) => [index + 1, citation]));
+  const tbaMap = new Map(tbaCitations.map((citation, index) => [index + 1, citation]));
   const webMap = new Map(webCitations.map((citation, index) => [index + 1, citation]));
   const used: Citation[] = [];
   const seen = new Set<string>();
-  const pattern = /\[(SOURCE|WEB)\s+(\d+)\]/gi;
+  const pattern = /\[(SOURCE|TBA|WEB)\s+(\d+)\]/gi;
 
   for (const match of assistantText.matchAll(pattern)) {
     const kind = match[1]?.toUpperCase();
     const index = Number(match[2]);
     const citation = kind === "SOURCE"
       ? docMap.get(index)
+      : kind === "TBA"
+        ? tbaMap.get(index)
       : webMap.get(index);
 
     if (!citation) {
@@ -297,6 +307,7 @@ export async function POST(request: NextRequest) {
           let ragHitCount = 0;
           let ragBestScore = 0;
           let ragCitations: Citation[] = [];
+          let tbaCitations: Citation[] = [];
           const webCitations: Citation[] = [];
 
           if (lastUser) {
@@ -320,6 +331,28 @@ export async function POST(request: NextRequest) {
               });
             } catch {
               sendEvent({ type: "status", message: "Document search is unavailable, continuing without it..." });
+            }
+          }
+
+          if (lastUser && session?.user?.teamNumber && shouldRunTbaLookup(lastUser.content)) {
+            sendEvent({ type: "status", message: "Checking live team context from The Blue Alliance..." });
+
+            try {
+              const tbaContext = await buildTbaContext(lastUser.content, effectiveSeasonYear, {
+                userTeamNumber: session.user.teamNumber,
+                onStatus: (message) => sendEvent({ type: "status", message }),
+              });
+              contextBlock += tbaContext.contextBlock;
+              tbaCitations = tbaContext.citations;
+
+              if (tbaCitations.length > 0) {
+                sendEvent({
+                  type: "status",
+                  message: `Found ${tbaCitations.length} live TBA ${pluralize(tbaCitations.length, "result")}.`,
+                });
+              }
+            } catch {
+              sendEvent({ type: "status", message: "TBA lookup is unavailable, continuing without it..." });
             }
           }
 
@@ -351,7 +384,7 @@ export async function POST(request: NextRequest) {
             }
           }
 
-          const answerInputs = describeAnswerInputs(ragCitations, webCitations);
+          const answerInputs = describeAnswerInputs(ragCitations, tbaCitations, webCitations);
           sendEvent({
             type: "status",
             message: answerInputs
@@ -359,7 +392,10 @@ export async function POST(request: NextRequest) {
               : "Thinking through the answer from the available context...",
           });
 
-          const systemPrompt = buildSystemPrompt(effectiveSeasonYear, contextBlock, chatMode);
+          const systemPrompt = buildSystemPrompt(effectiveSeasonYear, contextBlock, chatMode, {
+            preferredName: session?.user?.preferredName ?? null,
+            teamNumber: session?.user?.teamNumber ?? null,
+          });
           const fullMessages = [{ role: "system", content: systemPrompt }, ...messages];
           const assistantText = await streamChatCompletion({
             apiKey,
@@ -370,7 +406,7 @@ export async function POST(request: NextRequest) {
           });
           sendEvent({
             type: "citations",
-            citations: filterUsedCitations(assistantText, ragCitations, webCitations),
+            citations: filterUsedCitations(assistantText, ragCitations, tbaCitations, webCitations),
           });
           sendDone();
           controller.close();

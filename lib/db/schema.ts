@@ -12,6 +12,9 @@ export const users = pgTable("users", {
   defaultChatMode: text("default_chat_mode", { enum: ["rookie", "veteran"] }).notNull().default("veteran"),
   ipBanned: boolean("ip_banned").notNull().default(false),
   bannedIp: text("banned_ip"),
+  preferredName: text("preferred_name"),
+  teamNumber: integer("team_number"),
+  onboardedAt: timestamp("onboarded_at"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
