@@ -1,19 +1,20 @@
 "use client";
 
 import { useState, useCallback } from "react";
-
-const TOS_KEY = "curator_tos_accepted";
-const GUEST_COUNT_KEY = "curator_guest_count";
-const GUEST_LIMIT = 3;
+import {
+  GUEST_MESSAGE_COUNT_COOKIE_NAME,
+  GUEST_MESSAGE_LIMIT,
+  TOS_ACCEPTED_COOKIE_NAME,
+} from "@/lib/app-cookies";
+import { readBrowserCookie, serializeCookie } from "@/lib/cookies";
 
 function initializeTosState(): boolean {
-  if (typeof window === "undefined") return false;
-  return localStorage.getItem(TOS_KEY) === "true";
+  return readBrowserCookie(TOS_ACCEPTED_COOKIE_NAME) === "true";
 }
 
 function initializeGuestCount(): number {
-  if (typeof window === "undefined") return 0;
-  return parseInt(localStorage.getItem(GUEST_COUNT_KEY) ?? "0", 10);
+  const parsed = Number.parseInt(readBrowserCookie(GUEST_MESSAGE_COUNT_COOKIE_NAME) ?? "0", 10);
+  return Number.isFinite(parsed) ? parsed : 0;
 }
 
 export function useGuestLimit(isAuthenticated: boolean) {
@@ -23,21 +24,20 @@ export function useGuestLimit(isAuthenticated: boolean) {
   const [showAuthModal, setShowAuthModal] = useState(false);
 
   const acceptTos = useCallback(() => {
-    localStorage.setItem(TOS_KEY, "true");
+    document.cookie = serializeCookie(TOS_ACCEPTED_COOKIE_NAME, "true");
     setTosAccepted(true);
     setShowTosModal(false);
   }, []);
 
   const consumeGuestTurn = useCallback((): boolean => {
     if (isAuthenticated) return true;
-    if (guestCount >= GUEST_LIMIT) {
+    if (guestCount >= GUEST_MESSAGE_LIMIT) {
       setShowAuthModal(true);
       return false;
     }
 
     const next = guestCount + 1;
     setGuestCount(next);
-    localStorage.setItem(GUEST_COUNT_KEY, String(next));
     return true;
   }, [guestCount, isAuthenticated]);
 

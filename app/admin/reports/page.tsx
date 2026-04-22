@@ -58,10 +58,13 @@ export default function AdminReportsPage() {
   }, [allReports, filter]);
 
   return (
-    <div className="min-h-svh bg-background">
+    <div className="min-h-svh bg-transparent">
       <div className="mx-auto flex w-full max-w-3xl flex-col gap-6 px-4 py-6 sm:px-6 sm:py-8">
         <div className="space-y-2">
-          <h1 className="text-2xl font-semibold tracking-tight text-foreground">Reports</h1>
+          <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
+            Admin panel
+          </p>
+          <h1 className="text-3xl font-semibold tracking-tight text-foreground">Reports</h1>
           <p className="text-[13px] leading-6 text-muted-foreground">
             Review flagged assistant replies, inspect chat context, and resolve the moderation queue.
           </p>
@@ -85,7 +88,7 @@ export default function AdminReportsPage() {
           ))}
         </div>
 
-        <div className="space-y-3 rounded-[1.75rem] border border-border/60 bg-card/55 p-4 shadow-[var(--shadow-card)]">
+        <div className="space-y-3 rounded-[1.75rem] border border-border/60 bg-card/60 p-4 shadow-[var(--shadow-card)]">
           {filteredReports.length === 0 ? (
             <div className="flex flex-col items-center gap-2 py-16">
               <Flag className="size-8 text-muted-foreground/40" />
@@ -96,7 +99,7 @@ export default function AdminReportsPage() {
               <button
                 key={report.id}
                 type="button"
-                className="flex w-full flex-col gap-3 rounded-2xl border border-border/60 bg-background/80 px-4 py-4 text-left transition-colors hover:bg-background"
+                className="flex w-full flex-col gap-3 rounded-2xl border border-border/60 bg-background/70 px-4 py-4 text-left transition-colors hover:bg-background/90"
                 onClick={() => setSelected(report)}
               >
                 <div className="flex flex-wrap items-center justify-between gap-3">

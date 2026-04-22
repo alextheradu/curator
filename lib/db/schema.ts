@@ -9,6 +9,7 @@ export const users = pgTable("users", {
   emailVerified: timestamp("email_verified", { mode: "date" }),
   image: text("image"),
   isAdmin: boolean("is_admin").notNull().default(false),
+  defaultChatMode: text("default_chat_mode", { enum: ["rookie", "veteran"] }).notNull().default("veteran"),
   ipBanned: boolean("ip_banned").notNull().default(false),
   bannedIp: text("banned_ip"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
@@ -89,6 +90,8 @@ export const bannedIps = pgTable("banned_ips", {
 });
 
 export const reportStatusEnum = pgEnum("report_status", ["pending", "reviewed", "dismissed"]);
+export const supportRequestStatusEnum = pgEnum("support_request_status", ["open", "closed"]);
+export const appLogLevelEnum = pgEnum("app_log_level", ["info", "warn", "error"]);
 
 export const reports = pgTable("reports", {
   id: uuid("id").primaryKey().defaultRandom(),
@@ -98,6 +101,41 @@ export const reports = pgTable("reports", {
   reason: text("reason").notNull(),
   status: reportStatusEnum("status").notNull().default("pending"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export const supportRequests = pgTable("support_requests", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  userId: text("user_id").references(() => users.id, { onDelete: "set null" }),
+  name: text("name"),
+  email: text("email"),
+  subject: text("subject").notNull(),
+  message: text("message").notNull(),
+  pagePath: text("page_path"),
+  userAgent: text("user_agent"),
+  ip: text("ip"),
+  status: supportRequestStatusEnum("status").notNull().default("open"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+export const appLogs = pgTable("app_logs", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  level: appLogLevelEnum("level").notNull().default("info"),
+  source: text("source").notNull(),
+  message: text("message").notNull(),
+  path: text("path"),
+  userId: text("user_id").references(() => users.id, { onDelete: "set null" }),
+  ip: text("ip"),
+  details: jsonb("details").$type<Record<string, unknown> | null>(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export const rateLimitBuckets = pgTable("rate_limit_buckets", {
+  key: text("key").primaryKey(),
+  scope: text("scope").notNull(),
+  count: integer("count").notNull().default(0),
+  windowStart: timestamp("window_start").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
 
 export type Citation = {
@@ -112,3 +150,5 @@ export type Citation = {
 
 export type DocumentScope = "season" | "general";
 export type ReportStatus = "pending" | "reviewed" | "dismissed";
+export type SupportRequestStatus = "open" | "closed";
+export type AppLogLevel = "info" | "warn" | "error";

@@ -2,6 +2,7 @@ import { create } from "zustand";
 import { persist } from "zustand/middleware";
 import { generateChatTitle } from "./utils";
 import type { Citation } from "./db/schema";
+import { DEFAULT_SEASON_YEAR } from "./seasons";
 
 export type Role = "user" | "assistant" | "system";
 
@@ -13,6 +14,8 @@ export interface Message {
   citations?: Citation[];
 }
 
+export type ChatMode = "rookie" | "veteran";
+
 export interface Conversation {
   id: string;
   title: string;
@@ -22,6 +25,7 @@ export interface Conversation {
   updatedAt: Date;
   seasonYear: number;
   isPublic: boolean;
+  chatMode: ChatMode;
 }
 
 interface ChatStore {
@@ -32,6 +36,7 @@ interface ChatStore {
   sidebarOpen: boolean;
   settingsOpen: boolean;
   temperature: number;
+  defaultChatMode: ChatMode;
   typingTitleConversationId: string | null;
   typingTitle: string;
 
@@ -47,9 +52,11 @@ interface ChatStore {
   clearConversation: (conversationId: string) => void;
   deleteConversation: (conversationId: string) => void;
   setSeasonYear: (conversationId: string, year: number) => void;
+  setDefaultChatMode: (mode: ChatMode) => void;
   setSidebarOpen: (open: boolean) => void;
   setSettingsOpen: (open: boolean) => void;
   setTemperature: (temp: number) => void;
+  resetSettings: () => void;
   replaceConversations: (convs: Conversation[]) => void;
   upsertConversation: (conversation: Conversation) => void;
   updateConversation: (conversationId: string, patch: Partial<Omit<Conversation, "id" | "messages">>) => void;
@@ -74,6 +81,7 @@ export const useChatStore = create<ChatStore>()(
       sidebarOpen: true,
       settingsOpen: false,
       temperature: 0.2,
+      defaultChatMode: "veteran",
       typingTitleConversationId: null,
       typingTitle: "",
 
@@ -88,8 +96,9 @@ export const useChatStore = create<ChatStore>()(
               messages: [],
               createdAt: new Date(),
               updatedAt: new Date(),
-              seasonYear: 2026,
+              seasonYear: DEFAULT_SEASON_YEAR,
               isPublic: false,
+              chatMode: s.defaultChatMode,
             },
             ...s.conversations,
           ]),
@@ -172,15 +181,32 @@ export const useChatStore = create<ChatStore>()(
         conversations: s.conversations.map((c) => c.id === id ? { ...c, seasonYear: year } : c),
       })),
 
+      setDefaultChatMode: (mode) => set((s) => ({
+        defaultChatMode: mode,
+        conversations: s.conversations.map((conversation) => ({
+          ...conversation,
+          chatMode: mode,
+        })),
+      })),
+
       setSidebarOpen: (open) => set({ sidebarOpen: open }),
       setSettingsOpen: (open) => set({ settingsOpen: open }),
       setTemperature: (temp) => set({ temperature: temp }),
+      resetSettings: () => set((s) => ({
+        temperature: 0.2,
+        defaultChatMode: "veteran",
+        conversations: s.conversations.map((conversation) => ({
+          ...conversation,
+          chatMode: "veteran",
+        })),
+      })),
 
       replaceConversations: (convs) => set((s) => {
         const existingMessages = new Map(s.conversations.map((conversation) => [conversation.id, conversation.messages]));
         const merged = sortConversations(
           convs.map((conversation) => ({
             ...conversation,
+            chatMode: conversation.chatMode ?? s.defaultChatMode,
             messages: existingMessages.get(conversation.id) ?? conversation.messages,
           }))
         );
@@ -198,6 +224,7 @@ export const useChatStore = create<ChatStore>()(
         const existing = s.conversations.find((item) => item.id === conversation.id);
         const mergedConversation = {
           ...conversation,
+          chatMode: conversation.chatMode ?? existing?.chatMode ?? s.defaultChatMode,
           messages: conversation.messages.length > 0
             ? conversation.messages
             : (existing?.messages ?? []),
@@ -248,6 +275,7 @@ export const useChatStore = create<ChatStore>()(
         activeConversationId: s.activeConversationId,
         temperature: s.temperature,
         sidebarOpen: s.sidebarOpen,
+        defaultChatMode: s.defaultChatMode,
       }),
     }
   )

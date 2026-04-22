@@ -1,12 +1,5 @@
 {
   "mcpServers": {
-    "tba": {
-      "command": "bash",
-      "args": [
-        "-lc",
-        "set -a; [ -f ./.env ] && . ./.env; [ -f ./.env.local ] && . ./.env.local; exec npx -y @withinfocus/tba-mcp-server"
-      ]
-    },
     "shadcn": {
       "command": "npx",
       "args": [

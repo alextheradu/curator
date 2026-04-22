@@ -1,9 +1,10 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
-import { BarChart3, FileText, MessageSquare, Shield, Users, Flag, ChevronLeft, PanelLeftIcon } from "lucide-react";
+import { BarChart3, FileText, MessageSquare, Users, Flag, ChevronLeft, PanelLeftIcon, Bug } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useSession } from "next-auth/react";
 import { Button } from "@/components/ui/button";
@@ -15,6 +16,7 @@ const NAV = [
   { href: "/admin/users", label: "Users", icon: Users, exact: false },
   { href: "/admin/chats", label: "Chats", icon: MessageSquare, exact: false },
   { href: "/admin/reports", label: "Reports", icon: Flag, exact: false },
+  { href: "/admin/ops", label: "Ops", icon: Bug, exact: false },
 ];
 
 function AdminNavLinks({
@@ -36,10 +38,10 @@ function AdminNavLinks({
             href={item.href}
             onClick={onNavigate}
             className={cn(
-              "flex items-center gap-2.5 rounded-xl px-3 py-2 text-[13px] transition-colors",
+              "flex items-center gap-3 rounded-[1rem] border px-3 py-2.5 text-[13px] transition-colors",
               active
-                ? "bg-[#0066B3]/10 text-[#0066B3]"
-                : "text-muted-foreground hover:bg-muted hover:text-foreground"
+                ? "border-white/8 bg-white/[0.07] text-foreground shadow-[var(--shadow-card)]"
+                : "border-transparent text-muted-foreground hover:border-white/6 hover:bg-white/[0.03] hover:text-foreground"
             )}
           >
             <item.icon className="size-4 shrink-0" />
@@ -63,56 +65,76 @@ export function AdminSidebar({ pendingReports }: { pendingReports?: number }) {
 
   return (
     <>
-      <div className="fixed inset-x-0 top-0 z-40 flex h-14 items-center gap-3 border-b border-border/60 bg-background/95 px-4 backdrop-blur md:hidden">
-        <Button
-          variant="ghost"
-          size="icon-sm"
-          className="rounded-xl"
-          onClick={() => setMobileOpen(true)}
-          aria-label="Open admin navigation"
-        >
-          <PanelLeftIcon className="size-4" />
-        </Button>
-        <div className="flex min-w-0 flex-1 items-center gap-2">
-          <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-[#0066B3]/10 text-[#0066B3]">
-            <Shield className="size-4" />
+      <div className="fixed inset-x-0 top-0 z-40 border-b border-white/6 bg-[#0f0f0f]/94 px-3 py-3 backdrop-blur md:hidden">
+        <div className="flex h-12 items-center gap-3 rounded-[1.35rem] border border-border/60 bg-card/78 px-3 shadow-[var(--shadow-card)]">
+          <Button
+            variant="ghost"
+            size="icon-sm"
+            className="rounded-xl border border-white/6 bg-white/[0.03]"
+            onClick={() => setMobileOpen(true)}
+            aria-label="Open admin navigation"
+          >
+            <PanelLeftIcon className="size-4" />
+          </Button>
+          <div className="flex min-w-0 flex-1 items-center gap-2.5">
+            <Image
+              src="/logo.png"
+              alt="Curator"
+              width={28}
+              height={28}
+              className="h-7 w-7 rounded-lg object-contain"
+            />
+            <div className="min-w-0">
+              <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
+                Curator
+              </p>
+              <span className="block truncate text-[13px] font-semibold text-foreground">Admin Panel</span>
+            </div>
           </div>
-          <span className="truncate text-[13px] font-semibold text-foreground">Admin Panel</span>
+          {pendingReports && pendingReports > 0 ? (
+            <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-red-500 px-1.5 text-[10px] font-bold text-white">
+              {pendingReports > 99 ? "99+" : pendingReports}
+            </span>
+          ) : null}
         </div>
-        {pendingReports && pendingReports > 0 ? (
-          <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-red-500 px-1.5 text-[10px] font-bold text-white">
-            {pendingReports > 99 ? "99+" : pendingReports}
-          </span>
-        ) : null}
       </div>
 
       <Sheet open={mobileOpen} onOpenChange={setMobileOpen}>
-        <SheetContent side="left" className="w-[18rem] max-w-[85vw] border-r border-border/60 bg-card p-0">
-          <SheetHeader className="border-b border-border/60 pr-14">
+        <SheetContent side="left" className="w-[20rem] max-w-[88vw] border-r border-white/6 bg-[#0f0f0f] p-3">
+          <SheetHeader className="rounded-[1.5rem] border border-border/60 bg-card/78 px-4 py-4 pr-14 shadow-[var(--shadow-card)]">
             <div className="flex items-center gap-2.5">
-              <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-[#0066B3]/10 text-[#0066B3]">
-                <Shield className="size-4" />
+              <Image
+                src="/logo.png"
+                alt="Curator"
+                width={28}
+                height={28}
+                className="h-7 w-7 rounded-lg object-contain"
+              />
+              <div className="min-w-0">
+                <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
+                  Curator
+                </p>
+                <SheetTitle className="text-[13px] font-semibold">Admin Panel</SheetTitle>
               </div>
-              <SheetTitle className="text-[13px] font-semibold">Admin Panel</SheetTitle>
               {session?.user?.isSuperAdmin && (
-                <span className="ml-auto rounded-full bg-amber-500/10 px-2 py-0.5 text-[10px] font-semibold text-amber-600 dark:text-amber-400">
+                <span className="ml-auto rounded-full border border-amber-400/20 bg-amber-500/10 px-2 py-0.5 text-[10px] font-semibold text-amber-300">
                   super
                 </span>
               )}
             </div>
-            <SheetDescription className="text-[12px]">
-              Navigate between stats, documents, users, chats, and reports.
+            <SheetDescription className="text-[12px] leading-5">
+              Navigate between stats, documents, users, chats, reports, and operations.
             </SheetDescription>
           </SheetHeader>
 
-          <div className="flex min-h-0 flex-1 flex-col">
+          <div className="mt-3 flex min-h-0 flex-1 flex-col rounded-[1.5rem] border border-border/60 bg-card/58 p-2 shadow-[var(--shadow-card)]">
             <AdminNavLinks pathname={pathname} pendingReports={pendingReports} onNavigate={() => setMobileOpen(false)} />
 
-            <div className="border-t border-border/60 p-2">
+            <div className="border-t border-white/6 p-2">
               <Link
                 href="/"
                 onClick={() => setMobileOpen(false)}
-                className="flex items-center gap-2 rounded-xl px-3 py-2 text-[13px] text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+                className="flex items-center gap-2 rounded-[1rem] border border-transparent px-3 py-2.5 text-[13px] text-muted-foreground transition-colors hover:border-white/6 hover:bg-white/[0.03] hover:text-foreground"
               >
                 <ChevronLeft className="size-4" />
                 Back to chat
@@ -122,29 +144,52 @@ export function AdminSidebar({ pendingReports }: { pendingReports?: number }) {
         </SheetContent>
       </Sheet>
 
-      <aside className="hidden h-svh w-56 shrink-0 flex-col border-r border-border/60 bg-card md:flex">
-        <div className="flex h-14 items-center gap-2.5 border-b border-border/60 px-4">
-          <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-[#0066B3]/10 text-[#0066B3]">
-            <Shield className="size-4" />
+      <aside className="hidden h-svh w-[18.5rem] shrink-0 border-r border-white/6 bg-[#0f0f0f] p-4 md:flex">
+        <div className="flex w-full flex-col rounded-[1.75rem] border border-border/60 bg-card/74 p-3 shadow-[var(--shadow-float)] backdrop-blur-xl">
+          <div className="rounded-[1.35rem] border border-white/6 bg-white/[0.03] px-4 py-4">
+            <div className="flex items-center gap-3">
+              <Image
+                src="/logo.png"
+                alt="Curator"
+                width={32}
+                height={32}
+                className="h-8 w-8 rounded-xl object-contain"
+              />
+              <div className="min-w-0">
+                <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
+                  Curator
+                </p>
+                <span className="block text-[14px] font-semibold text-foreground">Admin Panel</span>
+              </div>
+              {session?.user?.isSuperAdmin && (
+                <span className="ml-auto rounded-full border border-amber-400/20 bg-amber-500/10 px-2 py-0.5 text-[10px] font-semibold text-amber-300">
+                  super
+                </span>
+              )}
+            </div>
+            <p className="mt-3 text-[12px] leading-5 text-muted-foreground">
+              Stats, moderation, retrieval, and support operations in the same visual system as chat.
+            </p>
           </div>
-          <span className="text-[13px] font-semibold text-foreground">Admin Panel</span>
-          {session?.user?.isSuperAdmin && (
-            <span className="ml-auto rounded-full bg-amber-500/10 px-2 py-0.5 text-[10px] font-semibold text-amber-600 dark:text-amber-400">
-              super
-            </span>
-          )}
-        </div>
 
-        <AdminNavLinks pathname={pathname} pendingReports={pendingReports} />
+          <div className="mt-3 flex min-h-0 flex-1 flex-col rounded-[1.35rem] border border-white/6 bg-black/10">
+            <div className="px-4 pb-2 pt-4">
+              <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
+                Navigation
+              </p>
+            </div>
+            <AdminNavLinks pathname={pathname} pendingReports={pendingReports} />
 
-        <div className="border-t border-border/60 p-2">
-          <Link
-            href="/"
-            className="flex items-center gap-2 rounded-xl px-3 py-2 text-[13px] text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
-          >
-            <ChevronLeft className="size-4" />
-            Back to chat
-          </Link>
+            <div className="border-t border-white/6 p-2">
+              <Link
+                href="/"
+                className="flex items-center gap-2 rounded-[1rem] border border-transparent px-3 py-2.5 text-[13px] text-muted-foreground transition-colors hover:border-white/6 hover:bg-white/[0.03] hover:text-foreground"
+              >
+                <ChevronLeft className="size-4" />
+                Back to chat
+              </Link>
+            </div>
+          </div>
         </div>
       </aside>
     </>

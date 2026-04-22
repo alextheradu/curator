@@ -31,7 +31,10 @@ export function ConversationItem({
 }: Props) {
   const { typingTitleConversationId, typingTitle } = useChatStore();
   const [isEditing, setIsEditing] = useState(false);
+  const [menuOpen, setMenuOpen] = useState(false);
+  const [menuAnchorX, setMenuAnchorX] = useState<number | null>(null);
   const [draftTitle, setDraftTitle] = useState(conversation.title);
+  const rowRef = useRef<HTMLDivElement | null>(null);
   const inputRef = useRef<HTMLInputElement | null>(null);
   const isTyping = typingTitleConversationId === conversation.id;
   const displayTitle = isTyping ? typingTitle : conversation.title;
@@ -58,8 +61,27 @@ export function ConversationItem({
     onRename(nextTitle);
   };
 
+  const updateMenuAnchor = (clientX: number) => {
+    const row = rowRef.current;
+    if (!row) return;
+
+    const rect = row.getBoundingClientRect();
+    const clampedX = Math.max(16, Math.min(rect.width - 16, clientX - rect.left));
+    setMenuAnchorX(clampedX);
+  };
+
   return (
-    <div className="group/item relative">
+    <div
+      ref={rowRef}
+      className="group/item relative"
+      onContextMenu={(event) => {
+        if (isEditing) return;
+        event.preventDefault();
+        event.stopPropagation();
+        updateMenuAnchor(event.clientX);
+        setMenuOpen(true);
+      }}
+    >
       <SidebarMenuButton
         isActive={isActive}
         onClick={() => {
@@ -105,19 +127,29 @@ export function ConversationItem({
         )}
       </SidebarMenuButton>
       {!isEditing && (
-        <DropdownMenu>
+        <DropdownMenu open={menuOpen} onOpenChange={setMenuOpen}>
           <DropdownMenuTrigger asChild>
-            <SidebarMenuAction
-              showOnHover
-              onClick={(e: React.MouseEvent) => {
-                e.stopPropagation();
-              }}
-              aria-label="Conversation options"
-              className="right-1 rounded-md text-sidebar-foreground/30 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
-            >
-              <MoreHorizontal className="size-3.5" />
-            </SidebarMenuAction>
+            <button
+              type="button"
+              tabIndex={-1}
+              aria-hidden="true"
+              className="pointer-events-none absolute top-1/2 size-px -translate-y-1/2 opacity-0"
+              style={{ left: menuAnchorX ?? 16 }}
+            />
           </DropdownMenuTrigger>
+          <SidebarMenuAction
+            showOnHover
+            onClick={(event: React.MouseEvent<HTMLButtonElement>) => {
+              event.preventDefault();
+              event.stopPropagation();
+              updateMenuAnchor(event.currentTarget.getBoundingClientRect().left + event.currentTarget.offsetWidth / 2);
+              setMenuOpen(true);
+            }}
+            aria-label="Conversation options"
+            className="right-1 rounded-md text-sidebar-foreground/30 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
+          >
+            <MoreHorizontal className="size-3.5" />
+          </SidebarMenuAction>
           <DropdownMenuContent
             align="end"
             side="bottom"

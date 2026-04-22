@@ -45,8 +45,7 @@ export function EmptyState({ onPromptSelect }: Props) {
 
   return (
     <div className="flex w-full flex-1 flex-col">
-      {/* Logo + greeting — centered in the empty space above the cards */}
-      <div className="flex flex-1 flex-col items-center justify-center gap-3 px-4">
+      <div className="flex flex-1 flex-col items-center justify-center gap-4 px-4 pb-6 pt-8 sm:gap-3 sm:pt-0">
         <motion.div
           initial={{ opacity: 0, scale: 0.85 }}
           animate={{ opacity: 1, scale: 1 }}
@@ -57,31 +56,36 @@ export function EmptyState({ onPromptSelect }: Props) {
             alt="Curator"
             width={64}
             height={64}
+            priority
             className="h-14 w-14 object-contain sm:h-16 sm:w-16"
             style={{ filter: "drop-shadow(0 0 24px rgba(140,50,50,0.55)) drop-shadow(0 0 8px rgba(120,40,40,0.4))" }}
           />
         </motion.div>
-        <motion.div
+        <motion.h1
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.35, duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
-          className="text-center text-xl font-semibold tracking-tight text-foreground sm:text-2xl md:text-3xl"
+          className="max-w-[13ch] text-center text-2xl font-semibold tracking-tight text-foreground sm:max-w-none sm:text-2xl md:text-3xl"
         >
           What can I help with?
-        </motion.div>
+        </motion.h1>
         <motion.div
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.5, duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
-          className="text-center text-sm text-muted-foreground/80"
+          className="max-w-sm text-center text-sm leading-6 text-muted-foreground"
         >
           Ask about FRC rules, strategy, programming, or game documentation.
         </motion.div>
       </div>
 
-      {/* Suggested actions — pinned near the bottom */}
       <div className="mx-auto w-full max-w-3xl px-4 pb-6">
-        <div className="grid w-full grid-cols-2 gap-2.5">
+        <div className="mb-3 flex items-center justify-between px-1 sm:mb-2">
+          <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
+            Quick starts
+          </p>
+        </div>
+        <div className="grid w-full grid-cols-1 gap-2.5 sm:grid-cols-2">
           {suggestions.map((suggestion, index) => (
             <motion.div
               key={suggestion}
@@ -98,7 +102,7 @@ export function EmptyState({ onPromptSelect }: Props) {
               <button
                 type="button"
                 onClick={() => onPromptSelect(suggestion)}
-                className="flex w-full cursor-pointer items-center rounded-xl border border-border/50 bg-card/30 px-4 py-3 text-left text-[12px] leading-snug text-muted-foreground transition-all duration-200 hover:-translate-y-0.5 hover:bg-card/60 hover:text-foreground hover:shadow-[var(--shadow-card)] sm:px-4 sm:py-3.5 sm:text-[13px]"
+                className="flex w-full cursor-pointer items-center rounded-2xl border border-border/50 bg-card/35 px-4 py-3.5 text-left text-[13px] leading-snug text-foreground/75 transition-all duration-200 hover:-translate-y-0.5 hover:bg-card/60 hover:text-foreground hover:shadow-[var(--shadow-card)] sm:rounded-xl sm:px-4 sm:py-3.5"
               >
                 {suggestion}
               </button>

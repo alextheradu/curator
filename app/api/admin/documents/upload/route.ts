@@ -1,22 +1,26 @@
-import { auth } from "@/auth";
-import { db } from "@/lib/db";
+import { NextRequest, NextResponse } from "next/server";
+import { requireAdmin } from "@/lib/admin-auth";
+import { revalidateDocumentDerivedCaches } from "@/lib/cache-tags";
+import { withAdminDbAccess } from "@/lib/db/access";
 import { documents, docChunks } from "@/lib/db/schema";
 import { normalizeDocumentScope } from "@/lib/documents";
 import { uploadPdf } from "@/lib/minio";
 import { extractChunks } from "@/lib/chunker";
 import { embedBatch } from "@/lib/embeddings";
 import { ensureCollection, upsertChunks } from "@/lib/qdrant";
-import { NextResponse } from "next/server";
+import { applyRateLimitHeaders, enforceRequestRateLimit } from "@/lib/rate-limit";
 
 const MAX_PDF_SIZE_BYTES = 250 * 1024 * 1024;
 
-function isAdmin(email?: string | null) {
-  return (process.env.ADMIN_EMAILS ?? "").split(",").map((e) => e.trim()).includes(email ?? "");
-}
-
-export async function POST(req: Request) {
-  const session = await auth();
-  if (!isAdmin(session?.user?.email)) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+export async function POST(req: NextRequest) {
+  const adminAuth = await requireAdmin(req);
+  if (!adminAuth.ok) return adminAuth.response;
+  const rateLimit = await enforceRequestRateLimit(req, "adminDocumentUpload", adminAuth.userId);
+  const headers = new Headers();
+  applyRateLimitHeaders(headers, rateLimit);
+  if (!rateLimit.ok) {
+    return NextResponse.json({ error: "Too many document uploads. Please slow down." }, { status: 429, headers });
+  }
 
   let formData: FormData;
   try {
@@ -24,7 +28,7 @@ export async function POST(req: Request) {
   } catch {
     return NextResponse.json(
       { error: "Upload could not be parsed. Make sure the PDF is valid and under 250 MB." },
-      { status: 400 },
+      { status: 400, headers },
     );
   }
 
@@ -39,27 +43,28 @@ export async function POST(req: Request) {
   const tags: string[] = tagsRaw ? JSON.parse(tagsRaw) as string[] : [];
 
   if (!file || file.type !== "application/pdf") {
-    return NextResponse.json({ error: "PDF file required" }, { status: 400 });
+    return NextResponse.json({ error: "PDF file required" }, { status: 400, headers });
   }
   if (file.size > MAX_PDF_SIZE_BYTES) {
-    return NextResponse.json({ error: "PDF must be 250 MB or smaller." }, { status: 413 });
+    return NextResponse.json({ error: "PDF must be 250 MB or smaller." }, { status: 413, headers });
   }
   if (scope === "season" && !Number.isInteger(seasonYear)) {
-    return NextResponse.json({ error: "A valid season is required." }, { status: 400 });
+    return NextResponse.json({ error: "A valid season is required." }, { status: 400, headers });
   }
 
   const buffer = Buffer.from(await file.arrayBuffer());
   const keyPrefix = scope === "general" ? "general" : String(seasonYear);
-  const minioKey = `${keyPrefix}/${Date.now()}-${file.name.replace(/\s+/g, "-")}`;
+  const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, "_").replace(/^[._]+/, "");
+  const minioKey = `${keyPrefix}/${Date.now()}-${safeName}`;
 
   const { chunks, pageCount } = await extractChunks(buffer);
   if (chunks.length === 0) {
-    return NextResponse.json({ error: "No extractable text found in this PDF" }, { status: 400 });
+    return NextResponse.json({ error: "No extractable text found in this PDF" }, { status: 400, headers });
   }
 
   await uploadPdf(minioKey, buffer, buffer.length);
 
-  const [doc] = await db.insert(documents).values({
+  const [doc] = await withAdminDbAccess(adminAuth.userId, (tx) => tx.insert(documents).values({
     name: customName ?? file.name,
     description,
     tags,
@@ -67,8 +72,8 @@ export async function POST(req: Request) {
     seasonYear,
     minioKey,
     pageCount,
-    uploadedById: session!.user!.id,
-  }).returning();
+    uploadedById: adminAuth.userId,
+  }).returning());
 
   await ensureCollection();
   const embeddings = await embedBatch(chunks.map((c) => c.text));
@@ -84,11 +89,12 @@ export async function POST(req: Request) {
   }));
 
   await upsertChunks(qdrantPoints);
-  await db.insert(docChunks).values(chunks.map((chunk, i) => ({
+  await withAdminDbAccess(adminAuth.userId, (tx) => tx.insert(docChunks).values(chunks.map((chunk, i) => ({
     documentId: doc.id, chunkIndex: chunk.chunkIndex,
     pageNumber: chunk.pageNumber, content: chunk.text,
     qdrantPointId: qdrantPoints[i].id,
-  })));
+  }))));
 
-  return NextResponse.json({ ok: true, docId: doc.id, chunks: chunks.length, pageCount });
+  revalidateDocumentDerivedCaches();
+  return NextResponse.json({ ok: true, docId: doc.id, chunks: chunks.length, pageCount }, { headers });
 }

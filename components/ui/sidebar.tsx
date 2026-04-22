@@ -23,11 +23,14 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from "@/components/ui/tooltip"
+import {
+  SIDEBAR_COOKIE_MAX_AGE,
+  SIDEBAR_COOKIE_NAME,
+  SIDEBAR_WIDTH_COOKIE_NAME,
+} from "@/lib/app-cookies"
+import { readBrowserCookie, serializeCookie } from "@/lib/cookies"
 import { PanelLeftIcon } from "lucide-react"
 
-const SIDEBAR_COOKIE_NAME = "sidebar_state"
-const SIDEBAR_WIDTH_COOKIE_NAME = "sidebar_width"
-const SIDEBAR_COOKIE_MAX_AGE = 60 * 60 * 24 * 7
 const SIDEBAR_DEFAULT_WIDTH_PX = 256
 const SIDEBAR_MIN_WIDTH_PX = 208
 const SIDEBAR_MAX_WIDTH_PX = 352
@@ -80,7 +83,13 @@ function SidebarProvider({
 }) {
   const isMobile = useIsMobile()
   const [openMobile, setOpenMobile] = React.useState(false)
-  const [width, setWidthState] = React.useState(SIDEBAR_DEFAULT_WIDTH_PX)
+  const [width, setWidthState] = React.useState(() => {
+    const raw = readBrowserCookie(SIDEBAR_WIDTH_COOKIE_NAME)
+    const parsed = Number(raw)
+    return Number.isFinite(parsed)
+      ? Math.max(SIDEBAR_MIN_WIDTH_PX, Math.min(SIDEBAR_MAX_WIDTH_PX, parsed))
+      : SIDEBAR_DEFAULT_WIDTH_PX
+  })
 
   // This is the internal state of the sidebar.
   // We use openProp and setOpenProp for control from outside the component.
@@ -96,7 +105,9 @@ function SidebarProvider({
       }
 
       // This sets the cookie to keep the sidebar state.
-      document.cookie = `${SIDEBAR_COOKIE_NAME}=${openState}; path=/; max-age=${SIDEBAR_COOKIE_MAX_AGE}`
+      document.cookie = serializeCookie(SIDEBAR_COOKIE_NAME, String(openState), {
+        maxAge: SIDEBAR_COOKIE_MAX_AGE,
+      })
     },
     [setOpenProp, open]
   )
@@ -108,21 +119,9 @@ function SidebarProvider({
     )
 
     setWidthState(boundedWidth)
-    document.cookie = `${SIDEBAR_WIDTH_COOKIE_NAME}=${boundedWidth}; path=/; max-age=${SIDEBAR_COOKIE_MAX_AGE}`
-  }, [])
-
-  React.useEffect(() => {
-    const widthMatch = document.cookie
-      .split("; ")
-      .find((entry) => entry.startsWith(`${SIDEBAR_WIDTH_COOKIE_NAME}=`))
-      ?.split("=")[1]
-
-    const parsedWidth = Number(widthMatch)
-    if (Number.isFinite(parsedWidth)) {
-      setWidthState(
-        Math.max(SIDEBAR_MIN_WIDTH_PX, Math.min(SIDEBAR_MAX_WIDTH_PX, parsedWidth))
-      )
-    }
+    document.cookie = serializeCookie(SIDEBAR_WIDTH_COOKIE_NAME, String(boundedWidth), {
+      maxAge: SIDEBAR_COOKIE_MAX_AGE,
+    })
   }, [])
 
   // Helper to toggle the sidebar.

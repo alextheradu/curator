@@ -3,6 +3,9 @@
 import { ReactNode, useEffect } from "react";
 import { SessionProvider } from "next-auth/react";
 import { ThemeProvider } from "next-themes";
+import { CookieConsentBanner } from "@/components/analytics/CookieConsentBanner";
+import { GoogleAnalytics } from "@/components/analytics/GoogleAnalytics";
+import { PwaRuntime } from "@/components/pwa/PwaRuntime";
 import { Toaster } from "@/components/ui/sonner";
 import { ErrorToastListener } from "@/components/ui/ErrorToast";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -22,6 +25,42 @@ function shouldReloadForAssetFailure(message: string) {
 
 function AssetRecovery() {
   useEffect(() => {
+    const sendClientError = (payload: { kind: string; message: string; stack?: string; url: string }) => {
+      const body = JSON.stringify(payload);
+
+      if (navigator.sendBeacon) {
+        navigator.sendBeacon("/api/client-errors", body);
+        return;
+      }
+
+      void fetch("/api/client-errors", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body,
+        keepalive: true,
+      });
+    };
+
+    const clearAppCaches = async () => {
+      try {
+        if ("serviceWorker" in navigator) {
+          const registrations = await navigator.serviceWorker.getRegistrations();
+          await Promise.all(registrations.map((registration) => registration.unregister()));
+        }
+
+        if ("caches" in window) {
+          const keys = await caches.keys();
+          await Promise.all(
+            keys
+              .filter((key) => key.startsWith("curator-pwa-"))
+              .map((key) => caches.delete(key)),
+          );
+        }
+      } catch {
+        // Ignore cache cleanup failures and still force a reload.
+      }
+    };
+
     const attemptReload = () => {
       const now = Date.now();
       const previous = Number(sessionStorage.getItem(ASSET_RECOVERY_KEY) ?? "0");
@@ -31,9 +70,11 @@ function AssetRecovery() {
       }
 
       sessionStorage.setItem(ASSET_RECOVERY_KEY, String(now));
-      const url = new URL(window.location.href);
-      url.searchParams.set(ASSET_RECOVERY_PARAM, String(now));
-      window.location.replace(url.toString());
+      void clearAppCaches().finally(() => {
+        const url = new URL(window.location.href);
+        url.searchParams.set(ASSET_RECOVERY_PARAM, String(now));
+        window.location.replace(url.toString());
+      });
     };
 
     const handleWindowError = (event: ErrorEvent) => {
@@ -56,6 +97,11 @@ function AssetRecovery() {
 
       if (shouldReloadForAssetFailure(message)) {
         attemptReload();
+        sendClientError({
+          kind: "asset_failure",
+          message,
+          url: window.location.href,
+        });
       }
     };
 
@@ -67,7 +113,20 @@ function AssetRecovery() {
 
       if (shouldReloadForAssetFailure(message)) {
         attemptReload();
+        sendClientError({
+          kind: "asset_failure",
+          message,
+          url: window.location.href,
+        });
+        return;
       }
+
+      sendClientError({
+        kind: "unhandled_rejection",
+        message,
+        stack: reason instanceof Error ? reason.stack : undefined,
+        url: window.location.href,
+      });
     };
 
     window.addEventListener("error", handleWindowError, true);
@@ -87,9 +146,12 @@ export function Providers({ children }: { children: ReactNode }) {
     <SessionProvider>
       <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
         <TooltipProvider>
+          <GoogleAnalytics />
+          <PwaRuntime />
           <AssetRecovery />
           <ErrorToastListener />
           {children}
+          <CookieConsentBanner />
           <Toaster richColors position="top-right" closeButton />
         </TooltipProvider>
       </ThemeProvider>

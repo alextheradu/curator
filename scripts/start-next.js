@@ -59,6 +59,27 @@ const configPort =
     : undefined;
 const port = explicitPort || configPort || positionalPort || process.env.PORT || "3000";
 const nextBin = require.resolve("next/dist/bin/next");
+const shouldSubmitIndexNow = process.env.INDEXNOW_SUBMIT_ON_START === "true";
+const indexNowDelayMs = Number.parseInt(process.env.INDEXNOW_SUBMIT_DELAY_MS ?? "5000", 10);
+let indexNowTimeout;
+
+function runIndexNowSubmission() {
+  if (!shouldSubmitIndexNow) return;
+
+  const scriptPath = require.resolve("../scripts/indexnow-submit.mjs");
+
+  const task = spawn(process.execPath, [scriptPath], {
+    cwd: process.cwd(),
+    env: process.env,
+    stdio: "inherit",
+  });
+
+  task.on("exit", (code) => {
+    if (code && code !== 0) {
+      console.error(`[indexnow] submission exited with code ${code}`);
+    }
+  });
+}
 
 const child = spawn(
   process.execPath,
@@ -73,7 +94,17 @@ const child = spawn(
   },
 );
 
+child.on("spawn", () => {
+  if (!shouldSubmitIndexNow) return;
+
+  indexNowTimeout = setTimeout(runIndexNowSubmission, Number.isFinite(indexNowDelayMs) ? indexNowDelayMs : 5000);
+});
+
 child.on("exit", (code, signal) => {
+  if (indexNowTimeout) {
+    clearTimeout(indexNowTimeout);
+  }
+
   if (signal) {
     process.kill(process.pid, signal);
     return;

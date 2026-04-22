@@ -1,5 +1,5 @@
 import type { Citation } from "@/lib/db/schema";
-import type { Conversation, Message, Role } from "@/lib/store";
+import type { ChatMode, Conversation, Message, Role } from "@/lib/store";
 
 export type ConversationRecord = {
   id: string;
@@ -7,6 +7,7 @@ export type ConversationRecord = {
   searchDescription?: string | null;
   seasonYear: number;
   isPublic: boolean;
+  chatMode?: ChatMode;
   createdAt: string | Date;
   updatedAt: string | Date;
 };
@@ -32,7 +33,8 @@ export function normalizeMessage(message: MessageRecord): Message {
 
 export function normalizeConversation(
   conversation: ConversationRecord,
-  messages: Message[] = []
+  messages: Message[] = [],
+  fallbackChatMode: ChatMode = "veteran"
 ): Conversation {
   return {
     id: conversation.id,
@@ -40,6 +42,7 @@ export function normalizeConversation(
     searchDescription: conversation.searchDescription ?? null,
     seasonYear: conversation.seasonYear,
     isPublic: conversation.isPublic,
+    chatMode: conversation.chatMode ?? fallbackChatMode,
     createdAt: new Date(conversation.createdAt),
     updatedAt: new Date(conversation.updatedAt),
     messages,

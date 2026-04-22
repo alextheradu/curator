@@ -2,13 +2,17 @@ import { auth } from "@/auth";
 import { buildSystemPrompt } from "@/lib/frc-system-prompt";
 import { buildRagContext } from "@/lib/rag";
 import { buildWebContext, webSearch } from "@/lib/langsearch";
-import { buildTbaContext, isTbaMcpEnabled, shouldRunTbaLookup } from "@/lib/tba";
+import { DEFAULT_SEASON_YEAR } from "@/lib/seasons";
 import { shouldRunWebSearch } from "@/lib/web-search-decision";
 import type { Citation } from "@/lib/db/schema";
+import { GUEST_MESSAGE_COUNT_COOKIE_NAME, GUEST_MESSAGE_LIMIT } from "@/lib/app-cookies";
+import { serializeCookie } from "@/lib/cookies";
+import { captureException } from "@/lib/logging";
+import { applyRateLimitHeaders, enforceRateLimit } from "@/lib/rate-limit";
+import { getClientIp } from "@/lib/request-context";
 import { NextRequest, NextResponse } from "next/server";
 import { cookies } from "next/headers";
 
-const GUEST_LIMIT = 3;
 const OR_URL = "https://openrouter.ai/api/v1/chat/completions";
 const CHAT_MODELS = (
   process.env.OPENROUTER_CHAT_MODELS
@@ -55,17 +59,12 @@ function joinNaturalList(parts: string[]) {
 
 function describeAnswerInputs(
   ragCitations: Citation[],
-  tbaCitations: Citation[],
   webCitations: Citation[],
 ) {
   const parts: string[] = [];
 
   if (ragCitations.length > 0) {
     parts.push(`${ragCitations.length} document ${pluralize(ragCitations.length, "page")}`);
-  }
-
-  if (tbaCitations.length > 0) {
-    parts.push("The Blue Alliance data");
   }
 
   if (webCitations.length > 0) {
@@ -209,24 +208,20 @@ async function streamChatCompletion({
 function filterUsedCitations(
   assistantText: string,
   docCitations: Citation[],
-  tbaCitations: Citation[],
   webCitations: Citation[],
 ) {
   const docMap = new Map(docCitations.map((citation, index) => [index + 1, citation]));
-  const tbaMap = new Map(tbaCitations.map((citation, index) => [index + 1, citation]));
   const webMap = new Map(webCitations.map((citation, index) => [index + 1, citation]));
   const used: Citation[] = [];
   const seen = new Set<string>();
-  const pattern = /\[(SOURCE|TBA|WEB)\s+(\d+)\]/gi;
+  const pattern = /\[(SOURCE|WEB)\s+(\d+)\]/gi;
 
   for (const match of assistantText.matchAll(pattern)) {
     const kind = match[1]?.toUpperCase();
     const index = Number(match[2]);
     const citation = kind === "SOURCE"
       ? docMap.get(index)
-      : kind === "TBA"
-        ? tbaMap.get(index)
-        : webMap.get(index);
+      : webMap.get(index);
 
     if (!citation) {
       continue;
@@ -245,15 +240,28 @@ function filterUsedCitations(
 export async function POST(request: NextRequest) {
   const session = await auth();
   const cookieStore = await cookies();
+  const ip = getClientIp(request);
+  const rateLimit = await enforceRateLimit({
+    scope: "chat",
+    key: session?.user?.id ? `user:${session.user.id}` : `ip:${ip}`,
+    limit: session?.user?.id ? 60 : 15,
+    windowMs: 60 * 1000,
+  });
+
+  if (!rateLimit.ok) {
+    const headers = new Headers();
+    applyRateLimitHeaders(headers, rateLimit);
+    return NextResponse.json({ error: "Too many chat requests. Please slow down." }, { status: 429, headers });
+  }
 
   if (!session?.user?.id) {
-    const count = parseInt(cookieStore.get("guest_message_count")?.value ?? "0", 10);
-    if (count >= GUEST_LIMIT) {
+    const count = parseInt(cookieStore.get(GUEST_MESSAGE_COUNT_COOKIE_NAME)?.value ?? "0", 10);
+    if (count >= GUEST_MESSAGE_LIMIT) {
       return NextResponse.json({ error: "auth_required" }, { status: 401 });
     }
   }
 
-  const { messages, temperature = 0.2, seasonYear = 2026 } = await request.json();
+  const { messages, temperature = 0.2, seasonYear = DEFAULT_SEASON_YEAR, chatMode = "veteran" } = await request.json();
   const apiKey = process.env.OPENROUTER_API_KEY!;
 
   const responseHeaders = new Headers({
@@ -261,10 +269,11 @@ export async function POST(request: NextRequest) {
     "Cache-Control": "no-cache",
     "X-Accel-Buffering": "no",
   });
+  applyRateLimitHeaders(responseHeaders, rateLimit);
 
   if (!session?.user?.id) {
-    const count = parseInt(cookieStore.get("guest_message_count")?.value ?? "0", 10);
-    responseHeaders.set("Set-Cookie", `guest_message_count=${count + 1}; Path=/; SameSite=Lax`);
+    const count = parseInt(cookieStore.get(GUEST_MESSAGE_COUNT_COOKIE_NAME)?.value ?? "0", 10);
+    responseHeaders.set("Set-Cookie", serializeCookie(GUEST_MESSAGE_COUNT_COOKIE_NAME, String(count + 1)));
   }
 
   const stream = new ReadableStream({
@@ -288,8 +297,6 @@ export async function POST(request: NextRequest) {
           let ragHitCount = 0;
           let ragBestScore = 0;
           let ragCitations: Citation[] = [];
-          let tbaCitations: Citation[] = [];
-          let tbaDirectAnswer: string | undefined;
           const webCitations: Citation[] = [];
 
           if (lastUser) {
@@ -314,36 +321,6 @@ export async function POST(request: NextRequest) {
             } catch {
               sendEvent({ type: "status", message: "Document search is unavailable, continuing without it..." });
             }
-          }
-
-          if (lastUser && isTbaMcpEnabled() && shouldRunTbaLookup(lastUser.content)) {
-            sendEvent({ type: "status", message: "Checking The Blue Alliance for live FRC data..." });
-
-            try {
-              const tbaContext = await buildTbaContext(lastUser.content, effectiveSeasonYear, {
-                onStatus: (message) => sendEvent({ type: "status", message }),
-              });
-              contextBlock += tbaContext.contextBlock;
-              tbaCitations = tbaContext.citations;
-              tbaDirectAnswer = tbaContext.directAnswer;
-              if (tbaCitations.length > 0 && !tbaDirectAnswer) {
-                sendEvent({
-                  type: "status",
-                  message: "The Blue Alliance returned live data for this question.",
-                });
-              }
-            } catch {
-              sendEvent({ type: "status", message: "The Blue Alliance lookup is unavailable, continuing without it..." });
-            }
-          }
-
-          if (tbaDirectAnswer) {
-            sendEvent({ type: "status", message: "Formatting the live TBA result into a direct answer..." });
-            sendEvent({ type: "token", token: tbaDirectAnswer });
-            sendEvent({ type: "citations", citations: tbaCitations });
-            sendDone();
-            controller.close();
-            return;
           }
 
           if (lastUser && shouldRunWebSearch(lastUser.content, ragHitCount, ragBestScore)) {
@@ -374,7 +351,7 @@ export async function POST(request: NextRequest) {
             }
           }
 
-          const answerInputs = describeAnswerInputs(ragCitations, tbaCitations, webCitations);
+          const answerInputs = describeAnswerInputs(ragCitations, webCitations);
           sendEvent({
             type: "status",
             message: answerInputs
@@ -382,7 +359,7 @@ export async function POST(request: NextRequest) {
               : "Thinking through the answer from the available context...",
           });
 
-          const systemPrompt = buildSystemPrompt(effectiveSeasonYear, contextBlock);
+          const systemPrompt = buildSystemPrompt(effectiveSeasonYear, contextBlock, chatMode);
           const fullMessages = [{ role: "system", content: systemPrompt }, ...messages];
           const assistantText = await streamChatCompletion({
             apiKey,
@@ -393,11 +370,16 @@ export async function POST(request: NextRequest) {
           });
           sendEvent({
             type: "citations",
-            citations: filterUsedCitations(assistantText, ragCitations, tbaCitations, webCitations),
+            citations: filterUsedCitations(assistantText, ragCitations, webCitations),
           });
           sendDone();
           controller.close();
         } catch (error) {
+          await captureException("chat", error, {
+            path: request.nextUrl.pathname,
+            userId: session?.user?.id ?? null,
+            ip,
+          });
           const message = error instanceof Error ? error.message : "Chat request failed";
           sendEvent({ type: "error", message });
           sendDone();

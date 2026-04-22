@@ -1,16 +1,16 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { readPublicMarkdown } from "@/lib/markdown";
+import { buildPublicPageMetadata } from "@/lib/seo";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 
-export const metadata: Metadata = {
+export const metadata: Metadata = buildPublicPageMetadata({
   title: "Terms of Service",
-  description: "Read Curator's terms of service, including acceptable use, accounts, shared chats, and service limitations.",
-  alternates: {
-    canonical: "/terms-of-service",
-  },
-};
+  description:
+    "Read Curator's terms of service, including acceptable use, accounts, shared chats, search indexing notifications, and service limitations.",
+  path: "/terms-of-service",
+});
 
 export default async function TermsPage() {
   const content = await readPublicMarkdown("terms-of-service.md");

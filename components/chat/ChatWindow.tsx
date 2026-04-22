@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import Image from "next/image";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { lazy, Suspense, useCallback, useEffect, useRef, useState } from "react";
 import { useSession } from "next-auth/react";
 import { AnimatePresence, motion } from "framer-motion";
 import { CopyIcon, GlobeIcon, LinkIcon, LockIcon, Share2Icon } from "lucide-react";
@@ -10,10 +10,19 @@ import { MessageBubble } from "./MessageBubble";
 import { StreamingIndicator } from "./StreamingIndicator";
 import { EmptyState } from "./EmptyState";
 import { InputBar } from "./InputBar";
-import { DocumentViewerModal } from "./DocumentViewerModal";
-import { TosModal } from "@/components/auth/TosModal";
-import { AuthModal } from "@/components/auth/AuthModal";
-import { SettingsModal } from "@/components/ui/SettingsModal";
+
+const DocumentViewerModal = lazy(() =>
+  import("./DocumentViewerModal").then((m) => ({ default: m.DocumentViewerModal }))
+);
+const TosModal = lazy(() =>
+  import("@/components/auth/TosModal").then((m) => ({ default: m.TosModal }))
+);
+const AuthModal = lazy(() =>
+  import("@/components/auth/AuthModal").then((m) => ({ default: m.AuthModal }))
+);
+const SettingsModal = lazy(() =>
+  import("@/components/ui/SettingsModal").then((m) => ({ default: m.SettingsModal }))
+);
 import { SidebarInset, SidebarTrigger } from "@/components/ui/sidebar";
 import { Button } from "@/components/ui/button";
 import {
@@ -36,6 +45,7 @@ import type { Citation } from "@/lib/db/schema";
 import type { Conversation } from "@/lib/store";
 import { useChatStore } from "@/lib/store";
 import { streamOpenRouterChat } from "@/lib/openrouter";
+import { DEFAULT_SEASON_YEAR } from "@/lib/seasons";
 import { generateChatTitle } from "@/lib/utils";
 import { toast } from "sonner";
 
@@ -69,6 +79,7 @@ export function ChatWindow({
     streamingContent,
     isStreaming,
     temperature,
+    defaultChatMode,
     addMessage,
     startStreaming,
     updateStreamingContent,
@@ -175,7 +186,7 @@ export function ChatWindow({
     let conversationId = activeConversationId;
     if (!conversationId) {
       if (isAuthenticated) {
-        const created = normalizeConversation(await createConversation());
+        const created = normalizeConversation(await createConversation(), [], defaultChatMode);
         upsertConversation(created);
         setActiveConversation(created.id);
         conversationId = created.id;
@@ -241,7 +252,8 @@ export function ChatWindow({
     startStreaming();
 
     const currentConversation = useChatStore.getState().activeConversation();
-    const seasonYear = currentConversation?.seasonYear ?? 2026;
+    const seasonYear = currentConversation?.seasonYear ?? DEFAULT_SEASON_YEAR;
+    const chatMode = useChatStore.getState().defaultChatMode;
     const history = (currentConversation?.messages ?? [])
       .filter((message) => message.role !== "system")
       .map((message) => ({ role: message.role as "user" | "assistant", content: message.content }));
@@ -252,6 +264,7 @@ export function ChatWindow({
       messages: history,
       temperature,
       seasonYear,
+      chatMode,
       signal: controller.signal,
       onToken: (token) => {
         accumulated += token;
@@ -296,6 +309,7 @@ export function ChatWindow({
     setShowAuthModal,
     setTypingTitle,
     startStreaming,
+    defaultChatMode,
     temperature,
     upsertConversation,
     updateConversation,
@@ -373,18 +387,20 @@ export function ChatWindow({
 
   return (
     <SidebarInset className="flex min-h-svh max-h-svh flex-col overflow-hidden bg-background">
-      <TosModal open={showTosModal} onAccept={handleAcceptTos} />
-      <AuthModal open={showAuthModal} onOpenChange={setShowAuthModal} />
-      <SettingsModal />
-      <DocumentViewerModal
-        open={!!viewerCitation}
-        citation={viewerCitation}
-        onOpenChange={(open) => {
-          if (!open) {
-            setViewerCitation(null);
-          }
-        }}
-      />
+      <Suspense>
+        <TosModal open={showTosModal} onAccept={handleAcceptTos} />
+        <AuthModal open={showAuthModal} onOpenChange={setShowAuthModal} />
+        <SettingsModal />
+        <DocumentViewerModal
+          open={!!viewerCitation}
+          citation={viewerCitation}
+          onOpenChange={(open) => {
+            if (!open) {
+              setViewerCitation(null);
+            }
+          }}
+        />
+      </Suspense>
 
       <Dialog open={shareDialogOpen} onOpenChange={setShareDialogOpen}>
         <DialogContent className="max-w-md border-border/60 bg-background/95">
@@ -440,78 +456,95 @@ export function ChatWindow({
         </DialogContent>
       </Dialog>
 
-      <div className="border-b border-border/40 bg-background/90 px-3 py-2.5 backdrop-blur md:px-6">
-        <div className="mx-auto flex w-full max-w-3xl items-center">
-          {/* Sidebar trigger — fixed width so logo centers between it and title */}
-          {!readOnly && (
-            <div className="flex w-10 shrink-0 items-center justify-center md:hidden">
-              <SidebarTrigger className="text-muted-foreground" />
-            </div>
-          )}
-
-          {/* Logo — centered in its own fixed-width column */}
-          <div className="flex w-14 shrink-0 items-center justify-center">
-            <Image
-              src="/logo.png"
-              alt="Curator"
-              width={32}
-              height={32}
-              className="h-7 w-7 object-contain sm:h-8 sm:w-8"
-              style={{ filter: "drop-shadow(0 0 7px rgba(120,40,40,0.22))" }}
-            />
+      <div className="border-b border-border/40 bg-background/92 px-3 py-2.5 backdrop-blur md:px-6">
+        <div className="flex w-full items-center gap-2.5 sm:gap-3">
+          <div className="flex shrink-0 items-center justify-center md:hidden">
+            {!readOnly && <SidebarTrigger className="text-muted-foreground" />}
           </div>
 
-          {/* Title + status badge — inline on the same row */}
-          <div className="flex min-w-0 flex-1 items-center gap-2">
-            <div className="truncate text-sm font-semibold text-foreground">
-              {conversation?.title ?? "New Chat"}
+          <div className="mx-auto flex min-w-0 flex-1 max-w-3xl items-center gap-2.5 sm:gap-3">
+            <div className="flex shrink-0 items-center justify-center">
+              <Image
+                src="/logo.png"
+                alt="Curator"
+                width={32}
+                height={32}
+                priority
+                className="h-7 w-7 object-contain sm:h-8 sm:w-8"
+                style={{ filter: "drop-shadow(0 0 7px rgba(120,40,40,0.22))" }}
+              />
+            </div>
+
+            <div className="min-w-0 flex-1">
+              <div className="truncate text-[13px] font-semibold text-foreground sm:text-sm">
+                {conversation?.title ?? "New Chat"}
+              </div>
+              <div className="mt-0.5 flex items-center gap-2 sm:hidden">
+                {readOnly ? (
+                  <span className="inline-flex shrink-0 items-center gap-1 rounded-full border border-border/50 bg-muted/50 px-2 py-0.5 text-[10px] font-medium text-muted-foreground">
+                    <GlobeIcon className="size-2.5" />
+                    Public
+                  </span>
+                ) : conversation?.isPublic ? (
+                  <span className="inline-flex shrink-0 items-center gap-1 rounded-full border border-blue-500/20 bg-blue-500/10 px-2 py-0.5 text-[10px] font-medium text-blue-400">
+                    <GlobeIcon className="size-2.5" />
+                    Public
+                  </span>
+                ) : (
+                  <span className="inline-flex shrink-0 items-center gap-1 rounded-full border border-border/50 bg-muted/50 px-2 py-0.5 text-[10px] font-medium text-muted-foreground">
+                    <LockIcon className="size-2.5" />
+                    Private
+                  </span>
+                )}
+              </div>
             </div>
             {readOnly ? (
-              <span className="inline-flex shrink-0 items-center gap-1 rounded-full border border-border/50 bg-muted/50 px-2 py-0.5 text-[10px] font-medium text-muted-foreground">
+              <span className="hidden shrink-0 items-center gap-1 rounded-full border border-border/50 bg-muted/50 px-2 py-0.5 text-[10px] font-medium text-muted-foreground sm:inline-flex">
                 <GlobeIcon className="size-2.5" />
                 Public · read-only
               </span>
             ) : conversation?.isPublic ? (
-              <span className="inline-flex shrink-0 items-center gap-1 rounded-full border border-blue-500/20 bg-blue-500/10 px-2 py-0.5 text-[10px] font-medium text-blue-400">
+              <span className="hidden shrink-0 items-center gap-1 rounded-full border border-blue-500/20 bg-blue-500/10 px-2 py-0.5 text-[10px] font-medium text-blue-400 sm:inline-flex">
                 <GlobeIcon className="size-2.5" />
                 Public
               </span>
             ) : (
-              <span className="inline-flex shrink-0 items-center gap-1 rounded-full border border-border/50 bg-muted/50 px-2 py-0.5 text-[10px] font-medium text-muted-foreground">
+              <span className="hidden shrink-0 items-center gap-1 rounded-full border border-border/50 bg-muted/50 px-2 py-0.5 text-[10px] font-medium text-muted-foreground sm:inline-flex">
                 <LockIcon className="size-2.5" />
                 Private
               </span>
             )}
+            <div className="flex shrink-0 items-center gap-2">
+              {readOnly ? (
+                <Link
+                  href="/"
+                  className="inline-flex h-8 shrink-0 items-center rounded-xl border border-border/60 px-2.5 text-xs font-medium text-foreground transition-colors hover:bg-muted sm:px-3"
+                >
+                  <span className="hidden sm:inline">Start your own chat</span>
+                  <span className="sm:hidden">Start chat</span>
+                </Link>
+              ) : (
+                <Button
+                  variant="outline"
+                  aria-label="Share"
+                  onClick={() => {
+                    if (canShare) {
+                      setShareDialogOpen(true);
+                      return;
+                    }
+
+                    setShowAuthModal(true);
+                    toast.info("Sign in to share chats.");
+                  }}
+                  disabled={!conversation || messages.length === 0 || isShareUpdating}
+                  className="h-8 shrink-0 px-2 text-xs sm:px-3 sm:text-sm"
+                >
+                  <Share2Icon className="size-4" />
+                  <span className="hidden sm:inline">Share</span>
+                </Button>
+              )}
+            </div>
           </div>
-
-          {/* Right: action */}
-          {readOnly ? (
-            <Link
-              href="/"
-              className="inline-flex h-8 shrink-0 items-center rounded-xl border border-border/60 px-2.5 text-xs font-medium text-foreground transition-colors hover:bg-muted sm:px-3"
-            >
-              <span className="hidden sm:inline">Start your own chat</span>
-              <span className="sm:hidden">Start chat</span>
-            </Link>
-          ) : (
-            <Button
-              variant="outline"
-              onClick={() => {
-                if (canShare) {
-                  setShareDialogOpen(true);
-                  return;
-                }
-
-                setShowAuthModal(true);
-                toast.info("Sign in to share chats.");
-              }}
-              disabled={!conversation || messages.length === 0 || isShareUpdating}
-              className="h-8 shrink-0 px-2.5 text-xs sm:px-3 sm:text-sm"
-            >
-              <Share2Icon className="size-4" />
-              <span className="hidden sm:inline">Share</span>
-            </Button>
-          )}
         </div>
       </div>
 
@@ -544,7 +577,7 @@ export function ChatWindow({
               animate={{ opacity: 1, y: 0, scale: 1 }}
               exit={{ opacity: 0, y: -8, scale: 0.992 }}
               transition={{ duration: 0.24, ease: [0.22, 1, 0.36, 1] }}
-              className="mx-auto flex w-full max-w-3xl flex-col gap-6 px-3 pb-32 pt-5 sm:px-4 sm:pb-40 sm:pt-8 md:px-6"
+              className="mx-auto flex w-full max-w-3xl flex-col gap-5 px-3 pb-32 pt-4 sm:gap-6 sm:px-4 sm:pb-40 sm:pt-8 md:px-6"
             >
               {messages.map((message) => (
                 <MessageBubble
@@ -576,7 +609,7 @@ export function ChatWindow({
         </AnimatePresence>
       </div>
 
-      <div className="sticky inset-x-0 bottom-0 z-20 mt-auto bg-gradient-to-t from-background via-background/95 to-transparent px-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))] pt-5 sm:px-4 sm:pb-[calc(1rem+env(safe-area-inset-bottom))] sm:pt-6 md:px-6">
+      <div className="sticky inset-x-0 bottom-0 z-20 mt-auto bg-gradient-to-t from-background via-background/96 to-transparent px-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))] pt-4 sm:px-4 sm:pb-[calc(1rem+env(safe-area-inset-bottom))] sm:pt-6 md:px-6">
         <div className="mx-auto w-full max-w-3xl">
           {readOnly ? (
             <div className="rounded-2xl border border-border/40 bg-card/70 px-4 py-3 text-sm text-muted-foreground shadow-[var(--shadow-composer)]">

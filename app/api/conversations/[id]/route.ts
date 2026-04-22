@@ -1,6 +1,9 @@
 import { auth } from "@/auth";
-import { db } from "@/lib/db";
+import { withSessionDbAccess } from "@/lib/db/access";
 import { conversations } from "@/lib/db/schema";
+import { revalidateConversationDerivedCaches } from "@/lib/cache-tags";
+import { getCachedPublicConversation, revalidatePublicConversation } from "@/lib/public-conversations";
+import { applyRateLimitHeaders, enforceRequestRateLimit } from "@/lib/rate-limit";
 import { eq, and } from "drizzle-orm";
 import { NextResponse } from "next/server";
 
@@ -8,7 +11,13 @@ export async function GET(_: Request, { params }: { params: Promise<{ id: string
   const session = await auth();
   const { id } = await params;
 
-  const [conversation] = await db.select().from(conversations).where(eq(conversations.id, id));
+  const conversation = session?.user?.id
+    ? await withSessionDbAccess(session, async (tx) => {
+        const [row] = await tx.select().from(conversations).where(eq(conversations.id, id)).limit(1);
+        return row ?? null;
+      })
+    : await getCachedPublicConversation(id);
+
   if (!conversation) {
     return NextResponse.json({ error: "Not found" }, { status: 404 });
   }
@@ -27,10 +36,16 @@ export async function GET(_: Request, { params }: { params: Promise<{ id: string
 export async function PATCH(req: Request, { params }: { params: Promise<{ id: string }> }) {
   const session = await auth();
   if (!session?.user?.id) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const rateLimit = await enforceRequestRateLimit(req, "conversationMutate", session.user.id);
+  const headers = new Headers();
+  applyRateLimitHeaders(headers, rateLimit);
+  if (!rateLimit.ok) {
+    return NextResponse.json({ error: "Too many conversation updates. Please slow down." }, { status: 429, headers });
+  }
   const { id } = await params;
   const body = await req.json();
 
-  const [updated] = await db.update(conversations)
+  const [updated] = await withSessionDbAccess(session, (tx) => tx.update(conversations)
     .set({
       ...(typeof body.title === "string" ? { title: body.title } : {}),
       ...(typeof body.seasonYear === "number" ? { seasonYear: body.seasonYear } : {}),
@@ -38,22 +53,32 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
       updatedAt: new Date(),
     })
     .where(and(eq(conversations.id, id), eq(conversations.userId, session.user.id)))
-    .returning();
+    .returning());
 
   if (!updated) {
     return NextResponse.json({ error: "Not found" }, { status: 404 });
   }
 
-  return NextResponse.json(updated);
+  revalidatePublicConversation(id);
+  revalidateConversationDerivedCaches();
+  return NextResponse.json(updated, { headers });
 }
 
-export async function DELETE(_: Request, { params }: { params: Promise<{ id: string }> }) {
+export async function DELETE(req: Request, { params }: { params: Promise<{ id: string }> }) {
   const session = await auth();
   if (!session?.user?.id) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const rateLimit = await enforceRequestRateLimit(req, "conversationMutate", session.user.id);
+  const headers = new Headers();
+  applyRateLimitHeaders(headers, rateLimit);
+  if (!rateLimit.ok) {
+    return NextResponse.json({ error: "Too many conversation updates. Please slow down." }, { status: 429, headers });
+  }
   const { id } = await params;
 
-  await db.delete(conversations)
-    .where(and(eq(conversations.id, id), eq(conversations.userId, session.user.id)));
+  await withSessionDbAccess(session, (tx) => tx.delete(conversations)
+    .where(and(eq(conversations.id, id), eq(conversations.userId, session.user.id))));
 
-  return NextResponse.json({ ok: true });
+  revalidatePublicConversation(id);
+  revalidateConversationDerivedCaches();
+  return NextResponse.json({ ok: true }, { headers });
 }

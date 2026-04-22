@@ -82,19 +82,23 @@ export default function AdminUsersPage() {
   };
 
   return (
-    <div className="relative min-h-svh">
-      <div className="pointer-events-none absolute inset-x-0 top-0 h-64 bg-[radial-gradient(circle_at_top,_color-mix(in_oklab,_#0066B3_10%,_transparent)_0%,_transparent_70%)]" />
+    <div className="relative">
       <div className="relative mx-auto max-w-5xl space-y-6 px-4 py-6 sm:px-6 sm:py-8">
-        <div>
-          <h1 className="text-2xl font-semibold tracking-tight text-foreground">Users</h1>
-          <p className="mt-1 text-[13px] text-muted-foreground">{users.length} total</p>
+        <div className="space-y-2">
+          <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
+            Admin panel
+          </p>
+          <h1 className="text-3xl font-semibold tracking-tight text-foreground">Users</h1>
+          <p className="mt-1 text-[13px] leading-6 text-muted-foreground">
+            Search accounts, review activity, and apply moderation actions. {users.length} total user{users.length === 1 ? "" : "s"} loaded.
+          </p>
         </div>
 
-        <div className="flex flex-wrap items-center gap-2">
-          <div className="relative">
+        <div className="flex flex-wrap items-center gap-2 rounded-[1.5rem] border border-border/60 bg-card/70 p-2 shadow-[var(--shadow-card)]">
+          <div className="relative flex-1 min-w-[14rem]">
             <Search className="absolute left-3 top-1/2 size-3.5 -translate-y-1/2 text-muted-foreground" />
             <Input
-              className="h-8 rounded-xl pl-8 text-[13px]"
+              className="h-10 rounded-[1rem] border-white/6 bg-background/45 pl-8 text-[13px]"
               placeholder="Search users..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
@@ -104,8 +108,8 @@ export default function AdminUsersPage() {
             <button
               key={f}
               onClick={() => setFilter(f)}
-              className={`rounded-xl px-3 py-1.5 text-[13px] transition-colors ${
-                filter === f ? "bg-[#0066B3]/10 text-[#0066B3]" : "text-muted-foreground hover:bg-muted"
+              className={`rounded-full border px-3 py-2 text-[12px] transition-colors ${
+                filter === f ? "border-foreground/10 bg-foreground text-background" : "border-border/60 bg-card/70 text-muted-foreground hover:text-foreground"
               }`}
             >
               {f.charAt(0).toUpperCase() + f.slice(1)}
@@ -113,7 +117,7 @@ export default function AdminUsersPage() {
           ))}
         </div>
 
-        <div className="overflow-hidden rounded-[1.75rem] border border-border/60 bg-card shadow-[var(--shadow-card)]">
+        <div className="overflow-hidden rounded-[1.75rem] border border-border/60 bg-card/72 shadow-[var(--shadow-card)] backdrop-blur-sm">
           {users.length === 0 ? (
             <p className="px-5 py-10 text-center text-[13px] text-muted-foreground">No users found.</p>
           ) : (
@@ -138,7 +142,7 @@ export default function AdminUsersPage() {
                             <p className="text-muted-foreground">{u.email}</p>
                           </div>
                           {u.isAdmin && (
-                            <span className="rounded-full bg-[#0066B3]/10 px-2 py-0.5 text-[10px] font-semibold text-[#0066B3]">
+                            <span className="rounded-full border border-[#0066B3]/20 bg-[#0066B3]/10 px-2 py-0.5 text-[10px] font-semibold text-[#8cc6f3]">
                               Admin
                             </span>
                           )}
