@@ -3,6 +3,25 @@ const DEFAULT_REPLAYS_SESSION_SAMPLE_RATE = 1;
 const DEFAULT_REPLAYS_ON_ERROR_SAMPLE_RATE = 1;
 const DEFAULT_SENTRY_TUNNEL_PATH = "/monitoring";
 
+function readBoolean(...values: Array<string | undefined>) {
+  for (const value of values) {
+    const normalized = value?.trim().toLowerCase();
+    if (!normalized) {
+      continue;
+    }
+
+    if (["1", "true", "yes", "on"].includes(normalized)) {
+      return true;
+    }
+
+    if (["0", "false", "no", "off"].includes(normalized)) {
+      return false;
+    }
+  }
+
+  return false;
+}
+
 function readString(...values: Array<string | undefined>) {
   for (const value of values) {
     const trimmed = value?.trim();
@@ -81,11 +100,12 @@ export function getSentryReleaseManagementConfig() {
   const authToken = readString(process.env.SENTRY_AUTH_TOKEN);
   const org = readString(process.env.SENTRY_ORG);
   const project = readString(process.env.SENTRY_PROJECT);
+  const releaseManagementEnabled = readBoolean(process.env.SENTRY_RELEASE_MANAGEMENT_ENABLED);
 
   return {
     authToken,
     org,
     project,
-    enabled: Boolean(authToken && org && project),
+    enabled: releaseManagementEnabled && Boolean(authToken && org && project),
   };
 }
