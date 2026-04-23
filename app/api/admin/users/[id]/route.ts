@@ -7,7 +7,7 @@ import {
 } from "@/lib/cache-tags";
 import { withAdminDbAccess } from "@/lib/db/access";
 import { db } from "@/lib/db";
-import { users, bannedIps } from "@/lib/db/schema";
+import { users, bannedEmails } from "@/lib/db/schema";
 import { applyRateLimitHeaders, enforceRequestRateLimit } from "@/lib/rate-limit";
 import { eq } from "drizzle-orm";
 
@@ -31,7 +31,6 @@ export async function PATCH(req: NextRequest, { params }: Params) {
   const body = await req.json() as {
     action: "promote" | "demote" | "ban" | "unban";
     reason?: string;
-    ip?: string;
   };
 
   const [target] = await db.select().from(users).where(eq(users.id, id)).limit(1);
@@ -52,24 +51,29 @@ export async function PATCH(req: NextRequest, { params }: Params) {
       await db.update(users).set({ isAdmin: false }).where(eq(users.id, id));
       break;
     case "ban": {
-      const ip = body.ip ?? "unknown";
-      await db.update(users).set({ ipBanned: true, bannedIp: ip }).where(eq(users.id, id));
-      if (ip !== "unknown") {
-        await withAdminDbAccess(adminAuth.userId, (tx) => tx
-          .insert(bannedIps)
-          .values({ ip, reason: body.reason ?? null, bannedById: adminAuth.userId })
-          .onConflictDoNothing());
-      }
+      const email = target.email.toLowerCase();
+      await db.update(users).set({ emailBanned: true, bannedEmail: email }).where(eq(users.id, id));
+      await withAdminDbAccess(adminAuth.userId, (tx) => tx
+        .insert(bannedEmails)
+        .values({ email, reason: body.reason?.trim() || null, bannedById: adminAuth.userId })
+        .onConflictDoUpdate({
+          target: bannedEmails.email,
+          set: {
+            reason: body.reason?.trim() || null,
+            bannedAt: new Date(),
+            bannedById: adminAuth.userId,
+          },
+        }));
       break;
     }
     case "unban":
-      if (typeof target.bannedIp === "string" && target.bannedIp) {
-        const bannedIp = target.bannedIp;
+      if (typeof target.bannedEmail === "string" && target.bannedEmail) {
+        const bannedEmail = target.bannedEmail;
         await withAdminDbAccess(adminAuth.userId, (tx) => tx
-          .delete(bannedIps)
-          .where(eq(bannedIps.ip, bannedIp)));
+          .delete(bannedEmails)
+          .where(eq(bannedEmails.email, bannedEmail)));
       }
-      await db.update(users).set({ ipBanned: false, bannedIp: null }).where(eq(users.id, id));
+      await db.update(users).set({ emailBanned: false, bannedEmail: null }).where(eq(users.id, id));
       break;
     default:
       return NextResponse.json({ error: "Unknown action" }, { status: 400, headers });

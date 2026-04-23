@@ -3,7 +3,7 @@ import { and, count, eq, gt, gte, sql, sum } from "drizzle-orm";
 import { withDbAccessContext } from "@/lib/db/access";
 import {
   accounts,
-  bannedIps,
+  bannedEmails,
   conversations,
   docChunks,
   documents,
@@ -66,7 +66,7 @@ const loadAdminStats = unstable_cache(
       accountProviders,
       [totalSessions],
       [activeSessions],
-      [blockedIps],
+      [blockedEmails],
     ] = await Promise.all([
       tx.select({ count: count() }).from(users),
       tx.select({ count: count() }).from(users).where(gte(users.createdAt, oneDayAgo)),
@@ -74,7 +74,7 @@ const loadAdminStats = unstable_cache(
       tx.select({ count: count() }).from(users).where(gte(users.createdAt, thirtyDaysAgo)),
       tx.select({ count: count() }).from(users).where(eq(users.isAdmin, true)),
       tx.select({ count: count() }).from(users).where(sql`${users.emailVerified} is not null`),
-      tx.select({ count: count() }).from(users).where(eq(users.ipBanned, true)),
+      tx.select({ count: count() }).from(users).where(eq(users.emailBanned, true)),
       tx.select({ count: count() }).from(conversations),
       tx.select({ count: count() }).from(conversations).where(eq(conversations.isPublic, true)),
       tx.select({ count: count() }).from(conversations).where(eq(conversations.isPublic, false)),
@@ -132,7 +132,7 @@ const loadAdminStats = unstable_cache(
         .orderBy(sql`count(*) desc`),
       tx.select({ count: count() }).from(sessions),
       tx.select({ count: count() }).from(sessions).where(gt(sessions.expires, now)),
-      tx.select({ count: count() }).from(bannedIps),
+      tx.select({ count: count() }).from(bannedEmails),
     ]);
 
     let qdrantCount = 0;
@@ -181,7 +181,7 @@ const loadAdminStats = unstable_cache(
       accountProviders,
       totalSessions,
       activeSessions,
-      blockedIps,
+      blockedEmails,
       qdrantCount,
     };
   }),

@@ -42,6 +42,7 @@ export const RATE_LIMIT_POLICIES = {
   adminDocumentMutate: { scope: "admin-document-mutate", limit: 120, windowMs: 60 * 60 * 1000 },
   adminDocumentUpload: { scope: "admin-document-upload", limit: 12, windowMs: 60 * 60 * 1000 },
   adminDocumentDescribe: { scope: "admin-document-describe", limit: 60, windowMs: 60 * 60 * 1000 },
+  adminBlogMutate: { scope: "admin-blog-mutate", limit: 120, windowMs: 60 * 60 * 1000 },
   adminReportMutate: { scope: "admin-report-mutate", limit: 120, windowMs: 60 * 60 * 1000 },
   adminUserMutate: { scope: "admin-user-mutate", limit: 60, windowMs: 60 * 60 * 1000 },
 } as const;

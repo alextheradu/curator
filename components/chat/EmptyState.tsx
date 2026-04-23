@@ -30,11 +30,9 @@ const GREETING_PREFIXES = [
   "What's up",
   "How's it going",
   "Glad you're here",
-  "Good morning",
-  "Good afternoon",
-  "Good evening",
   "Ahoy",
   "Hola",
+  "Bonjour",
 ];
 
 function selectRandomSuggestions(count: number) {

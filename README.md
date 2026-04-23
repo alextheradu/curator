@@ -58,7 +58,7 @@ NEXT_PUBLIC_SENTRY_REPLAY_SESSION_SAMPLE_RATE=1
 NEXT_PUBLIC_SENTRY_REPLAY_ON_ERROR_SAMPLE_RATE=1
 ```
 
-By default, when `NEXT_PUBLIC_SENTRY_DSN` is configured, Curator records full browser sessions and error-triggered replays, and sends them through the app's `/monitoring` tunnel route to reduce ad-blocker loss.
+By default, when `NEXT_PUBLIC_SENTRY_DSN` is configured, Curator records full browser sessions and error-triggered replays, and sends them through the app's `/_events` tunnel route to reduce ad-blocker loss.
 
 Optional build-time source map upload:
 

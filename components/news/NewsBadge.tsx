@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo } from "react";
 import { usePathname } from "next/navigation";
 
 const STORAGE_KEY = "lastSeenNewsAt";
@@ -11,27 +11,24 @@ interface NewsBadgeProps {
 
 export function NewsBadge({ latestPublishedAt }: NewsBadgeProps) {
   const pathname = usePathname();
-  const [hasUnread, setHasUnread] = useState(false);
 
   useEffect(() => {
-    if (!latestPublishedAt) {
-      setHasUnread(false);
-      return;
-    }
-
     if (pathname === "/news") {
       localStorage.setItem(STORAGE_KEY, Date.now().toString());
-      setHasUnread(false);
-      return;
+    }
+  }, [pathname]);
+
+  const hasUnread = useMemo(() => {
+    if (!latestPublishedAt || pathname === "/news" || typeof window === "undefined") {
+      return false;
     }
 
     const lastSeen = localStorage.getItem(STORAGE_KEY);
     if (!lastSeen) {
-      setHasUnread(true);
-      return;
+      return true;
     }
 
-    setHasUnread(new Date(latestPublishedAt).getTime() > Number(lastSeen));
+    return new Date(latestPublishedAt).getTime() > Number(lastSeen);
   }, [latestPublishedAt, pathname]);
 
   if (!hasUnread) return null;

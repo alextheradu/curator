@@ -1,7 +1,6 @@
 import { auth } from "@/auth";
 import { withSystemDbAccess } from "@/lib/db/access";
-import { bannedIps } from "@/lib/db/schema";
-import { getClientIp } from "@/lib/request-context";
+import { bannedEmails } from "@/lib/db/schema";
 import { NO_INDEX_X_ROBOTS_TAG } from "@/lib/seo";
 import { eq } from "drizzle-orm";
 import { NextResponse } from "next/server";
@@ -24,13 +23,13 @@ function applyCrawlerHeaders(pathname: string, response: NextResponse) {
 
 export default auth(async (req) => {
   const pathname = req.nextUrl.pathname;
-  const ip = getClientIp(req);
+  const email = req.auth?.user?.email?.toLowerCase();
 
-  if (ip !== "unknown") {
+  if (email) {
     const [ban] = await withSystemDbAccess((tx) => tx
-      .select({ ip: bannedIps.ip })
-      .from(bannedIps)
-      .where(eq(bannedIps.ip, ip))
+      .select({ email: bannedEmails.email })
+      .from(bannedEmails)
+      .where(eq(bannedEmails.email, email))
       .limit(1));
 
     if (ban) {
@@ -50,5 +49,5 @@ export default auth(async (req) => {
 });
 
 export const config = {
-  matcher: ["/((?!api/auth|monitoring|_next/static|_next/image|favicon.ico|icon.png|icon.svg).*)"],
+  matcher: ["/((?!api/auth|_events|_next/static|_next/image|favicon.ico|icon.png|icon.svg).*)"],
 };

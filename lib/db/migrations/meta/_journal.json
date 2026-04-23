@@ -78,6 +78,27 @@
       "when": 1776954857917,
       "tag": "0010_blog_posts",
       "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "7",
+      "when": 1776972600000,
+      "tag": "0011_blog_posts_rls",
+      "breakpoints": true
+    },
+    {
+      "idx": 12,
+      "version": "7",
+      "when": 1776982511934,
+      "tag": "0012_futuristic_shadowcat",
+      "breakpoints": true
+    },
+    {
+      "idx": 13,
+      "version": "7",
+      "when": 1776988800000,
+      "tag": "0013_email_moderation",
+      "breakpoints": true
     }
   ]
 }

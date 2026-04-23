@@ -46,7 +46,7 @@ self.addEventListener("fetch", (event) => {
     return;
   }
 
-  if (url.pathname.startsWith("/api/") || url.pathname.startsWith("/monitoring")) {
+  if (url.pathname.startsWith("/api/") || url.pathname.startsWith("/_events")) {
     return;
   }
 

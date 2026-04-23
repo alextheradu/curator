@@ -5,7 +5,7 @@ import Image from "next/image";
 import { lazy, Suspense, useCallback, useEffect, useRef, useState } from "react";
 import { useSession } from "next-auth/react";
 import { AnimatePresence, motion } from "framer-motion";
-import { CopyIcon, GlobeIcon, LinkIcon, LockIcon, Share2Icon } from "lucide-react";
+import { CopyIcon, GlobeIcon, LinkIcon, LockIcon, NewspaperIcon, Share2Icon } from "lucide-react";
 import { MessageBubble } from "./MessageBubble";
 import { StreamingIndicator } from "./StreamingIndicator";
 import { EmptyState } from "./EmptyState";
@@ -19,9 +19,6 @@ const TosModal = lazy(() =>
 );
 const AuthModal = lazy(() =>
   import("@/components/auth/AuthModal").then((m) => ({ default: m.AuthModal }))
-);
-const SettingsModal = lazy(() =>
-  import("@/components/ui/SettingsModal").then((m) => ({ default: m.SettingsModal }))
 );
 import { SidebarInset, SidebarTrigger, useSidebar } from "@/components/ui/sidebar";
 import { Button } from "@/components/ui/button";
@@ -68,8 +65,9 @@ export function ChatWindow({
   shareDialogConversationId = null,
   onShareDialogHandled,
 }: ChatWindowProps) {
-  const { data: session } = useSession();
+  const { data: session, update } = useSession();
   const isAuthenticated = !!session?.user?.id;
+  const accountTosAccepted = session?.user?.tosAcceptedAt != null;
 
   const {
     activeConversation,
@@ -96,9 +94,9 @@ export function ChatWindow({
     setShowTosModal,
     showAuthModal,
     setShowAuthModal,
-    acceptTos,
+    acceptGuestTos,
     consumeGuestTurn,
-  } = useGuestLimit(isAuthenticated);
+  } = useGuestLimit(isAuthenticated, accountTosAccepted);
 
   const { setOpenMobile: setSidebarOpenMobile } = useSidebar();
 
@@ -391,20 +389,54 @@ export function ChatWindow({
   ]);
 
   const handleAcceptTos = useCallback(() => {
-    acceptTos();
-    const pendingMessage = pendingMessageRef.current;
-    pendingMessageRef.current = null;
+    void (async () => {
+      try {
+        if (isAuthenticated) {
+          const response = await fetch("/api/account/tos", { method: "PATCH" });
+          const payload = await response.json().catch(() => ({}));
+          if (!response.ok) {
+            throw new Error(payload.error ?? "Unable to save your terms acceptance.");
+          }
 
-    if (!pendingMessage) {
-      return;
-    }
+          setShowTosModal(false);
 
-    if (!isAuthenticated && !consumeGuestTurn()) {
-      return;
-    }
+          try {
+            await update({
+              tosAcceptedAt: payload.tosAcceptedAt ?? new Date().toISOString(),
+            });
+          } catch {
+            window.location.reload();
+            return;
+          }
+        } else {
+          acceptGuestTos();
+        }
 
-    void sendMessage(pendingMessage);
-  }, [acceptTos, consumeGuestTurn, isAuthenticated, sendMessage]);
+        const pendingMessage = pendingMessageRef.current;
+        pendingMessageRef.current = null;
+
+        if (!pendingMessage) {
+          return;
+        }
+
+        if (!isAuthenticated && !consumeGuestTurn()) {
+          return;
+        }
+
+        void sendMessage(pendingMessage);
+      } catch (error) {
+        console.error(error);
+        toast.error(error instanceof Error ? error.message : "Unable to save your terms acceptance.");
+      }
+    })();
+  }, [
+    acceptGuestTos,
+    consumeGuestTurn,
+    isAuthenticated,
+    sendMessage,
+    setShowTosModal,
+    update,
+  ]);
 
   const handleCopyShareLink = useCallback(async () => {
     if (!conversation || !origin) {
@@ -432,6 +464,7 @@ export function ChatWindow({
   const messages = conversation?.messages ?? [];
   const isEmpty = messages.length === 0 && !isStreaming;
   const shareUrl = conversation ? `${origin}/c/${conversation.id}` : "";
+  const showConversationChrome = readOnly || !isEmpty;
 
   return (
     <SidebarInset className="flex min-h-svh max-h-svh flex-col overflow-hidden bg-background">
@@ -439,7 +472,6 @@ export function ChatWindow({
       <Suspense>
         <TosModal open={showTosModal} onAccept={handleAcceptTos} />
         <AuthModal open={showAuthModal} onOpenChange={setShowAuthModal} />
-        <SettingsModal />
         <DocumentViewerModal
           open={!!viewerCitation}
           citation={viewerCitation}
@@ -524,80 +556,143 @@ export function ChatWindow({
               />
             </div>
 
-            <div className="min-w-0 flex-1">
-              <div className="truncate text-[13px] font-semibold text-foreground sm:text-sm">
-                {conversation?.title ?? "New Chat"}
-              </div>
-              <div className="mt-0.5 flex items-center gap-2 sm:hidden">
-                {readOnly ? (
-                  <span className="inline-flex shrink-0 items-center gap-1 rounded-full border border-border/50 bg-muted/50 px-2 py-0.5 text-[10px] font-medium text-muted-foreground">
-                    <GlobeIcon className="size-2.5" />
-                    Public
-                  </span>
-                ) : conversation?.isPublic ? (
-                  <span className="inline-flex shrink-0 items-center gap-1 rounded-full border border-blue-500/20 bg-blue-500/10 px-2 py-0.5 text-[10px] font-medium text-blue-400">
-                    <GlobeIcon className="size-2.5" />
-                    Public
-                  </span>
-                ) : (
-                  <span className="inline-flex shrink-0 items-center gap-1 rounded-full border border-border/50 bg-muted/50 px-2 py-0.5 text-[10px] font-medium text-muted-foreground">
-                    <LockIcon className="size-2.5" />
-                    Private
-                  </span>
-                )}
-              </div>
-            </div>
-            {readOnly ? (
-              <span className="hidden shrink-0 items-center gap-1 rounded-full border border-border/50 bg-muted/50 px-2 py-0.5 text-[10px] font-medium text-muted-foreground sm:inline-flex">
-                <GlobeIcon className="size-2.5" />
-                Public · read-only
-              </span>
-            ) : conversation?.isPublic ? (
-              <span className="hidden shrink-0 items-center gap-1 rounded-full border border-blue-500/20 bg-blue-500/10 px-2 py-0.5 text-[10px] font-medium text-blue-400 sm:inline-flex">
-                <GlobeIcon className="size-2.5" />
-                Public
-              </span>
-            ) : (
-              <span className="hidden shrink-0 items-center gap-1 rounded-full border border-border/50 bg-muted/50 px-2 py-0.5 text-[10px] font-medium text-muted-foreground sm:inline-flex">
-                <LockIcon className="size-2.5" />
-                Private
-              </span>
-            )}
-            <div className="flex shrink-0 items-center gap-2">
-              {readOnly ? (
-                <Link
-                  href="/"
-                  className="inline-flex h-8 shrink-0 items-center rounded-xl border border-border/60 px-2.5 text-xs font-medium text-foreground transition-colors hover:bg-muted sm:px-3"
+            <AnimatePresence initial={false} mode="wait">
+              {showConversationChrome ? (
+                <motion.div
+                  key="conversation-meta"
+                  initial={{ opacity: 0, x: 12 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  exit={{ opacity: 0, x: -12 }}
+                  transition={{ duration: 0.22, ease: [0.22, 1, 0.36, 1] }}
+                  className="flex min-w-0 flex-1 items-center gap-2.5 sm:gap-3"
                 >
-                  <span className="hidden sm:inline">Start your own chat</span>
-                  <span className="sm:hidden">Start chat</span>
-                </Link>
+                  <div className="min-w-0 flex-1">
+                    <div className="truncate text-[13px] font-semibold text-foreground sm:text-sm">
+                      {conversation?.title ?? "New Chat"}
+                    </div>
+                    <div className="mt-0.5 flex items-center gap-2 sm:hidden">
+                      {readOnly ? (
+                        <span className="inline-flex shrink-0 items-center gap-1 rounded-full border border-border/50 bg-muted/50 px-2 py-0.5 text-[10px] font-medium text-muted-foreground">
+                          <GlobeIcon className="size-2.5" />
+                          Public
+                        </span>
+                      ) : conversation?.isPublic ? (
+                        <span className="inline-flex shrink-0 items-center gap-1 rounded-full border border-blue-500/20 bg-blue-500/10 px-2 py-0.5 text-[10px] font-medium text-blue-400">
+                          <GlobeIcon className="size-2.5" />
+                          Public
+                        </span>
+                      ) : (
+                        <span className="inline-flex shrink-0 items-center gap-1 rounded-full border border-border/50 bg-muted/50 px-2 py-0.5 text-[10px] font-medium text-muted-foreground">
+                          <LockIcon className="size-2.5" />
+                          Private
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                  {readOnly ? (
+                    <span className="hidden shrink-0 items-center gap-1 rounded-full border border-border/50 bg-muted/50 px-2 py-0.5 text-[10px] font-medium text-muted-foreground sm:inline-flex">
+                      <GlobeIcon className="size-2.5" />
+                      Public · read-only
+                    </span>
+                  ) : conversation?.isPublic ? (
+                    <span className="hidden shrink-0 items-center gap-1 rounded-full border border-blue-500/20 bg-blue-500/10 px-2 py-0.5 text-[10px] font-medium text-blue-400 sm:inline-flex">
+                      <GlobeIcon className="size-2.5" />
+                      Public
+                    </span>
+                  ) : (
+                    <span className="hidden shrink-0 items-center gap-1 rounded-full border border-border/50 bg-muted/50 px-2 py-0.5 text-[10px] font-medium text-muted-foreground sm:inline-flex">
+                      <LockIcon className="size-2.5" />
+                      Private
+                    </span>
+                  )}
+                </motion.div>
               ) : (
-                <Button
-                  variant="outline"
-                  aria-label="Share"
-                  onClick={() => {
-                    if (canShare) {
-                      setShareDialogOpen(true);
-                      return;
-                    }
-
-                    setShowAuthModal(true);
-                    toast.info("Sign in to share chats.");
-                  }}
-                  disabled={!conversation || messages.length === 0 || isShareUpdating}
-                  className="h-8 shrink-0 px-2 text-xs sm:px-3 sm:text-sm"
+                <motion.div
+                  key="blank-meta"
+                  initial={{ opacity: 0, x: -12 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  exit={{ opacity: 0, x: 12 }}
+                  transition={{ duration: 0.22, ease: [0.22, 1, 0.36, 1] }}
+                  className="min-w-0 flex-1"
                 >
-                  <Share2Icon className="size-4" />
-                  <span className="hidden sm:inline">Share</span>
-                </Button>
+                  <div className="truncate text-[13px] font-semibold text-foreground sm:text-sm">
+                    Curator
+                  </div>
+                  <div className="mt-0.5 truncate text-[11px] text-muted-foreground">
+                    Read updates or start a new FRC question.
+                  </div>
+                </motion.div>
               )}
+            </AnimatePresence>
+            <div className="flex shrink-0 items-center gap-2">
+              <AnimatePresence initial={false} mode="wait">
+                {readOnly ? (
+                  <motion.div
+                    key="readonly-action"
+                    initial={{ opacity: 0, x: 12 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    exit={{ opacity: 0, x: 12 }}
+                    transition={{ duration: 0.22, ease: [0.22, 1, 0.36, 1] }}
+                  >
+                    <Link
+                      href="/"
+                      className="inline-flex h-8 shrink-0 items-center rounded-xl border border-border/60 px-2.5 text-xs font-medium text-foreground transition-colors hover:bg-muted sm:px-3"
+                    >
+                      <span className="hidden sm:inline">Start your own chat</span>
+                      <span className="sm:hidden">Start chat</span>
+                    </Link>
+                  </motion.div>
+                ) : !showConversationChrome ? (
+                  <motion.div
+                    key="blank-action"
+                    initial={{ opacity: 0, x: 12 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    exit={{ opacity: 0, x: 12 }}
+                    transition={{ duration: 0.22, ease: [0.22, 1, 0.36, 1] }}
+                  >
+                    <Link
+                      href="/blog"
+                      className="inline-flex h-8 shrink-0 items-center gap-1.5 rounded-xl border border-border/60 px-2.5 text-xs font-medium text-foreground transition-colors hover:bg-muted sm:px-3"
+                    >
+                      <NewspaperIcon className="size-3.5" />
+                      <span>Blog</span>
+                    </Link>
+                  </motion.div>
+                ) : (
+                  <motion.div
+                    key="share-action"
+                    initial={{ opacity: 0, x: 12 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    exit={{ opacity: 0, x: 12 }}
+                    transition={{ duration: 0.22, ease: [0.22, 1, 0.36, 1] }}
+                  >
+                    <Button
+                      variant="outline"
+                      aria-label="Share"
+                      onClick={() => {
+                        if (canShare) {
+                          setShareDialogOpen(true);
+                          return;
+                        }
+
+                        setShowAuthModal(true);
+                        toast.info("Sign in to share chats.");
+                      }}
+                      disabled={!conversation || messages.length === 0 || isShareUpdating}
+                      className="h-8 shrink-0 px-2 text-xs sm:px-3 sm:text-sm"
+                    >
+                      <Share2Icon className="size-4" />
+                      <span className="hidden sm:inline">Share</span>
+                    </Button>
+                  </motion.div>
+                )}
+              </AnimatePresence>
             </div>
           </div>
         </div>
       </div>
 
-      <div ref={containerRef} className="relative flex min-h-0 flex-1 flex-col overflow-y-auto overscroll-contain">
+      <div ref={containerRef} className="relative flex min-h-0 flex-1 flex-col overflow-x-hidden overflow-y-auto overscroll-contain">
         <AnimatePresence mode="popLayout">
           {isEmpty && readOnly ? (
             <div className="mx-auto flex w-full max-w-3xl flex-1 flex-col items-center justify-center gap-3 px-4 pb-40 pt-16 text-center">
@@ -626,33 +721,36 @@ export function ChatWindow({
               animate={{ opacity: 1, y: 0, scale: 1 }}
               exit={{ opacity: 0, y: -8, scale: 0.992 }}
               transition={{ duration: 0.24, ease: [0.22, 1, 0.36, 1] }}
-              className="mx-auto flex w-full max-w-3xl flex-col gap-4 px-3 pb-24 pt-4 sm:gap-6 sm:px-4 sm:pb-40 sm:pt-8 md:px-6"
+              className="mx-auto flex min-h-full w-full max-w-3xl flex-col px-3 pb-24 sm:px-4 sm:pb-40 md:px-6"
             >
-              {messages.map((message) => (
-                <MessageBubble
-                  key={message.id}
-                  message={message}
-                  onOpenCitation={setViewerCitation}
-                />
-              ))}
+              <div className="flex-1" />
+              <div className="flex flex-col gap-4 pt-4 sm:gap-6 sm:pt-8">
+                {messages.map((message) => (
+                  <MessageBubble
+                    key={message.id}
+                    message={message}
+                    onOpenCitation={setViewerCitation}
+                  />
+                ))}
 
-              {isStreaming && !streamingContent && (
-                <StreamingIndicator key="indicator" label={streamStatus} />
-              )}
+                {isStreaming && !streamingContent && (
+                  <StreamingIndicator key="indicator" label={streamStatus} />
+                )}
 
-              {isStreaming && streamingContent && (
-                <MessageBubble
-                  key="streaming"
-                  message={{
-                    id: "streaming",
-                    role: "assistant",
-                    content: streamingContent,
-                    timestamp: new Date(),
-                  }}
-                  isStreaming
-                  onOpenCitation={setViewerCitation}
-                />
-              )}
+                {isStreaming && streamingContent && (
+                  <MessageBubble
+                    key="streaming"
+                    message={{
+                      id: "streaming",
+                      role: "assistant",
+                      content: streamingContent,
+                      timestamp: new Date(),
+                    }}
+                    isStreaming
+                    onOpenCitation={setViewerCitation}
+                  />
+                )}
+              </div>
             </motion.div>
           )}
         </AnimatePresence>

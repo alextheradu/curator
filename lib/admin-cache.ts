@@ -1,7 +1,7 @@
 import { unstable_cache } from "next/cache";
 import { and, count, desc, eq, ilike, or } from "drizzle-orm";
 import { withAdminDbAccess, withDbAccessContext } from "@/lib/db/access";
-import { conversations, documents, messages, reports, users } from "@/lib/db/schema";
+import { bannedEmails, conversations, documents, messages, reports, users } from "@/lib/db/schema";
 import {
   ADMIN_CHATS_CACHE_TAG,
   ADMIN_DOCUMENTS_CACHE_TAG,
@@ -34,17 +34,22 @@ export async function getCachedAdminReports() {
       .select({
         id: reports.id,
         status: reports.status,
+        source: reports.source,
         reason: reports.reason,
+        matchedTerms: reports.matchedTerms,
         createdAt: reports.createdAt,
         conversationId: reports.conversationId,
         conversationTitle: conversations.title,
         messageId: reports.messageId,
-        reporterName: users.name,
-        reporterEmail: users.email,
+        messageRole: messages.role,
+        accountUserId: users.id,
+        accountName: users.name,
+        accountEmail: users.email,
       })
       .from(reports)
       .innerJoin(conversations, eq(reports.conversationId, conversations.id))
-      .innerJoin(users, eq(reports.reportedById, users.id))
+      .innerJoin(messages, eq(reports.messageId, messages.id))
+      .innerJoin(users, eq(conversations.userId, users.id))
       .orderBy(desc(reports.createdAt))
       .limit(200)),
     ["admin-reports"],
@@ -127,12 +132,14 @@ export async function getCachedAdminUsers(search?: string | null, filter?: strin
           email: users.email,
           image: users.image,
           isAdmin: users.isAdmin,
-          ipBanned: users.ipBanned,
-          bannedIp: users.bannedIp,
+          emailBanned: users.emailBanned,
+          bannedEmail: users.bannedEmail,
+          banReason: bannedEmails.reason,
           createdAt: users.createdAt,
           msgCount: count(messages.id),
         })
         .from(users)
+        .leftJoin(bannedEmails, eq(bannedEmails.email, users.bannedEmail))
         .leftJoin(conversations, eq(conversations.userId, users.id))
         .leftJoin(messages, eq(messages.conversationId, conversations.id))
         .where(
@@ -140,12 +147,12 @@ export async function getCachedAdminUsers(search?: string | null, filter?: strin
             ? or(ilike(users.name, `%${searchValue}%`), ilike(users.email, `%${searchValue}%`))
             : undefined,
         )
-        .groupBy(users.id)
+        .groupBy(users.id, bannedEmails.reason)
         .orderBy(desc(users.createdAt)));
 
       return rows.filter((user) => {
         if (filterValue === "admin") return user.isAdmin;
-        if (filterValue === "banned") return user.ipBanned;
+        if (filterValue === "banned") return user.emailBanned;
         return true;
       });
     },

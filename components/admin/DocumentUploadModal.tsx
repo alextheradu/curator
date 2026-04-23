@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useRef } from "react";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -90,6 +90,9 @@ export function DocumentUploadModal({ open, onClose, onSuccess }: Props) {
       <DialogContent className="w-full max-w-lg rounded-[1.75rem] border border-border/60 bg-card/95 p-0 shadow-[var(--shadow-float)] backdrop-blur-xl">
         <DialogHeader className="border-b border-border/60 px-6 py-4">
           <DialogTitle className="text-base font-semibold">Upload document</DialogTitle>
+          <DialogDescription className="sr-only">
+            Upload a PDF, add retrieval metadata, and confirm indexing into the document library.
+          </DialogDescription>
           <div className="mt-2 flex items-center gap-2">
             {[1, 2, 3].map((s) => (
               <div

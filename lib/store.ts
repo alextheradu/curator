@@ -3,6 +3,7 @@ import { persist } from "zustand/middleware";
 import { generateChatTitle } from "./utils";
 import type { Citation } from "./db/schema";
 import { DEFAULT_SEASON_YEAR } from "./seasons";
+import { randomUuid } from "./uuid";
 
 export type Role = "user" | "assistant" | "system";
 
@@ -88,7 +89,7 @@ export const useChatStore = create<ChatStore>()(
       typingTitle: "",
 
       newConversation: () => {
-        const id = crypto.randomUUID();
+        const id = randomUuid();
         set((s) => ({
           conversations: sortConversations([
             {
@@ -115,7 +116,7 @@ export const useChatStore = create<ChatStore>()(
         set({ activeConversationId: id, streamingContent: "", isStreaming: false }),
 
       addMessage: (conversationId, message) => {
-        const id = crypto.randomUUID();
+        const id = randomUuid();
         const full: Message = { ...message, id, timestamp: new Date() };
         set((s) => ({
           conversations: sortConversations(
@@ -139,7 +140,7 @@ export const useChatStore = create<ChatStore>()(
         const { streamingContent } = get();
         if (!streamingContent) { set({ streamingContent: "", isStreaming: false }); return; }
         const msg: Message = {
-          id: crypto.randomUUID(), role: "assistant",
+          id: randomUuid(), role: "assistant",
           content: streamingContent, timestamp: new Date(),
           ...(citations?.length && { citations }),
         };

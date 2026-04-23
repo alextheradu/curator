@@ -1,27 +1,27 @@
 import { auth } from "@/auth";
 import { withSystemDbAccess } from "@/lib/db/access";
-import { bannedIps } from "@/lib/db/schema";
-import { getClientIp } from "@/lib/request-context";
+import { bannedEmails } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
 import { NextRequest, NextResponse } from "next/server";
 
-export async function requireAdmin(req: NextRequest): Promise<
+export async function requireAdmin(_req: NextRequest): Promise<
   { ok: true; userId: string; isSuperAdmin: boolean } | { ok: false; response: NextResponse }
 > {
-  const ip = getClientIp(req);
+  void _req;
+  const session = await auth();
+  const email = session?.user?.email?.toLowerCase();
 
-  if (ip !== "unknown") {
+  if (email) {
     const [ban] = await withSystemDbAccess((tx) => tx
-      .select({ ip: bannedIps.ip })
-      .from(bannedIps)
-      .where(eq(bannedIps.ip, ip))
+      .select({ email: bannedEmails.email })
+      .from(bannedEmails)
+      .where(eq(bannedEmails.email, email))
       .limit(1));
     if (ban) {
       return { ok: false, response: NextResponse.json({ error: "Forbidden" }, { status: 403 }) };
     }
   }
 
-  const session = await auth();
   if (!session?.user?.isAdmin) {
     return { ok: false, response: NextResponse.json({ error: "Forbidden" }, { status: 403 }) };
   }

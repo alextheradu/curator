@@ -1,7 +1,7 @@
 const DEFAULT_TRACES_SAMPLE_RATE = 0.1;
 const DEFAULT_REPLAYS_SESSION_SAMPLE_RATE = 1;
 const DEFAULT_REPLAYS_ON_ERROR_SAMPLE_RATE = 1;
-const DEFAULT_SENTRY_TUNNEL_PATH = "/monitoring";
+const DEFAULT_SENTRY_TUNNEL_PATH = "/_events";
 
 function readBoolean(...values: Array<string | undefined>) {
   for (const value of values) {

@@ -10,6 +10,7 @@ declare module "next-auth" {
       preferredName: string | null;
       teamNumber: number | null;
       onboardedAt: Date | null;
+      tosAcceptedAt: Date | null;
       name?: string | null;
       email?: string | null;
       image?: string | null;
@@ -26,5 +27,6 @@ declare module "next-auth/jwt" {
     preferredName?: string | null;
     teamNumber?: number | null;
     onboardedAt?: Date | null;
+    tosAcceptedAt?: Date | null;
   }
 }

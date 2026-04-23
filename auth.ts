@@ -1,10 +1,12 @@
 import NextAuth from "next-auth";
 import Google from "next-auth/providers/google";
 import { DrizzleAdapter } from "@auth/drizzle-adapter";
+import { eq } from "drizzle-orm";
 import { pgTable, text, timestamp } from "drizzle-orm/pg-core";
 import { db } from "@/lib/db";
+import { withSystemDbAccess } from "@/lib/db/access";
 import { DEFAULT_CHAT_MODE, readUserAccountSettings } from "@/lib/account-settings";
-import { accounts, sessions, verificationTokens } from "@/lib/db/schema";
+import { accounts, bannedEmails, sessions, verificationTokens } from "@/lib/db/schema";
 
 type GoogleProfile = {
   sub: string;
@@ -56,6 +58,20 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
   ],
   session: { strategy: "jwt" },
   callbacks: {
+    async signIn({ user }) {
+      const normalizedEmail = user.email?.toLowerCase();
+      if (!normalizedEmail) {
+        return false;
+      }
+
+      const [ban] = await withSystemDbAccess((tx) => tx
+        .select({ email: bannedEmails.email })
+        .from(bannedEmails)
+        .where(eq(bannedEmails.email, normalizedEmail))
+        .limit(1));
+
+      return !ban;
+    },
     async jwt({ token, user, trigger, session }) {
       if (user) token.id = user.id;
       const email = user?.email ?? token.email;
@@ -73,6 +89,9 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         if ("onboardedAt" in session) {
           token.onboardedAt = session.onboardedAt ? new Date(session.onboardedAt) : null;
         }
+        if ("tosAcceptedAt" in session) {
+          token.tosAcceptedAt = session.tosAcceptedAt ? new Date(session.tosAcceptedAt) : null;
+        }
       }
 
       const shouldRefreshAccountSettings = Boolean(
@@ -81,6 +100,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
           user
           || trigger === "update"
           || token.onboardedAt == null
+          || token.tosAcceptedAt === undefined
           || token.defaultChatMode == null
         )
       );
@@ -92,6 +112,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         token.preferredName = settings.preferredName;
         token.teamNumber = settings.teamNumber;
         token.onboardedAt = settings.onboardedAt;
+        token.tosAcceptedAt = settings.tosAcceptedAt;
       }
 
       if (isAdminEmail(email)) {
@@ -116,6 +137,9 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         session.user.teamNumber = typeof token.teamNumber === "number" ? token.teamNumber : null;
         session.user.onboardedAt = token.onboardedAt
           ? new Date(token.onboardedAt as Date | string)
+          : null;
+        session.user.tosAcceptedAt = token.tosAcceptedAt
+          ? new Date(token.tosAcceptedAt as Date | string)
           : null;
       }
       return session;

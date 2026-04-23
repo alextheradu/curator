@@ -92,7 +92,7 @@ export default async function AdminStatsPage() {
             <StatCard label="Admins" value={s.adminUsers.count} icon={Shield} />
             <StatCard label="Verified emails" value={s.verifiedUsers.count} icon={BadgeCheck} />
             <StatCard label="User bans" value={s.bannedUsers.count} icon={ShieldAlert} />
-            <StatCard label="Blocked IPs" value={s.blockedIps.count} icon={Ban} />
+            <StatCard label="Blocked emails" value={s.blockedEmails.count} icon={Ban} />
           </div>
         </section>
 

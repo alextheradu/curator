@@ -1,3 +1,4 @@
+<INSTRUCTIONS>
 <!-- BEGIN:nextjs-agent-rules -->
 # This is NOT the Next.js you know
 
@@ -14,3 +15,5 @@ This version has breaking changes — APIs, conventions, and file structure may 
 - Adding new user-facing restrictions (Terms §4)
 - Changing authentication methods (Terms §5, Privacy Policy §2b)
 <!-- END:nextjs-agent-rules -->
+
+</INSTRUCTIONS>

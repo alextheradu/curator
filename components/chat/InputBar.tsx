@@ -65,8 +65,8 @@ export function InputBar({ onSend, onStop, disabled, isStreaming, compact = fals
           focused && "shadow-[var(--shadow-composer-focus)]"
         )}
       >
-        {/* Textarea + optional inline mobile button (compact/empty state) */}
-        <div className="flex items-end sm:block">
+        {/* Textarea + inline send button (compact/empty state) */}
+        <div className="flex items-end">
           <textarea
             ref={textareaRef}
             value={value}
@@ -81,7 +81,7 @@ export function InputBar({ onSend, onStop, disabled, isStreaming, compact = fals
             style={{ maxHeight: "200px" }}
           />
 
-          {/* Mobile inline button — only in compact/empty mode */}
+          {/* Inline send button — compact/empty mode on all screen sizes */}
           <AnimatePresence initial={false}>
             {compact && (
               <motion.div
@@ -90,7 +90,7 @@ export function InputBar({ onSend, onStop, disabled, isStreaming, compact = fals
                 animate={{ opacity: 1, scale: 1 }}
                 exit={{ opacity: 0, scale: 0.8 }}
                 transition={{ duration: 0.18, ease: [0.22, 1, 0.36, 1] }}
-                className="flex shrink-0 items-center px-2 pb-1.5 sm:hidden"
+                className="flex shrink-0 items-center px-2 pb-1.5"
               >
                 {isStreaming ? (
                   <button type="button" onClick={onStop} className="flex h-8 w-8 items-center justify-center rounded-xl bg-foreground text-background transition-all duration-200 hover:opacity-85 active:scale-95" aria-label="Stop">

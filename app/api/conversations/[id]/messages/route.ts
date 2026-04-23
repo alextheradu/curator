@@ -1,11 +1,43 @@
 import { auth } from "@/auth";
-import { withSessionDbAccess } from "@/lib/db/access";
-import { messages, conversations } from "@/lib/db/schema";
-import { revalidateConversationDerivedCaches } from "@/lib/cache-tags";
+import { withDbAccessContext, withSessionDbAccess } from "@/lib/db/access";
+import { messages, conversations, reports } from "@/lib/db/schema";
+import { revalidateConversationDerivedCaches, revalidateReportDerivedCaches } from "@/lib/cache-tags";
 import { getCachedPublicConversationMessages, revalidatePublicConversation } from "@/lib/public-conversations";
+import { captureException } from "@/lib/logging";
+import { scanMessageForModeration } from "@/lib/moderation";
 import { applyRateLimitHeaders, enforceRequestRateLimit } from "@/lib/rate-limit";
 import { eq, and, asc } from "drizzle-orm";
 import { NextResponse } from "next/server";
+
+async function autoFlagUserMessage(userId: string, message: { id: string; conversationId: string; content: string }) {
+  const moderation = scanMessageForModeration(message.content);
+  if (!moderation.flagged || !moderation.reason) {
+    return;
+  }
+  const reason = moderation.reason;
+
+  await withDbAccessContext({ userId, isAdmin: true }, async (tx) => {
+    const [existing] = await tx
+      .select({ id: reports.id })
+      .from(reports)
+      .where(and(eq(reports.messageId, message.id), eq(reports.source, "auto_moderation")))
+      .limit(1);
+
+    if (existing) {
+      return;
+    }
+
+    await tx.insert(reports).values({
+      conversationId: message.conversationId,
+      messageId: message.id,
+      reason,
+      source: "auto_moderation",
+      matchedTerms: moderation.matchedTerms,
+    });
+  });
+
+  revalidateReportDerivedCaches();
+}
 
 export async function GET(_: Request, { params }: { params: Promise<{ id: string }> }) {
   const session = await auth();
@@ -65,6 +97,19 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
   await withSessionDbAccess(session, (tx) => tx.update(conversations)
     .set({ updatedAt: new Date() })
     .where(eq(conversations.id, id)));
+
+  if (role === "user" && typeof content === "string" && content.trim()) {
+    await autoFlagUserMessage(session.user.id, {
+      id: msg.id,
+      conversationId: id,
+      content,
+    }).catch(async (error) => {
+      await captureException("auto-moderation", error, {
+        userId: session.user.id,
+        details: { conversationId: id, messageId: msg.id },
+      });
+    });
+  }
 
   revalidatePublicConversation(id);
   revalidateConversationDerivedCaches();

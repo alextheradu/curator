@@ -4,14 +4,15 @@ import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
-import { BarChart3, FileText, MessageSquare, Users, Flag, ChevronLeft, PanelLeftIcon, Bug } from "lucide-react";
+import { BarChart3, FileText, MessageSquare, Users, Flag, ChevronLeft, PanelLeftIcon, Bug, Newspaper } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useSession } from "next-auth/react";
 import { Button } from "@/components/ui/button";
-import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "@/components/ui/sheet";
+import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 
 const NAV = [
   { href: "/admin", label: "Stats", icon: BarChart3, exact: true },
+  { href: "/admin/blog", label: "Blog", icon: Newspaper, exact: false },
   { href: "/admin/documents", label: "Documents", icon: FileText, exact: false },
   { href: "/admin/users", label: "Users", icon: Users, exact: false },
   { href: "/admin/chats", label: "Chats", icon: MessageSquare, exact: false },
@@ -122,9 +123,9 @@ export function AdminSidebar({ pendingReports }: { pendingReports?: number }) {
                 </span>
               )}
             </div>
-            <SheetDescription className="text-[12px] leading-5">
-              Navigate between stats, documents, users, chats, reports, and operations.
-            </SheetDescription>
+            <p className="text-[12px] leading-5 text-muted-foreground">
+              Navigate between stats, blog publishing, documents, users, chats, reports, and operations.
+            </p>
           </SheetHeader>
 
           <div className="mt-3 flex min-h-0 flex-1 flex-col rounded-[1.5rem] border border-border/60 bg-card/58 p-2 shadow-[var(--shadow-card)]">
@@ -167,9 +168,6 @@ export function AdminSidebar({ pendingReports }: { pendingReports?: number }) {
                 </span>
               )}
             </div>
-            <p className="mt-3 text-[12px] leading-5 text-muted-foreground">
-              Stats, moderation, retrieval, and support operations in the same visual system as chat.
-            </p>
           </div>
 
           <div className="mt-3 flex min-h-0 flex-1 flex-col rounded-[1.35rem] border border-white/6 bg-black/10">

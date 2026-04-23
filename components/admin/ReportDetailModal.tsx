@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { AssistantMarkdown } from "@/components/chat/AssistantMarkdown";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
@@ -12,9 +12,13 @@ interface ReportRow {
   conversationId: string;
   messageId: string;
   reason: string;
+  source: "user_report" | "auto_moderation";
+  matchedTerms: string[];
+  messageRole: "user" | "assistant" | "system";
   status: string;
-  reporterEmail: string;
-  reporterName: string | null;
+  accountUserId: string;
+  accountEmail: string;
+  accountName: string | null;
   conversationTitle: string;
 }
 
@@ -77,12 +81,21 @@ export function ReportDetailModal({ report, onClose, onAction, onViewChat }: Pro
     <Dialog open={!!report} onOpenChange={(o) => !o && onClose()}>
       <DialogContent className="flex max-h-[80vh] w-full max-w-lg flex-col rounded-[1.75rem] border border-border/60 bg-card/95 p-0 shadow-[var(--shadow-float)] backdrop-blur-xl">
         <DialogHeader className="border-b border-border/60 px-6 py-4">
-          <DialogTitle className="text-sm font-semibold">Reported message</DialogTitle>
+          <DialogTitle className="text-sm font-semibold">
+            {report?.messageRole === "user" ? "Flagged user message" : "Reported assistant reply"}
+          </DialogTitle>
+          <DialogDescription className="sr-only">
+            Review the reported message, its surrounding context, and available moderation actions.
+          </DialogDescription>
           <div className="space-y-1 text-[12px] text-muted-foreground">
             <p>
-              From <span className="text-foreground">{report?.reporterName ?? report?.reporterEmail}</span>
+              Account <span className="text-foreground">{report?.accountName ?? report?.accountEmail}</span>
             </p>
+            <p>Source: {report?.source === "auto_moderation" ? "Automatic moderation" : "User-submitted report"}</p>
             <p>Reason: {report?.reason}</p>
+            {report && report.matchedTerms.length > 0 && (
+              <p>Matched terms: {report.matchedTerms.join(", ")}</p>
+            )}
           </div>
         </DialogHeader>
 

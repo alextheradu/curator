@@ -1,6 +1,4 @@
 import type { Metadata, Viewport } from "next";
-import { readFileSync } from "node:fs";
-import path from "node:path";
 import { Inter, JetBrains_Mono } from "next/font/google";
 import { Providers } from "@/components/Providers";
 import { SITE_DESCRIPTION, SITE_NAME, SITE_OG_IMAGE, SITE_TITLE, SITE_URL } from "@/lib/site";
@@ -8,8 +6,6 @@ import "./globals.css";
 
 const inter = Inter({ subsets: ["latin"], variable: "--font-sans" });
 const jetbrainsMono = JetBrains_Mono({ subsets: ["latin"], variable: "--font-mono" });
-const faviconSvg = readFileSync(path.join(process.cwd(), "app", "favicon.svg"), "utf-8");
-const faviconSvgDataUrl = `data:image/svg+xml,${encodeURIComponent(faviconSvg)}`;
 const googleSiteVerification = process.env.NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION?.trim();
 
 export const metadata: Metadata = {
@@ -59,8 +55,8 @@ export const metadata: Metadata = {
     },
   },
   icons: {
-    icon: [{ url: faviconSvgDataUrl, type: "image/svg+xml" }],
-    shortcut: [{ url: faviconSvgDataUrl, type: "image/svg+xml" }],
+    icon: [{ url: "/icon.png", sizes: "512x512", type: "image/png" }],
+    shortcut: [{ url: "/icon.png", sizes: "512x512", type: "image/png" }],
     apple: [{ url: "/apple-icon.png", sizes: "180x180", type: "image/png" }],
   },
   openGraph: {

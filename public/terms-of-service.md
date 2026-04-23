@@ -1,7 +1,7 @@
 # Terms of Service
 
 **Curator — FRC AI Assistant**
-**Last updated: April 22, 2026**
+**Last updated: April 23, 2026**
 
 ## 1. Acceptance of Terms
 
@@ -11,7 +11,9 @@ By accessing or using Curator ("the Service"), you agree to be bound by these Te
 
 Curator is an AI-powered assistant designed to help FRC teams find information from official game manuals, team updates, team reference material, awards documentation, and related FIRST Robotics Competition resources. The Service uses large language models, retrieval-augmented generation (RAG), live web search when needed, and The Blue Alliance for certain live team/event context to provide answers grounded in uploaded documents and current competition data.
 
-The Service also includes a support channel for bug reports, account/privacy questions, and feature requests, and uses operational monitoring tools, including browser session replay for debugging, to detect errors, measure performance, and diagnose failures.
+The Service also includes a support channel for bug reports, account/privacy questions, and feature requests, and uses operational monitoring tools, including browser session replay and cookie-free performance analytics, to detect errors, measure performance, and diagnose failures.
+
+The Service also includes a public blog where Curator admins may publish product updates, release notes, and operator announcements. Published blog posts may show the author using that admin's preferred name when available.
 
 The Service may also be installed to your device home screen as a web app. Installed/offline behavior is still subject to browser support and the limits described in the Privacy Policy.
 
@@ -29,12 +31,13 @@ You agree not to:
 - Upload content you do not have rights to (document uploads are admin-only)
 - Impersonate FIRST, its partners, or any event officials
 - Attempt to circumvent authentication or rate limiting
+- Submit obscene, abusive, harassing, threatening, or otherwise inappropriate content, including repeated profanity intended to target other people or misuse the Service
 - Submit sensitive credentials, secrets, or other highly confidential data through chat messages, shared chats, or support requests unless you are authorized to disclose that information and accept the associated risk
 - Publish or share chat links containing private, confidential, or sensitive information unless you are authorized to disclose that information
 
 ## 5. User Accounts
 
-You may use the Service as a guest for a limited number of messages. Creating an account via Google OAuth is required for continued use, to persist conversation history, to save account-level defaults such as your preferred name, optional team number, and preferred chat style, and to use public chat sharing. If you choose to make a chat public, anyone with that link may view the conversation until you disable sharing or delete the chat. You are responsible for maintaining the security of your account and for any content you choose to share publicly.
+You may use the Service as a guest for a limited number of messages. Creating an account via Google OAuth is required for continued use, to persist conversation history, to save account-level defaults such as your preferred name, optional team number, preferred chat style, and accepted-terms status, and to use public chat sharing. If you choose to make a chat public, anyone with that link may view the conversation until you disable sharing or delete the chat. You are responsible for maintaining the security of your account and for any content you choose to share publicly.
 
 ## 6. Intellectual Property
 
@@ -50,7 +53,7 @@ If you later change your analytics preference through the in-app cookie settings
 
 ## 8. Termination
 
-We reserve the right to suspend or terminate access to the Service at any time, for any reason, without notice.
+We reserve the right to suspend or terminate access to the Service at any time, for any reason, without notice. Suspensions may be applied to the email address used for sign-in, and we may use both manual review and automated moderation signals to identify content that requires admin review or account action.
 
 ## 9. Limitation of Liability
 
