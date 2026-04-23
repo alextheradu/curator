@@ -35,7 +35,7 @@ export function MessageBubble({ message, isStreaming, onOpenCitation }: Props) {
   const isAssistant = message.role === "assistant";
   const normalizedContent = isAssistant ? normalizeAssistantMarkdown(message.content) : message.content;
   const actionButtonClass =
-    "rounded-lg p-1 text-muted-foreground/50 transition hover:bg-muted hover:text-muted-foreground opacity-100 md:opacity-0 md:group-hover/message:opacity-100";
+    "rounded-lg p-2.5 sm:p-1 text-muted-foreground/50 transition hover:bg-muted hover:text-muted-foreground opacity-100 md:opacity-0 md:group-hover/message:opacity-100";
 
   const handleCopy = async (content: string, label: "Prompt" | "Response") => {
     try {
@@ -74,7 +74,7 @@ export function MessageBubble({ message, isStreaming, onOpenCitation }: Props) {
             <AssistantMarkdown content={normalizedContent} isStreaming={isStreaming} />
 
             {message.citations && message.citations.length > 0 && (
-              <div className="flex flex-wrap gap-1.5 pt-1">
+              <div className="flex flex-wrap content-start items-start gap-2 pt-1">
                 {message.citations.map((citation, index) => (
                   <CitationBadge
                     key={index}
@@ -95,7 +95,7 @@ export function MessageBubble({ message, isStreaming, onOpenCitation }: Props) {
                   title="Copy response"
                   aria-label="Copy response"
                 >
-                  <CopyIcon className="size-3" />
+                  <CopyIcon className="size-4 sm:size-3" />
                 </button>
                 <ReportButton messageId={message.id} className={actionButtonClass} />
               </div>
@@ -113,7 +113,7 @@ export function MessageBubble({ message, isStreaming, onOpenCitation }: Props) {
               title="Copy prompt"
               aria-label="Copy prompt"
             >
-              <CopyIcon className="size-3" />
+              <CopyIcon className="size-4 sm:size-3" />
             </button>
           </div>
         )}

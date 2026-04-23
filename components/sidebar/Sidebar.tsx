@@ -105,7 +105,8 @@ export function AppSidebar({ latestNewsPublishedAt }: AppSidebarProps) {
     shareConversation,
     deleteConversation,
   } = useSidebarActions();
-  const { data: session } = useSession();
+  const { data: session, status } = useSession();
+  const isSessionLoading = status === "loading";
   const userLabel = session?.user?.preferredName?.trim() || session?.user?.name?.trim() || session?.user?.email || "Signed in";
   const avatarHueSource = session?.user?.preferredName?.trim() || session?.user?.name?.trim() || session?.user?.email || "";
   const avatarUrl = session?.user?.image?.trim() || "";
@@ -397,7 +398,24 @@ export function AppSidebar({ latestNewsPublishedAt }: AppSidebarProps) {
         <SidebarFooter className="border-t border-sidebar-border pt-2 pb-3">
           <SidebarMenu>
             <SidebarMenuItem>
-              {session?.user ? (
+              {isSessionLoading ? (
+                <div className="flex w-full items-center gap-1 group-data-[collapsible=icon]:justify-center">
+                  <div className="flex h-8 flex-1 items-center gap-2 rounded-lg px-2 group-data-[collapsible=icon]:hidden">
+                    <div className="size-5 shrink-0 animate-pulse rounded-full bg-sidebar-accent/70 ring-1 ring-sidebar-border/50" />
+                    <div className="h-3 w-24 animate-pulse rounded-full bg-sidebar-accent/70" />
+                  </div>
+
+                  <button
+                    type="button"
+                    className="flex size-8 shrink-0 items-center justify-center rounded-lg text-sidebar-foreground/50 transition-colors duration-150 hover:bg-sidebar-accent hover:text-sidebar-foreground group-data-[collapsible=icon]:mx-auto"
+                    title="Settings"
+                    aria-label="Settings"
+                    onClick={() => setSettingsOpen(true)}
+                  >
+                    <Settings className="size-4" />
+                  </button>
+                </div>
+              ) : session?.user ? (
                 <div className="flex w-full items-center gap-1 group-data-[collapsible=icon]:justify-center">
                   <SidebarMenuButton
                     className="h-8 flex-1 rounded-lg bg-transparent px-2 text-sidebar-foreground/70 transition-colors duration-150 hover:text-sidebar-foreground group-data-[collapsible=icon]:hidden"

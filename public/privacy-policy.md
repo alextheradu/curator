@@ -1,7 +1,7 @@
 # Privacy Policy
 
 **Curator — FRC AI Assistant**
-**Last updated: April 22, 2026**
+**Last updated: April 23, 2026**
 
 ## 1. Overview
 
@@ -10,7 +10,7 @@ This Privacy Policy explains how Curator ("the Service", "we", "us") collects, u
 ## 2. Information We Collect
 
 ### 2a. Guests (unauthenticated users)
-- A session cookie tracking whether you have accepted the Terms of Service
+- A session cookie tracking whether you have accepted the Terms of Service for the current browser session
 - A cookie counting the number of messages sent in the current session (used to enforce the guest message limit)
 - A cookie recording your cookie-consent choice (`necessary` or `accepted`)
 - Optional sidebar preference cookies recording whether the sidebar is open and what width you chose
@@ -21,8 +21,10 @@ This Privacy Policy explains how Curator ("the Service", "we", "us") collects, u
 - **From Google OAuth:** your name, email address, and profile picture URL
 - **Onboarding profile:** your preferred name and optional FRC team number
 - **Conversation history:** all messages you send and receive, stored in our database so they persist across devices
+- **Moderation records:** if your account is suspended, we store the affected email address, suspension status, timestamp, and any admin-entered reason tied to that action
 - **Sharing preferences:** whether a conversation has been marked public by you
-- **Account settings:** your saved default chat style preference (`Veteran` or `Rookie`) and onboarding completion timestamp
+- **Admin-authored blog content:** if you are an admin, blog post drafts and publication metadata you create may be stored in our database and, when published, shown publicly with your preferred name (or your account name if no preferred name is set)
+- **Account settings:** your saved default chat style preference (`Veteran` or `Rookie`), onboarding completion timestamp, and Terms of Service acceptance timestamp
 - **Account metadata:** account creation date, last active date
 
 ### 2c. All users
@@ -31,7 +33,9 @@ This Privacy Policy explains how Curator ("the Service", "we", "us") collects, u
 - **Public shared chats:** if an authenticated user chooses to make a chat public, that conversation becomes accessible to anyone with the chat URL until the owner turns sharing off or deletes the chat.
 - **Search queries:** if web search is triggered, your query is sent to LangSearch. See LangSearch's privacy policy for details.
 - **Support requests:** if you use the support form, we collect the details you submit, which may include your name, email address, subject, message, current page path, browser user agent, IP address, and your account ID if signed in.
+- **Moderation flags:** authenticated user messages may be automatically scanned for profanity, harassment, threats, sexual content, or similar inappropriate language. Matching messages can create an internal moderation report containing the message ID, conversation ID, account ID, matched terms, and flag reason for admin review.
 - **Error and performance telemetry:** we use Sentry to capture application errors, request context, performance traces, diagnostic metadata such as URLs, browser/device information, and account identifiers when available, and browser Session Replay data for debugging. Replay traffic is tunneled through our own app domain to reduce losses caused by browser blocking of direct Sentry ingestion requests.
+- **Cookie-free performance analytics:** Cloudflare Web Analytics may collect aggregate pageview and performance metrics, including navigation timing and Core Web Vitals-style measurements, using a lightweight browser beacon that does not rely on advertising cookies.
 - **Operational logs:** we store application logs for support, abuse prevention, debugging, and reliability work. These logs can include request paths, IP address, account ID, and error details.
 - **Rate-limit metadata:** we store per-scope counters keyed to your account ID or network metadata so we can slow abusive traffic and protect the Service.
 - **Search indexing notifications:** when public Curator pages are added or updated, we may send the affected page URLs to IndexNow-participating search engines so they can recrawl those pages faster.
@@ -42,8 +46,10 @@ This Privacy Policy explains how Curator ("the Service", "we", "us") collects, u
 
 - To provide and improve the Service
 - To authenticate you and persist your conversation history
-- To store and apply your saved preferred name, optional team number, onboarding status, and account-level chat style preference
+- To store and apply your saved preferred name, optional team number, onboarding status, account-level chat style preference, and account-level Terms of Service acceptance
 - To honor your choice to publish or unpublish shared chat links
+- To let admins draft, edit, publish, and remove public blog posts about Curator updates
+- To detect, review, and act on profanity or other inappropriate content through manual reports and automatic moderation flags
 - To enforce the guest message limit and Terms of Service acceptance
 - To record, honor, and later update your cookie-consent preference
 - To generate AI responses grounded in FRC documentation
@@ -65,6 +71,7 @@ We do **not** sell your data, use it for advertising, or share it with third par
 | The Blue Alliance | Live team, event, rankings, and match context | thebluealliance.com/privacy |
 | LangSearch | Web search | (see LangSearch docs) |
 | Sentry | Error monitoring, performance tracing, logs, and Session Replay | sentry.io/privacy/ |
+| Cloudflare Web Analytics | Cookie-free site analytics and performance measurements | cloudflare.com/privacypolicy/ |
 | Google Analytics | Aggregated usage analytics and performance insights | policies.google.com/privacy |
 | IndexNow | Search engine change notifications for public page URLs | indexnow.org/documentation |
 | MinIO (self-hosted) | Document storage | Self-hosted, no third party |
@@ -72,8 +79,10 @@ We do **not** sell your data, use it for advertising, or share it with third par
 ## 5. Data Storage
 
 - User data and conversation history are stored in a self-hosted PostgreSQL database.
-- Saved onboarding fields, including preferred name, optional team number, and onboarding completion time, are stored in the same PostgreSQL account record.
+- Saved onboarding fields, including preferred name, optional team number, onboarding completion time, and Terms of Service acceptance time, are stored in the same PostgreSQL account record.
 - Public/private sharing status for authenticated conversations is stored alongside the conversation record in PostgreSQL.
+- Admin-authored blog posts, publication timestamps, and the associated author account reference are stored in PostgreSQL.
+- Moderation reports, matched-term metadata, and banned-email records are stored in PostgreSQL.
 - Support requests, application logs, and rate-limit counters are stored in PostgreSQL.
 - The installable web app stores a browser-managed offline cache of selected app shell files, icons, and a small set of public pages on your device.
 - PDF documents, including season-specific references and general team reference files, are stored in a self-hosted MinIO instance.
@@ -85,9 +94,11 @@ We do **not** sell your data, use it for advertising, or share it with third par
 
 - **Guest data:** stored only in your browser's `localStorage`. Cleared when you clear your browser data.
 - **Offline app cache:** stored in your browser until the browser clears site data, the service worker replaces the cache during an update, or you manually remove the site's stored data.
-- **Authenticated user data:** retained for as long as your account exists. This includes saved onboarding profile fields, chat-mode preference, and conversation history. You may delete your account and all associated data at any time from the Settings page.
+- **Authenticated user data:** retained for as long as your account exists. This includes saved onboarding profile fields, chat-mode preference, Terms of Service acceptance state, and conversation history. You may delete your account and all associated data at any time from the Settings page.
+- **Moderation data:** moderation reports and banned-email records are retained until they are manually cleared, no longer needed for safety or abuse review, or your account and related moderation history are deleted.
 - **Account export packages:** generated on demand from your current account data when you request an export from Settings and not stored by the Service after the response is delivered.
 - **Public shared chats:** remain publicly accessible until you make the chat private again or delete it.
+- **Admin-authored blog posts:** retained until they are deleted or unpublished by an admin; published posts remain publicly accessible until removed or replaced.
 - **Support requests and application logs:** retained until they are manually deleted or no longer needed for support, security, or operational debugging.
 - **Rate-limit counters:** retained for up to 7 days before cleanup.
 - **Server logs:** retained for 30 days, then deleted.
@@ -96,7 +107,7 @@ We do **not** sell your data, use it for advertising, or share it with third par
 ## 7. Cookies
 
 We use the following cookies:
-- `tos_accepted` — records that you have accepted the Terms of Service (session cookie)
+- `tos_accepted` — records that a guest browser session has accepted the Terms of Service (session cookie)
 - `guest_message_count` — tracks number of guest messages sent
 - `cookie_consent` — records whether you chose necessary-only cookies or accepted analytics cookies
 - `sidebar_state` — stores whether the app sidebar is expanded or collapsed
@@ -123,6 +134,8 @@ You have the right to:
 - Delete your account and all associated data
 - Make a shared chat private again or delete it to remove public access
 - Export your account data, including chats, saved onboarding/account settings, and support requests associated with your signed-in account
+
+We may retain limited moderation records when reasonably necessary to enforce the Terms, investigate abuse, or document account suspensions.
 
 These actions are available from the Settings page once logged in.
 

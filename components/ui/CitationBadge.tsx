@@ -14,6 +14,7 @@ export function CitationBadge({ citation, index, onOpen }: Props) {
   const documentHref = !isWeb && citation.minioKey
     ? citation.url ?? buildDocumentViewHref(citation.minioKey, citation.pageNumber)
     : citation.url;
+  const badgeStyle = { borderColor: `${color}40`, color };
 
   const content = (
     <>
@@ -34,21 +35,19 @@ export function CitationBadge({ citation, index, onOpen }: Props) {
 
   if (!isWeb) {
     return (
-      <div
-        className="inline-flex max-w-full flex-wrap items-center gap-1.5 rounded-2xl border px-2 py-1.5"
-        style={{ borderColor: `${color}40`, color }}
-      >
+      <div className="inline-flex max-w-full flex-wrap items-center gap-1.5 align-top">
         {onOpen ? (
           <button
             type="button"
             onClick={() => onOpen(citation)}
             className={className}
             title={citation.label}
+            style={badgeStyle}
           >
             {content}
           </button>
         ) : (
-          <div className={className} title={citation.label}>
+          <div className={className} title={citation.label} style={badgeStyle}>
             {content}
           </div>
         )}
@@ -58,8 +57,9 @@ export function CitationBadge({ citation, index, onOpen }: Props) {
             href={documentHref}
             target="_blank"
             rel="noopener noreferrer"
-            className="inline-flex items-center gap-1 rounded-full border border-current/15 px-2.5 py-1 text-[11px] font-medium transition-colors hover:bg-white/5"
+            className="inline-flex items-center gap-1 rounded-full border px-2.5 py-1 text-[11px] font-medium transition-colors hover:bg-white/5"
             title={`Open ${citation.documentName ?? citation.label} PDF`}
+            style={badgeStyle}
           >
             <ExternalLink size={10} className="shrink-0 opacity-70" />
             PDF
@@ -67,7 +67,7 @@ export function CitationBadge({ citation, index, onOpen }: Props) {
         ) : null}
 
         {citation.quote ? (
-          <p className="w-full px-1 text-[11px] leading-5 text-muted-foreground">
+          <p className="basis-full max-w-[min(18rem,70vw)] px-1 text-[11px] leading-5 text-muted-foreground line-clamp-2 sm:max-w-[24rem]">
             <span aria-hidden="true">&ldquo;</span>
             {citation.quote}
             <span aria-hidden="true">&rdquo;</span>
@@ -83,7 +83,7 @@ export function CitationBadge({ citation, index, onOpen }: Props) {
       target="_blank"
       rel="noopener noreferrer"
       className={className}
-      style={{ borderColor: `${color}40`, color }}
+      style={badgeStyle}
       title={citation.label}
     >
       {content}

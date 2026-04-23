@@ -46,6 +46,21 @@ const LIVE_INFO_HINTS = [
   "cmp",
 ];
 
+const LOOKUP_HINTS = [
+  "what is",
+  "what are",
+  "what does",
+  "what do",
+  "stand for",
+  "stands for",
+  "mean",
+  "means",
+  "meaning",
+  "abbreviation",
+  "acronym",
+  "full form",
+];
+
 const FRC_WEB_SEARCH_PATTERNS = [
   /\bteam\s+\d+\b/i,
   /\bfrc\s+\d+\b/i,
@@ -65,13 +80,55 @@ const FRC_WEB_SEARCH_PATTERNS = [
 const SEASON_HINTS = /\b(this year|this season|current season|latest|recent|current|today|yesterday|week\s+\d+)\b/i;
 const YEAR_PATTERN = /\b20\d{2}\b/;
 const FRC_SCOPE_PATTERN = /\b(frc|first robotics|first robotics competition|first inspires)\b/i;
+const ACRONYM_TOKEN_PATTERN = /^[a-z0-9-]{2,8}$/i;
+
+function tokenizeQuery(query: string) {
+  return query
+    .trim()
+    .split(/\s+/)
+    .map((token) => token.replace(/^[^a-z0-9]+|[^a-z0-9]+$/gi, ""))
+    .filter(Boolean);
+}
+
+function isAcronymLikeToken(token: string) {
+  return ACRONYM_TOKEN_PATTERN.test(token)
+    && /[a-z]/i.test(token)
+    && token.length <= 6;
+}
+
+function isAcronymLikeQuery(query: string) {
+  const tokens = tokenizeQuery(query);
+  if (tokens.length === 0) {
+    return false;
+  }
+
+  if (tokens.length === 1) {
+    return isAcronymLikeToken(tokens[0]);
+  }
+
+  return tokens.some(isAcronymLikeToken)
+    && LOOKUP_HINTS.some((hint) => query.toLowerCase().includes(hint));
+}
+
+function isShortLookupQuery(query: string) {
+  const tokens = tokenizeQuery(query);
+  if (tokens.length === 0 || tokens.length > 6) {
+    return false;
+  }
+
+  return LOOKUP_HINTS.some((hint) => query.toLowerCase().includes(hint))
+    || (tokens.length <= 3 && tokens.every((token) => token.length <= 8));
+}
 
 export function shouldRunWebSearch(query: string, ragHitCount: number, bestScore: number) {
   const normalized = query.toLowerCase();
   const asksForWeb = EXPLICIT_WEB_SEARCH_HINTS.some((hint) => normalized.includes(hint));
   const asksForFreshInfo = FRESHNESS_HINTS.some((hint) => normalized.includes(hint));
   const asksForLiveInfo = LIVE_INFO_HINTS.some((hint) => normalized.includes(hint));
+  const asksForLookup = LOOKUP_HINTS.some((hint) => normalized.includes(hint));
   const frcSpecific = FRC_WEB_SEARCH_PATTERNS.some((pattern) => pattern.test(query));
+  const acronymLike = isAcronymLikeQuery(query);
+  const shortLookup = isShortLookupQuery(query);
 
   if (asksForWeb || asksForFreshInfo) {
     return true;
@@ -82,6 +139,14 @@ export function shouldRunWebSearch(query: string, ragHitCount: number, bestScore
   }
 
   if (frcSpecific && asksForLiveInfo) {
+    return true;
+  }
+
+  if ((acronymLike || asksForLookup) && bestScore < 0.6) {
+    return true;
+  }
+
+  if (shortLookup && bestScore < 0.45) {
     return true;
   }
 
@@ -98,9 +163,12 @@ export function buildWebSearchQuery(query: string, seasonYear?: number) {
     return trimmed;
   }
 
-  const scopedQuery = FRC_SCOPE_PATTERN.test(trimmed)
+  const scopedQueryBase = FRC_SCOPE_PATTERN.test(trimmed)
     ? trimmed
     : `FIRST Robotics Competition (FRC) ${trimmed}`;
+  const scopedQuery = isAcronymLikeQuery(trimmed) && !LOOKUP_HINTS.some((hint) => trimmed.toLowerCase().includes(hint))
+    ? `${scopedQueryBase} abbreviation meaning`
+    : scopedQueryBase;
 
   if (!seasonYear || YEAR_PATTERN.test(trimmed) || !SEASON_HINTS.test(trimmed)) {
     return scopedQuery;

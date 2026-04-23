@@ -46,6 +46,7 @@ export async function POST(req: NextRequest) {
     messageId,
     reportedById: userAuth.userId,
     reason: reason.trim(),
+    source: "user_report",
   }));
 
   revalidateReportDerivedCaches();

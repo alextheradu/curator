@@ -17,15 +17,16 @@ function initializeGuestCount(): number {
   return Number.isFinite(parsed) ? parsed : 0;
 }
 
-export function useGuestLimit(isAuthenticated: boolean) {
-  const [tosAccepted, setTosAccepted] = useState(initializeTosState);
+export function useGuestLimit(isAuthenticated: boolean, accountTosAccepted: boolean) {
+  const [guestTosAccepted, setGuestTosAccepted] = useState(initializeTosState);
   const [guestCount, setGuestCount] = useState(initializeGuestCount);
   const [showTosModal, setShowTosModal] = useState(false);
   const [showAuthModal, setShowAuthModal] = useState(false);
+  const tosAccepted = isAuthenticated ? accountTosAccepted : guestTosAccepted;
 
-  const acceptTos = useCallback(() => {
+  const acceptGuestTos = useCallback(() => {
     document.cookie = serializeCookie(TOS_ACCEPTED_COOKIE_NAME, "true");
-    setTosAccepted(true);
+    setGuestTosAccepted(true);
     setShowTosModal(false);
   }, []);
 
@@ -47,7 +48,7 @@ export function useGuestLimit(isAuthenticated: boolean) {
     setShowTosModal,
     showAuthModal,
     setShowAuthModal,
-    acceptTos,
+    acceptGuestTos,
     consumeGuestTurn,
   };
 }

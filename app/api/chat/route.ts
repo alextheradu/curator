@@ -39,6 +39,30 @@ function encodeSse(data: unknown) {
 
 const OPENROUTER_TIMEOUT_MS = 60_000;
 
+function createAbortError(message = "The request was aborted.") {
+  const error = new Error(message);
+  error.name = "AbortError";
+  return error;
+}
+
+function isAbortError(error: unknown) {
+  return error instanceof Error && error.name === "AbortError";
+}
+
+function isControllerClosedError(error: unknown) {
+  return error instanceof TypeError && error.message.includes("Controller is already closed");
+}
+
+function formatProviderError(error: unknown) {
+  if (error instanceof Error) {
+    const message = error.message.trim();
+    return message || error.name || "Unknown error";
+  }
+
+  const message = String(error ?? "").trim();
+  return message || "Unknown error";
+}
+
 function pluralize(count: number, singular: string, plural = `${singular}s`) {
   return count === 1 ? singular : plural;
 }
@@ -97,6 +121,11 @@ async function streamChatCompletion({
   const errors: string[] = [];
 
   for (const [index, model] of CHAT_MODELS.entries()) {
+    const timeoutSignal = AbortSignal.timeout(OPENROUTER_TIMEOUT_MS);
+    const combinedSignal = signal
+      ? AbortSignal.any([signal, timeoutSignal])
+      : timeoutSignal;
+
     try {
       sendEvent({
         type: "status",
@@ -104,11 +133,6 @@ async function streamChatCompletion({
           ? "Asking Curator's primary model to draft the answer..."
           : `Asking Curator's backup model (${index + 1}/${CHAT_MODELS.length}) to draft the answer...`,
       });
-
-      const timeoutSignal = AbortSignal.timeout(OPENROUTER_TIMEOUT_MS);
-      const combinedSignal = signal
-        ? AbortSignal.any([signal, timeoutSignal])
-        : timeoutSignal;
 
       const upstream = await fetch(OR_URL, {
         method: "POST",
@@ -124,7 +148,8 @@ async function streamChatCompletion({
       });
 
       if (!upstream.ok) {
-        errors.push(`${model}: ${await upstream.text()}`);
+        const responseText = (await upstream.text()).trim();
+        errors.push(`${model}: ${responseText || `HTTP ${upstream.status}`}`);
         if (index < CHAT_MODELS.length - 1) {
           sendEvent({
             type: "status",
@@ -151,47 +176,68 @@ async function streamChatCompletion({
       let streamDone = false;
       let fullText = "";
 
+      const consumeLine = (line: string) => {
+        if (!line.startsWith("data:")) {
+          return false;
+        }
+
+        const data = line.slice(5).trim();
+        if (!data) {
+          return false;
+        }
+        if (data === "[DONE]") {
+          streamDone = true;
+          return true;
+        }
+
+        try {
+          const parsed = JSON.parse(data);
+          const token = parsed.choices?.[0]?.delta?.content;
+
+          if (token) {
+            tokenCount++;
+            fullText += token;
+            sendEvent({ type: "token", token });
+          }
+        } catch {
+          // Ignore malformed upstream chunks.
+        }
+
+        return false;
+      };
+
       outer: while (true) {
         const { done, value } = await reader.read();
-        if (done) break;
+        if (done) {
+          buffer += decoder.decode();
+          const trailingLines = buffer.split("\n");
+          buffer = "";
+
+          for (const line of trailingLines) {
+            if (consumeLine(line)) {
+              break outer;
+            }
+          }
+
+          break;
+        }
+
         buffer += decoder.decode(value, { stream: true });
         const parts = buffer.split("\n");
         buffer = parts.pop() ?? "";
 
         for (const line of parts) {
-          if (!line.startsWith("data:")) {
-            continue;
-          }
-
-          const data = line.slice(5).trim();
-          if (!data) {
-            continue;
-          }
-          if (data === "[DONE]") {
-            streamDone = true;
+          if (consumeLine(line)) {
             break outer;
-          }
-
-          try {
-            const parsed = JSON.parse(data);
-            const token = parsed.choices?.[0]?.delta?.content;
-
-            if (token) {
-              tokenCount++;
-              fullText += token;
-              sendEvent({ type: "token", token });
-            }
-          } catch {
-            // Ignore malformed upstream chunks.
           }
         }
       }
 
-      if (streamDone && tokenCount > 0) {
+      if (tokenCount > 0) {
         return fullText;
       }
 
-      errors.push(`${model}: stream ended with no content`);
+      errors.push(`${model}: ${streamDone ? "stream completed without content" : "stream ended before any content arrived"}`);
       if (index < CHAT_MODELS.length - 1) {
         sendEvent({
           type: "status",
@@ -199,7 +245,15 @@ async function streamChatCompletion({
         });
       }
     } catch (error) {
-      errors.push(`${model}: ${error instanceof Error ? error.message : String(error)}`);
+      if (signal?.aborted || isAbortError(error)) {
+        throw createAbortError();
+      }
+
+      if (timeoutSignal.aborted) {
+        errors.push(`${model}: request timed out after ${OPENROUTER_TIMEOUT_MS / 1000}s`);
+      } else {
+        errors.push(`${model}: ${formatProviderError(error)}`);
+      }
       if (index < CHAT_MODELS.length - 1) {
         sendEvent({
           type: "status",
@@ -209,7 +263,7 @@ async function streamChatCompletion({
     }
   }
 
-  throw new Error(errors.join(" | "));
+  throw new Error(errors.join(" | ") || "All configured chat models failed.");
 }
 
 function filterUsedCitations(
@@ -224,6 +278,22 @@ function filterUsedCitations(
   const used: Citation[] = [];
   const seen = new Set<string>();
   const pattern = /\[(SOURCE|TBA|WEB)\s+(\d+)\]/gi;
+  const normalizedAnswer = assistantText.toLowerCase();
+  const mentionsDocumentEvidence = /\b(team update|game manual|field manual|inspection checklist|page\s+\d+|q&a)\b/i.test(assistantText);
+  const mentionsTbaEvidence = /\bthe blue alliance|tba\b/i.test(assistantText);
+  const mentionsWebEvidence = /\bweb\b/i.test(assistantText);
+
+  const addCitation = (citation: Citation | undefined) => {
+    if (!citation) {
+      return;
+    }
+
+    const key = `${citation.type}:${citation.minioKey ?? citation.url ?? citation.label}:${citation.pageNumber ?? ""}`;
+    if (!seen.has(key)) {
+      seen.add(key);
+      used.push(citation);
+    }
+  };
 
   for (const match of assistantText.matchAll(pattern)) {
     const kind = match[1]?.toUpperCase();
@@ -234,14 +304,39 @@ function filterUsedCitations(
         ? tbaMap.get(index)
       : webMap.get(index);
 
-    if (!citation) {
-      continue;
-    }
+    addCitation(citation);
+  }
 
-    const key = `${citation.type}:${citation.minioKey ?? citation.url ?? citation.label}:${citation.pageNumber ?? ""}`;
-    if (!seen.has(key)) {
-      seen.add(key);
-      used.push(citation);
+  if (!used.some((citation) => citation.type === "doc") && docCitations.length > 0 && mentionsDocumentEvidence) {
+    for (const citation of docCitations) {
+      const normalizedDocumentName = citation.documentName?.toLowerCase() ?? citation.label.toLowerCase();
+      const mentionsDocumentName = normalizedDocumentName.length > 3 && normalizedAnswer.includes(normalizedDocumentName);
+      const mentionsPageNumber = citation.pageNumber
+        ? normalizedAnswer.includes(`page ${citation.pageNumber}`)
+          || normalizedAnswer.includes(`p. ${citation.pageNumber}`)
+        : false;
+
+      if (mentionsDocumentName || mentionsPageNumber || docCitations.length === 1) {
+        addCitation(citation);
+      }
+    }
+  }
+
+  if (!used.some((citation) => citation.type === "web") && webCitations.length > 0 && mentionsWebEvidence) {
+    for (const citation of webCitations) {
+      addCitation(citation);
+    }
+  }
+
+  if (!used.some((citation) => citation.label === "thebluealliance.com") && tbaCitations.length > 0 && mentionsTbaEvidence) {
+    for (const citation of tbaCitations) {
+      addCitation(citation);
+    }
+  }
+
+  if (used.length === 0 && (docCitations.length > 0 || tbaCitations.length > 0 || webCitations.length > 0)) {
+    for (const citation of [...docCitations, ...tbaCitations, ...webCitations]) {
+      addCitation(citation);
     }
   }
 
@@ -290,20 +385,79 @@ export async function POST(request: NextRequest) {
     responseHeaders.set("Set-Cookie", serializeCookie(GUEST_MESSAGE_COUNT_COOKIE_NAME, String(count + 1)));
   }
 
+  let streamClosed = false;
+  let streamAborted = false;
+
   const stream = new ReadableStream({
     start(controller) {
       const encoder = new TextEncoder();
+      const handleAbort = () => {
+        streamAborted = true;
+      };
+
+      request.signal.addEventListener("abort", handleAbort, { once: true });
+
+      const closeStream = () => {
+        if (streamClosed) {
+          return;
+        }
+
+        streamClosed = true;
+
+        try {
+          controller.close();
+        } catch (error) {
+          if (!isControllerClosedError(error)) {
+            throw error;
+          }
+        }
+      };
 
       const sendEvent = (payload: unknown) => {
-        controller.enqueue(encoder.encode(encodeSse(payload)));
+        if (streamClosed || streamAborted) {
+          return false;
+        }
+
+        try {
+          controller.enqueue(encoder.encode(encodeSse(payload)));
+          return true;
+        } catch (error) {
+          if (isControllerClosedError(error)) {
+            streamClosed = true;
+            return false;
+          }
+
+          throw error;
+        }
       };
 
       const sendDone = () => {
-        controller.enqueue(encoder.encode("data: [DONE]\n\n"));
+        if (streamClosed || streamAborted) {
+          return false;
+        }
+
+        try {
+          controller.enqueue(encoder.encode("data: [DONE]\n\n"));
+          return true;
+        } catch (error) {
+          if (isControllerClosedError(error)) {
+            streamClosed = true;
+            return false;
+          }
+
+          throw error;
+        }
+      };
+
+      const throwIfStreamAborted = () => {
+        if (streamClosed || streamAborted || request.signal.aborted) {
+          throw createAbortError();
+        }
       };
 
       void (async () => {
         try {
+          throwIfStreamAborted();
           const lastUser = [...messages].reverse().find((m: { role: string }) => m.role === "user");
 
           let contextBlock = "";
@@ -315,6 +469,7 @@ export async function POST(request: NextRequest) {
           const webCitations: Citation[] = [];
 
           if (lastUser) {
+            throwIfStreamAborted();
             sendEvent({ type: "status", message: "Reading your question..." });
             sendEvent({ type: "status", message: "Checking uploaded documents and indexed manuals..." });
 
@@ -338,6 +493,7 @@ export async function POST(request: NextRequest) {
             }
           }
 
+          throwIfStreamAborted();
           const userTeamNumber = userAccountSettings?.teamNumber ?? null;
           const shouldForceTeamTba = lastUser
             ? shouldForceUserTeamTbaLookup(lastUser.content)
@@ -352,6 +508,7 @@ export async function POST(request: NextRequest) {
           );
 
           if (lastUser && shouldCheckUserTeamTba) {
+            throwIfStreamAborted();
             sendEvent({ type: "status", message: "Checking live team context from The Blue Alliance..." });
 
             try {
@@ -375,6 +532,7 @@ export async function POST(request: NextRequest) {
           }
 
           if (lastUser && shouldRunWebSearch(lastUser.content, ragHitCount, ragBestScore)) {
+            throwIfStreamAborted();
             sendEvent({ type: "status", message: "Checking whether a live web search is needed..." });
 
             try {
@@ -410,6 +568,7 @@ export async function POST(request: NextRequest) {
               : "Thinking through the answer from the available context...",
           });
 
+          throwIfStreamAborted();
           const systemPrompt = buildSystemPrompt(effectiveSeasonYear, contextBlock, chatMode, {
             preferredName: userAccountSettings?.preferredName ?? null,
             teamNumber: userAccountSettings?.teamNumber ?? null,
@@ -427,8 +586,11 @@ export async function POST(request: NextRequest) {
             citations: filterUsedCitations(assistantText, ragCitations, tbaCitations, webCitations),
           });
           sendDone();
-          controller.close();
         } catch (error) {
+          if (isAbortError(error) || request.signal.aborted || streamAborted) {
+            return;
+          }
+
           await captureException("chat", error, {
             path: request.nextUrl.pathname,
             userId: session?.user?.id ?? null,
@@ -437,9 +599,15 @@ export async function POST(request: NextRequest) {
           const message = error instanceof Error ? error.message : "Chat request failed";
           sendEvent({ type: "error", message });
           sendDone();
-          controller.close();
+        } finally {
+          request.signal.removeEventListener("abort", handleAbort);
+          closeStream();
         }
       })();
+    },
+    cancel() {
+      streamClosed = true;
+      streamAborted = true;
     },
   });
 

@@ -4,7 +4,7 @@ import { useState } from "react";
 import { Flag } from "lucide-react";
 import { cn } from "@/lib/utils";
 import {
-  Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle,
+  Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -60,6 +60,9 @@ export function ReportButton({ messageId, className }: { messageId: string; clas
         <DialogContent className="rounded-[1.75rem] border border-border/60 bg-card/95 backdrop-blur-xl shadow-[var(--shadow-float)] sm:max-w-sm">
           <DialogHeader>
             <DialogTitle className="text-base font-semibold">Report response</DialogTitle>
+            <DialogDescription className="text-[13px] text-muted-foreground">
+              Describe what is wrong with this assistant response so it can be reviewed.
+            </DialogDescription>
           </DialogHeader>
           <Textarea
             placeholder="What's wrong with this response?"

@@ -10,11 +10,12 @@ export const users = pgTable("users", {
   image: text("image"),
   isAdmin: boolean("is_admin").notNull().default(false),
   defaultChatMode: text("default_chat_mode", { enum: ["rookie", "veteran"] }).notNull().default("veteran"),
-  ipBanned: boolean("ip_banned").notNull().default(false),
-  bannedIp: text("banned_ip"),
+  emailBanned: boolean("email_banned").notNull().default(false),
+  bannedEmail: text("banned_email"),
   preferredName: text("preferred_name"),
   teamNumber: integer("team_number"),
   onboardedAt: timestamp("onboarded_at"),
+  tosAcceptedAt: timestamp("tos_accepted_at"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
@@ -85,14 +86,15 @@ export const docChunks = pgTable("doc_chunks", {
   qdrantPointId: text("qdrant_point_id"),
 });
 
-export const bannedIps = pgTable("banned_ips", {
-  ip: text("ip").primaryKey(),
+export const bannedEmails = pgTable("banned_emails", {
+  email: text("email").primaryKey(),
   reason: text("reason"),
   bannedAt: timestamp("banned_at").defaultNow().notNull(),
   bannedById: text("banned_by_id").references(() => users.id),
 });
 
 export const reportStatusEnum = pgEnum("report_status", ["pending", "reviewed", "dismissed"]);
+export const reportSourceEnum = pgEnum("report_source", ["user_report", "auto_moderation"]);
 export const supportRequestStatusEnum = pgEnum("support_request_status", ["open", "closed"]);
 export const appLogLevelEnum = pgEnum("app_log_level", ["info", "warn", "error"]);
 
@@ -100,8 +102,10 @@ export const reports = pgTable("reports", {
   id: uuid("id").primaryKey().defaultRandom(),
   conversationId: uuid("conversation_id").notNull().references(() => conversations.id, { onDelete: "cascade" }),
   messageId: uuid("message_id").notNull().references(() => messages.id, { onDelete: "cascade" }),
-  reportedById: text("reported_by_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  reportedById: text("reported_by_id").references(() => users.id, { onDelete: "set null" }),
   reason: text("reason").notNull(),
+  source: reportSourceEnum("source").notNull().default("user_report"),
+  matchedTerms: text("matched_terms").array().notNull().default([]),
   status: reportStatusEnum("status").notNull().default("pending"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
@@ -154,8 +158,6 @@ export const blogPosts = pgTable("blog_posts", {
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
 
-export type BlogPost = typeof blogPosts.$inferSelect;
-
 export type Citation = {
   type: "doc" | "web";
   label: string;
@@ -166,7 +168,9 @@ export type Citation = {
   quote?: string;
 };
 
+export type BlogPost = typeof blogPosts.$inferSelect;
 export type DocumentScope = "season" | "general";
 export type ReportStatus = "pending" | "reviewed" | "dismissed";
+export type ReportSource = "user_report" | "auto_moderation";
 export type SupportRequestStatus = "open" | "closed";
 export type AppLogLevel = "info" | "warn" | "error";

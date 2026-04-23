@@ -55,7 +55,7 @@ export async function GET(req: NextRequest) {
       providers: stats.accountProviders,
       totalSessions: stats.totalSessions.count,
       activeSessions: stats.activeSessions.count,
-      blockedIps: stats.blockedIps.count,
+      blockedEmails: stats.blockedEmails.count,
     },
   });
 }

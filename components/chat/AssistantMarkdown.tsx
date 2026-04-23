@@ -70,7 +70,7 @@ export function AssistantMarkdown({
           ),
           table: ({ children }) => (
             <div className="my-3 overflow-x-auto">
-              <table className="w-full border-collapse text-xs">{children}</table>
+              <table className="min-w-full border-collapse text-xs">{children}</table>
             </div>
           ),
           th: ({ children }) => (

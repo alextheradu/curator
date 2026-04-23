@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { AssistantMarkdown } from "@/components/chat/AssistantMarkdown";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
 
 interface Message {
@@ -70,6 +70,9 @@ export function ChatViewerModal({ conversationId, onClose }: Props) {
       <DialogContent className="flex max-h-[80vh] w-full max-w-2xl flex-col rounded-[1.75rem] border border-border/60 bg-card/95 p-0 shadow-[var(--shadow-float)] backdrop-blur-xl">
         <DialogHeader className="border-b border-border/60 px-6 py-4">
           <DialogTitle className="text-base font-semibold">{data?.title ?? "Loading..."}</DialogTitle>
+          <DialogDescription className="sr-only">
+            Read the messages in this conversation, including both user prompts and assistant replies.
+          </DialogDescription>
           {data && (
             <p className="text-[12px] text-muted-foreground">
               {data.userName ?? data.userEmail}

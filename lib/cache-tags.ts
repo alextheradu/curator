@@ -5,6 +5,8 @@ export const ADMIN_CHATS_CACHE_TAG = "admin-chats";
 export const ADMIN_REPORTS_CACHE_TAG = "admin-reports";
 export const ADMIN_DOCUMENTS_CACHE_TAG = "admin-documents";
 export const ADMIN_USERS_CACHE_TAG = "admin-users";
+export const ADMIN_BLOG_CACHE_TAG = "admin-blog";
+export const PUBLIC_BLOG_INDEX_CACHE_TAG = "public-blog-index";
 
 export function revalidateAdminStatsCache() {
   revalidateTag(ADMIN_STATS_CACHE_TAG, "max");
@@ -24,6 +26,22 @@ export function revalidateAdminDocumentsCache() {
 
 export function revalidateAdminUsersCache() {
   revalidateTag(ADMIN_USERS_CACHE_TAG, "max");
+}
+
+export function revalidateAdminBlogCache() {
+  revalidateTag(ADMIN_BLOG_CACHE_TAG, "max");
+}
+
+export function revalidatePublicBlogIndexCache() {
+  revalidateTag(PUBLIC_BLOG_INDEX_CACHE_TAG, "max");
+}
+
+export function getPublicBlogPostCacheTag(slug: string) {
+  return `public-blog-post:${slug}`;
+}
+
+export function revalidatePublicBlogPostCache(slug: string) {
+  revalidateTag(getPublicBlogPostCacheTag(slug), "max");
 }
 
 export function revalidateConversationDerivedCaches() {
@@ -47,6 +65,20 @@ export function revalidateDocumentDerivedCaches() {
 export function revalidateUserDerivedCaches() {
   revalidateAdminUsersCache();
   revalidateAdminStatsCache();
+}
+
+export function revalidateBlogDerivedCaches(currentSlug?: string | null, previousSlug?: string | null) {
+  revalidateAdminBlogCache();
+  revalidatePublicBlogIndexCache();
+  revalidateAdminStatsCache();
+
+  if (previousSlug?.trim()) {
+    revalidatePublicBlogPostCache(previousSlug.trim());
+  }
+
+  if (currentSlug?.trim() && currentSlug?.trim() !== previousSlug?.trim()) {
+    revalidatePublicBlogPostCache(currentSlug.trim());
+  }
 }
 
 export function normalizeCacheKeyPart(value?: string | null) {
