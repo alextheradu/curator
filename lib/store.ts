@@ -53,6 +53,8 @@ interface ChatStore {
   deleteConversation: (conversationId: string) => void;
   setSeasonYear: (conversationId: string, year: number) => void;
   setDefaultChatMode: (mode: ChatMode) => void;
+  shareDialogConversationId: string | null;
+  setShareDialogConversationId: (id: string | null) => void;
   setSidebarOpen: (open: boolean) => void;
   setSettingsOpen: (open: boolean) => void;
   setTemperature: (temp: number) => void;
@@ -189,6 +191,8 @@ export const useChatStore = create<ChatStore>()(
         })),
       })),
 
+      shareDialogConversationId: null,
+      setShareDialogConversationId: (id) => set({ shareDialogConversationId: id }),
       setSidebarOpen: (open) => set({ sidebarOpen: open }),
       setSettingsOpen: (open) => set({ settingsOpen: open }),
       setTemperature: (temp) => set({ temperature: temp }),
