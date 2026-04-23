@@ -1,6 +1,6 @@
 import type { NextConfig } from "next";
 import { withSentryConfig } from "@sentry/nextjs";
-import { getSentryReleaseManagementConfig } from "./lib/sentry";
+import { getSentryReleaseManagementConfig, getSentryTunnelPath } from "./lib/sentry";
 
 const appBuildId =
   process.env.NEXT_PUBLIC_APP_BUILD_ID?.trim()
@@ -23,12 +23,12 @@ function buildCsp(): string {
 
   return [
     "default-src 'self'",
-    `script-src 'self' 'unsafe-inline' https://www.googletagmanager.com`,
+    "script-src 'self' 'unsafe-inline' https://www.googletagmanager.com https://static.cloudflareinsights.com",
     "worker-src 'self' blob:",
     "style-src 'self' 'unsafe-inline'",
     "img-src 'self' data: https:",
     "font-src 'self'",
-    "connect-src 'self' https://www.google-analytics.com https://region1.google-analytics.com",
+    "connect-src 'self' https://www.google-analytics.com https://region1.google-analytics.com https://cloudflareinsights.com https://static.cloudflareinsights.com",
     `frame-src ${frameSrc}`,
     "object-src 'none'",
     "base-uri 'self'",
@@ -71,6 +71,12 @@ const nextConfig: NextConfig = {
       },
     ];
   },
+  async redirects() {
+    return [
+      { source: "/blog", destination: "/news", permanent: true },
+      { source: "/blog/:slug", destination: "/news/:slug", permanent: true },
+    ];
+  },
 };
 
 const sentryReleaseManagement = getSentryReleaseManagementConfig();
@@ -80,7 +86,7 @@ export default withSentryConfig(nextConfig, {
   project: sentryReleaseManagement.project || undefined,
   authToken: sentryReleaseManagement.authToken || undefined,
   widenClientFileUpload: sentryReleaseManagement.enabled,
-  tunnelRoute: "/monitoring",
+  tunnelRoute: getSentryTunnelPath(),
   silent: !process.env.CI,
   sourcemaps: {
     disable: !sentryReleaseManagement.enabled,
