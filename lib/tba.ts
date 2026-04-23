@@ -13,6 +13,7 @@ type TbaContext = {
 interface TbaStatusOptions {
   onStatus?: (message: string) => void;
   userTeamNumber?: number | null;
+  forceLookup?: boolean;
 }
 
 const TEAM_PATTERN = /\b(?:team|frc)\s*#?\s*(\d{1,5})\b/i;
@@ -44,6 +45,34 @@ const TBA_HINTS = [
   "losses",
 ];
 
+const TEAM_SCOPED_TBA_HINTS = [
+  "event",
+  "events",
+  "match",
+  "matches",
+  "schedule",
+  "rank",
+  "ranking",
+  "rankings",
+  "record",
+  "play",
+  "playing",
+  "competing",
+  "competition",
+  "regional",
+  "district",
+  "dcmp",
+  "championship",
+];
+
+const TEAM_SCOPED_REFERENCES = [
+  "my team",
+  "our team",
+  "we",
+  "us",
+  "our",
+];
+
 export function shouldRunTbaLookup(query: string) {
   const lower = query.toLowerCase();
 
@@ -64,6 +93,23 @@ export function shouldRunTbaLookup(query: string) {
   }
 
   return lower.includes("the blue alliance") || lower.includes(" tba ");
+}
+
+export function shouldForceUserTeamTbaLookup(query: string) {
+  const lower = query.toLowerCase();
+  const hasTeamReference = TEAM_SCOPED_REFERENCES.some((reference) => {
+    if (reference.length <= 3) {
+      return new RegExp(`\\b${reference}\\b`, "i").test(query);
+    }
+
+    return lower.includes(reference);
+  });
+
+  if (!hasTeamReference) {
+    return false;
+  }
+
+  return TEAM_SCOPED_TBA_HINTS.some((hint) => lower.includes(hint));
 }
 
 export function isTbaMcpEnabled() {
@@ -499,7 +545,7 @@ export async function buildTbaContext(
 ): Promise<TbaContext> {
   const onStatus = options?.onStatus;
 
-  if (!isTbaMcpEnabled() || !shouldRunTbaLookup(query)) {
+  if (!isTbaMcpEnabled() || (!options?.forceLookup && !shouldRunTbaLookup(query))) {
     return { contextBlock: "", citations: [] };
   }
 

@@ -3,6 +3,7 @@
 import Image from "next/image";
 import { useState } from "react";
 import { motion } from "framer-motion";
+import { useSession } from "next-auth/react";
 
 const SUGGESTION_POOL = [
   "Explain the 2026 scoring flow in plain English.",
@@ -17,10 +18,24 @@ const SUGGESTION_POOL = [
   "Summarize common wiring mistakes on FRC robots.",
   "Explain backup robot rules and how they're picked.",
   "Explain what a drive coach is responsible for during a match.",
-  "Review our scouting sheet if I paste it below.",
 ];
 
 const VISIBLE_SUGGESTION_COUNT = 4;
+const GREETING_PREFIXES = [
+  "Howdy",
+  "Hey",
+  "Hello",
+  "Hi there",
+  "Hi",
+  "What's up",
+  "How's it going",
+  "Glad you're here",
+  "Good morning",
+  "Good afternoon",
+  "Good evening",
+  "Ahoy",
+  "Hola",
+];
 
 function selectRandomSuggestions(count: number) {
   const pool = [...SUGGESTION_POOL];
@@ -37,8 +52,26 @@ interface Props {
   onPromptSelect: (prompt: string) => void;
 }
 
+function getGreetingName(preferredName?: string | null, fullName?: string | null) {
+  if (preferredName?.trim()) {
+    return preferredName.trim().split(/\s+/)[0];
+  }
+
+  if (fullName?.trim()) {
+    return fullName.trim().split(/\s+/)[0];
+  }
+
+  return null;
+}
+
 export function EmptyState({ onPromptSelect }: Props) {
+  const { data: session } = useSession();
   const [suggestions] = useState(() => selectRandomSuggestions(VISIBLE_SUGGESTION_COUNT));
+  const [greetingPrefix] = useState(
+    () => GREETING_PREFIXES[Math.floor(Math.random() * GREETING_PREFIXES.length)] ?? "Howdy"
+  );
+  const greetingName = getGreetingName(session?.user?.preferredName, session?.user?.name);
+  const greeting = greetingName ? `${greetingPrefix}, ${greetingName}!` : `${greetingPrefix}!`;
 
   return (
     <div className="flex w-full flex-1 flex-col">
@@ -65,7 +98,7 @@ export function EmptyState({ onPromptSelect }: Props) {
           transition={{ delay: 0.35, duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
           className="text-center text-2xl font-semibold tracking-tight text-foreground sm:text-2xl md:text-3xl"
         >
-          What can I help with?
+          {greeting}
         </motion.h1>
         <motion.div
           initial={{ opacity: 0, y: 10 }}
