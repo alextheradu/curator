@@ -29,7 +29,7 @@ function AdminNavLinks({
   onNavigate?: () => void;
 }) {
   return (
-    <nav className="flex-1 space-y-0.5 p-2">
+    <nav className="flex-1 overflow-y-auto space-y-0.5 p-2">
       {NAV.map((item) => {
         const active = item.exact ? pathname === item.href : pathname.startsWith(item.href);
         return (
@@ -100,7 +100,7 @@ export function AdminSidebar({ pendingReports }: { pendingReports?: number }) {
       </div>
 
       <Sheet open={mobileOpen} onOpenChange={setMobileOpen}>
-        <SheetContent side="left" className="w-[20rem] max-w-[88vw] border-r border-white/6 bg-[#0f0f0f] p-3">
+        <SheetContent side="left" className="flex h-full w-[20rem] max-w-[88vw] flex-col overflow-hidden border-r border-white/6 bg-[#0f0f0f] p-3">
           <SheetHeader className="rounded-[1.5rem] border border-border/60 bg-card/78 px-4 py-4 pr-14 shadow-[var(--shadow-card)]">
             <div className="flex items-center gap-2.5">
               <Image
@@ -145,7 +145,7 @@ export function AdminSidebar({ pendingReports }: { pendingReports?: number }) {
       </Sheet>
 
       <aside className="hidden h-svh w-[18.5rem] shrink-0 border-r border-white/6 bg-[#0f0f0f] p-4 md:flex">
-        <div className="flex w-full flex-col rounded-[1.75rem] border border-border/60 bg-card/74 p-3 shadow-[var(--shadow-float)] backdrop-blur-xl">
+        <div className="flex w-full min-h-0 flex-col overflow-hidden rounded-[1.75rem] border border-border/60 bg-card/74 p-3 shadow-[var(--shadow-float)] backdrop-blur-xl">
           <div className="rounded-[1.35rem] border border-white/6 bg-white/[0.03] px-4 py-4">
             <div className="flex items-center gap-3">
               <Image

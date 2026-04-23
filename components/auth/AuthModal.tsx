@@ -1,7 +1,13 @@
 "use client";
 
 import { signIn } from "next-auth/react";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 
 interface Props {
@@ -17,9 +23,9 @@ export function AuthModal({ open, onOpenChange }: Props) {
           <DialogTitle className="text-center text-lg font-semibold text-[var(--foreground)]">
             Create a free account
           </DialogTitle>
-          <p className="text-center text-sm text-[var(--muted-foreground)]">
+          <DialogDescription className="text-center text-sm text-[var(--muted-foreground)]">
             Sign in to keep chatting once the guest limit is used.
-          </p>
+          </DialogDescription>
         </DialogHeader>
         <div className="py-2">
           <Button

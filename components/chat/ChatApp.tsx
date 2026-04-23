@@ -18,6 +18,7 @@ import {
   updateConversation as updateConversationRequest,
 } from "@/lib/conversation-api";
 import { normalizeConversation, normalizeMessage } from "@/lib/conversations";
+import { REOPEN_ONBOARDING_EVENT } from "@/lib/onboarding";
 import type { Conversation } from "@/lib/store";
 import { useChatStore } from "@/lib/store";
 
@@ -72,7 +73,10 @@ export function ChatApp({ requestedConversationId }: ChatAppProps) {
   const [publicConversation, setPublicConversation] = useState<Conversation | null>(null);
   const [isShareUpdating, setIsShareUpdating] = useState(false);
   const [shareDialogConversationId, setShareDialogConversationId] = useState<string | null>(null);
+  const [dismissedOnboardingUserId, setDismissedOnboardingUserId] = useState<string | null>(null);
+  const [forceOnboardingOpen, setForceOnboardingOpen] = useState(false);
   const previousAuthRef = useRef(false);
+  const hasResolvedAuthRef = useRef(false);
 
   useEffect(() => {
     if (!isAuthenticated) {
@@ -84,6 +88,32 @@ export function ChatApp({ requestedConversationId }: ChatAppProps) {
       setDefaultChatMode(accountChatMode);
     }
   }, [isAuthenticated, session?.user?.defaultChatMode, setDefaultChatMode]);
+
+  useEffect(() => {
+    if (!session?.user?.id) {
+      setDismissedOnboardingUserId(null);
+      setForceOnboardingOpen(false);
+      return;
+    }
+
+    if (session.user.onboardedAt != null && dismissedOnboardingUserId === session.user.id) {
+      setDismissedOnboardingUserId(null);
+    }
+  }, [dismissedOnboardingUserId, session?.user?.id, session?.user?.onboardedAt]);
+
+  useEffect(() => {
+    const handleReopenOnboarding = () => {
+      if (!session?.user?.id) {
+        return;
+      }
+
+      setDismissedOnboardingUserId(null);
+      setForceOnboardingOpen(true);
+    };
+
+    window.addEventListener(REOPEN_ONBOARDING_EVENT, handleReopenOnboarding);
+    return () => window.removeEventListener(REOPEN_ONBOARDING_EVENT, handleReopenOnboarding);
+  }, [session?.user?.id]);
 
   const navigateToConversation = useCallback((conversationId: string, replace = false) => {
     const href = `/c/${conversationId}`;
@@ -118,10 +148,14 @@ export function ChatApp({ requestedConversationId }: ChatAppProps) {
     }
 
     const wasAuthenticated = previousAuthRef.current;
-    if (previousAuthRef.current && !isAuthenticated) {
+    const hasResolvedAuth = hasResolvedAuthRef.current;
+
+    if (hasResolvedAuth && previousAuthRef.current && !isAuthenticated) {
       clearAllConversations();
     }
+
     previousAuthRef.current = isAuthenticated;
+    hasResolvedAuthRef.current = true;
 
     let cancelled = false;
 
@@ -133,8 +167,9 @@ export function ChatApp({ requestedConversationId }: ChatAppProps) {
           const guestConversations = useChatStore.getState().conversations;
           const guestConversationIds = new Set(guestConversations.map((conversation) => conversation.id));
           let transferredConversationId: string | null = null;
+          const shouldTransferGuestConversation = hasResolvedAuth && !wasAuthenticated;
 
-          if (!wasAuthenticated) {
+          if (shouldTransferGuestConversation) {
             const activeConversationId = useChatStore.getState().activeConversationId;
             const activeGuestConversation = guestConversations.find((conversation) => conversation.id === activeConversationId);
 
@@ -160,7 +195,7 @@ export function ChatApp({ requestedConversationId }: ChatAppProps) {
 
           const requestedGuestConversation = Boolean(
             requestedConversationId
-            && !wasAuthenticated
+            && shouldTransferGuestConversation
             && guestConversationIds.has(requestedConversationId)
           );
           const effectiveConversationId = transferredConversationId
@@ -449,11 +484,26 @@ export function ChatApp({ requestedConversationId }: ChatAppProps) {
   return (
     <>
       <OnboardingModal
-        open={status === "authenticated" && session?.user?.onboardedAt == null}
+        open={
+          status === "authenticated"
+          && (
+            forceOnboardingOpen
+            || (
+              session?.user?.onboardedAt == null
+              && dismissedOnboardingUserId !== session?.user?.id
+            )
+          )
+        }
         initialName={session?.user?.name}
         initialPreferredName={session?.user?.preferredName}
         initialTeamNumber={session?.user?.teamNumber}
         initialChatMode={session?.user?.defaultChatMode}
+        onCompleted={() => {
+          setForceOnboardingOpen(false);
+          if (session?.user?.id) {
+            setDismissedOnboardingUserId(session.user.id);
+          }
+        }}
       />
       <SidebarProvider defaultOpen={viewMode !== "public"}>
         <div className="flex h-svh w-full overflow-hidden bg-[var(--background)] text-[var(--foreground)]">

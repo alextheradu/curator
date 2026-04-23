@@ -15,7 +15,7 @@ export const metadata: Metadata = buildPublicPageMetadata({
 export default async function TermsPage() {
   const content = await readPublicMarkdown("terms-of-service.md");
   return (
-    <div className="min-h-screen bg-[#0f0f0f] px-6 py-12">
+    <div className="min-h-svh bg-[#0f0f0f] px-6 py-12">
       <div className="mx-auto max-w-2xl">
         <Link href="/" className="mb-8 inline-block text-sm text-[#0066B3] hover:underline">← Back to Curator</Link>
         <article className="prose prose-invert prose-sm max-w-none">

@@ -1,6 +1,12 @@
 "use client";
 
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { ExternalLink } from "lucide-react";
@@ -23,9 +29,9 @@ export function TosModal({ open, onAccept }: Props) {
             <DialogTitle className="text-lg font-semibold text-foreground">
               Accept the terms to start chatting
             </DialogTitle>
-            <p className="text-sm leading-6 text-muted-foreground">
+            <DialogDescription className="text-sm leading-6 text-muted-foreground">
               Before Curator sends your first message, you need to accept the Terms of Service and Privacy Policy.
-            </p>
+            </DialogDescription>
           </DialogHeader>
         </div>
 

@@ -23,6 +23,7 @@ import { Button } from "@/components/ui/button";
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Slider } from "@/components/ui/slider";
@@ -35,6 +36,7 @@ import {
   type CookieConsentValue,
 } from "@/lib/cookie-consent";
 import { readBrowserCookie } from "@/lib/cookies";
+import { REOPEN_ONBOARDING_EVENT } from "@/lib/onboarding";
 import { cn } from "@/lib/utils";
 import { useChatStore, type ChatMode } from "@/lib/store";
 
@@ -155,7 +157,7 @@ function SegmentedControl<T extends string>({
           type="button"
           onClick={() => onChange(opt.value)}
           className={cn(
-            "px-3 py-1.5 transition-colors",
+            "min-w-0 flex-1 px-3 py-2 text-center text-xs leading-tight transition-colors sm:text-sm",
             value === opt.value
               ? "bg-foreground font-medium text-background"
               : "text-muted-foreground hover:bg-muted hover:text-foreground"
@@ -309,20 +311,28 @@ export function SettingsModal() {
     }
   };
 
+  const handleRedoOnboarding = () => {
+    setSettingsOpen(false);
+    window.dispatchEvent(new Event(REOPEN_ONBOARDING_EVENT));
+  };
+
   return (
     <Dialog open={settingsOpen} onOpenChange={setSettingsOpen}>
-      <DialogContent className="overflow-hidden rounded-2xl border-border/60 bg-card p-0 shadow-[var(--shadow-float)] max-w-[calc(100vw-2rem)] sm:max-w-4xl max-h-[calc(100dvh-2rem)]">
+      <DialogContent className="h-[calc(100dvh-1rem)] w-[calc(100vw-1rem)] max-w-none overflow-hidden rounded-2xl border-border/60 bg-card p-0 shadow-[var(--shadow-float)] md:h-auto md:w-full md:max-w-4xl md:max-h-[calc(100dvh-2rem)]">
         <DialogTitle className="sr-only">Settings</DialogTitle>
-        <div className="flex h-[min(88dvh,calc(100dvh-2rem))] flex-col md:h-[76dvh] md:flex-row">
+        <DialogDescription className="sr-only">
+          Manage account, appearance, privacy, data, and support settings for Curator.
+        </DialogDescription>
+        <div className="flex h-full min-h-0 flex-col md:h-[76dvh] md:flex-row">
 
           {/* Nav sidebar */}
           <div className="border-b border-border/50 bg-card md:flex md:w-52 md:shrink-0 md:flex-col md:border-b-0 md:border-r">
             <div className="hidden px-4 pb-2 pt-5 md:block">
               <p className="text-base font-semibold text-foreground">Settings</p>
             </div>
-            <nav className="flex gap-1 overflow-x-auto px-3 py-2.5 md:flex-col md:overflow-y-auto md:px-3 md:pt-1 md:pb-3">
+            <nav className="grid grid-cols-2 gap-1 px-3 py-3 sm:grid-cols-3 md:flex md:flex-col md:overflow-y-auto md:overflow-x-hidden md:px-3 md:pt-1 md:pb-3">
               {SECTIONS.map((section) => (
-                <div key={section.id} className="min-w-[6.5rem] md:min-w-0">
+                <div key={section.id} className="min-w-0">
                   <NavItem
                     active={section.id === activeSection}
                     section={section}
@@ -334,7 +344,7 @@ export function SettingsModal() {
           </div>
 
           {/* Content */}
-          <div className="min-h-0 flex-1 overflow-y-auto px-4 py-5 sm:px-6 sm:py-6">
+          <div className="min-h-0 flex-1 overflow-y-auto px-4 py-4 sm:px-6 sm:py-6">
             <div className="mx-auto max-w-2xl">
 
               {/* Section title — visible on mobile only (desktop nav has it) */}
@@ -404,6 +414,22 @@ export function SettingsModal() {
                         </Button>
                       </SettingRow>
                     )}
+                    {session?.user?.id ? (
+                      <SettingRow
+                        label="Onboarding"
+                        description="Run the profile setup flow again to update your name, team, and default chat mode."
+                      >
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          className="rounded-lg"
+                          onClick={handleRedoOnboarding}
+                        >
+                          Redo onboarding
+                        </Button>
+                      </SettingRow>
+                    ) : null}
                   </div>
                 </div>
               ) : null}

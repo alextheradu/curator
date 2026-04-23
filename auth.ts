@@ -56,11 +56,36 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
   ],
   session: { strategy: "jwt" },
   callbacks: {
-    async jwt({ token, user, trigger }) {
+    async jwt({ token, user, trigger, session }) {
       if (user) token.id = user.id;
       const email = user?.email ?? token.email;
 
-      if ((user || trigger === "update") && token.id) {
+      if (trigger === "update" && session && token.id) {
+        if ("defaultChatMode" in session) {
+          token.defaultChatMode = session.defaultChatMode ?? DEFAULT_CHAT_MODE;
+        }
+        if ("preferredName" in session) {
+          token.preferredName = typeof session.preferredName === "string" ? session.preferredName : null;
+        }
+        if ("teamNumber" in session) {
+          token.teamNumber = typeof session.teamNumber === "number" ? session.teamNumber : null;
+        }
+        if ("onboardedAt" in session) {
+          token.onboardedAt = session.onboardedAt ? new Date(session.onboardedAt) : null;
+        }
+      }
+
+      const shouldRefreshAccountSettings = Boolean(
+        token.id
+        && (
+          user
+          || trigger === "update"
+          || token.onboardedAt == null
+          || token.defaultChatMode == null
+        )
+      );
+
+      if (shouldRefreshAccountSettings && token.id) {
         const settings = await readUserAccountSettings(token.id as string);
         token.isAdmin = settings.isAdmin;
         token.defaultChatMode = settings.defaultChatMode;

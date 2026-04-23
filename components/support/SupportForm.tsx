@@ -126,11 +126,11 @@ export function SupportForm({ onSuccess }: SupportFormProps = {}) {
         />
       </label>
 
-      <div className="flex items-center justify-between gap-4">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <p className="max-w-md text-[12px] leading-5 text-muted-foreground">
           This form is rate-limited and stores the message, contact details you provide, and basic request metadata so the operator can respond and debug issues.
         </p>
-        <Button type="submit" disabled={submitting}>
+        <Button type="submit" disabled={submitting} className="w-full sm:w-auto">
           {submitting ? "Sending..." : "Send request"}
         </Button>
       </div>

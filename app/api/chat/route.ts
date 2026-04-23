@@ -1,9 +1,10 @@
 import { auth } from "@/auth";
+import { readUserAccountSettings } from "@/lib/account-settings";
 import { buildSystemPrompt } from "@/lib/frc-system-prompt";
 import { buildRagContext } from "@/lib/rag";
 import { buildWebContext, webSearch } from "@/lib/langsearch";
 import { DEFAULT_SEASON_YEAR } from "@/lib/seasons";
-import { buildTbaContext, shouldRunTbaLookup } from "@/lib/tba";
+import { buildTbaContext, shouldForceUserTeamTbaLookup, shouldRunTbaLookup } from "@/lib/tba";
 import { shouldRunWebSearch } from "@/lib/web-search-decision";
 import type { Citation } from "@/lib/db/schema";
 import { GUEST_MESSAGE_COUNT_COOKIE_NAME, GUEST_MESSAGE_LIMIT } from "@/lib/app-cookies";
@@ -249,6 +250,9 @@ function filterUsedCitations(
 
 export async function POST(request: NextRequest) {
   const session = await auth();
+  const userAccountSettings = session?.user?.id
+    ? await readUserAccountSettings(session.user.id)
+    : null;
   const cookieStore = await cookies();
   const ip = getClientIp(request);
   const rateLimit = await enforceRateLimit({
@@ -334,12 +338,26 @@ export async function POST(request: NextRequest) {
             }
           }
 
-          if (lastUser && session?.user?.teamNumber && shouldRunTbaLookup(lastUser.content)) {
+          const userTeamNumber = userAccountSettings?.teamNumber ?? null;
+          const shouldForceTeamTba = lastUser
+            ? shouldForceUserTeamTbaLookup(lastUser.content)
+            : false;
+          const shouldCheckUserTeamTba = Boolean(
+            lastUser
+            && userTeamNumber
+            && (
+              shouldRunTbaLookup(lastUser.content)
+              || shouldForceTeamTba
+            )
+          );
+
+          if (lastUser && shouldCheckUserTeamTba) {
             sendEvent({ type: "status", message: "Checking live team context from The Blue Alliance..." });
 
             try {
               const tbaContext = await buildTbaContext(lastUser.content, effectiveSeasonYear, {
-                userTeamNumber: session.user.teamNumber,
+                userTeamNumber,
+                forceLookup: shouldForceTeamTba,
                 onStatus: (message) => sendEvent({ type: "status", message }),
               });
               contextBlock += tbaContext.contextBlock;
@@ -393,8 +411,8 @@ export async function POST(request: NextRequest) {
           });
 
           const systemPrompt = buildSystemPrompt(effectiveSeasonYear, contextBlock, chatMode, {
-            preferredName: session?.user?.preferredName ?? null,
-            teamNumber: session?.user?.teamNumber ?? null,
+            preferredName: userAccountSettings?.preferredName ?? null,
+            teamNumber: userAccountSettings?.teamNumber ?? null,
           });
           const fullMessages = [{ role: "system", content: systemPrompt }, ...messages];
           const assistantText = await streamChatCompletion({
