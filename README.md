@@ -63,12 +63,13 @@ By default, when `NEXT_PUBLIC_SENTRY_DSN` is configured, Curator records full br
 Optional build-time source map upload:
 
 ```bash
+SENTRY_RELEASE_MANAGEMENT_ENABLED=true
 SENTRY_AUTH_TOKEN=sntrys_...
 SENTRY_ORG=your-org-slug
 SENTRY_PROJECT=your-project-slug
 ```
 
-If those three build-time vars are missing, Curator still builds and runs, but source map upload is disabled.
+Release management is opt-in. Curator only uploads source maps when `SENTRY_RELEASE_MANAGEMENT_ENABLED=true` and the three Sentry build credentials are set. Otherwise, the app still builds and runs normally.
 
 Quick verification:
 
