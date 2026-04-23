@@ -6,11 +6,8 @@ import { useSession } from "next-auth/react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import { OnboardingModal } from "@/components/auth/OnboardingModal";
-import { SidebarProvider } from "@/components/ui/sidebar";
-import { AppSidebar } from "@/components/sidebar/Sidebar";
 import { ChatWindow } from "@/components/chat/ChatWindow";
 import {
-  deleteConversation as deleteConversationRequest,
   fetchConversation,
   fetchConversationList,
   fetchConversationMessages,
@@ -63,16 +60,16 @@ export function ChatApp({ requestedConversationId }: ChatAppProps) {
   const {
     setActiveConversation,
     setDefaultChatMode,
-    deleteConversation,
     replaceConversations,
     upsertConversation,
     clearAllConversations,
+    shareDialogConversationId,
+    setShareDialogConversationId,
   } = useChatStore();
 
   const [viewMode, setViewMode] = useState<ViewMode>("loading");
   const [publicConversation, setPublicConversation] = useState<Conversation | null>(null);
   const [isShareUpdating, setIsShareUpdating] = useState(false);
-  const [shareDialogConversationId, setShareDialogConversationId] = useState<string | null>(null);
   const [dismissedOnboardingUserId, setDismissedOnboardingUserId] = useState<string | null>(null);
   const [forceOnboardingOpen, setForceOnboardingOpen] = useState(false);
   const previousAuthRef = useRef(false);
@@ -303,81 +300,6 @@ export function ChatApp({ requestedConversationId }: ChatAppProps) {
     upsertConversation,
   ]);
 
-  const handleCreateConversation = useCallback(async () => {
-    setActiveConversation(null);
-    setPublicConversation(null);
-    setViewMode(isAuthenticated ? "owner" : "guest");
-    router.push("/");
-  }, [isAuthenticated, router, setActiveConversation]);
-
-  const handleOpenConversation = useCallback(async (conversationId: string) => {
-    try {
-      if (isAuthenticated) {
-        const loaded = await readConversation(conversationId);
-        if (!loaded || loaded.access !== "owner") {
-          toast.error("Unable to open that chat.");
-          return;
-        }
-
-        upsertConversation(loaded.conversation);
-        setActiveConversation(loaded.conversation.id);
-        setPublicConversation(null);
-        setViewMode("owner");
-        navigateToConversation(conversationId);
-        return;
-      }
-
-      setActiveConversation(conversationId);
-      setPublicConversation(null);
-      setViewMode("guest");
-      navigateToConversation(conversationId);
-    } catch (error) {
-      console.error(error);
-      toast.error("Unable to open that chat.");
-    }
-  }, [
-    isAuthenticated,
-    navigateToConversation,
-    readConversation,
-    setActiveConversation,
-    upsertConversation,
-  ]);
-
-  const handleDeleteConversation = useCallback(async (conversationId: string) => {
-    const currentActiveId = useChatStore.getState().activeConversationId;
-    const remaining = useChatStore.getState().conversations.filter((conversation) => conversation.id !== conversationId);
-
-    try {
-      if (isAuthenticated) {
-        await deleteConversationRequest(conversationId);
-      }
-
-      deleteConversation(conversationId);
-      setPublicConversation(null);
-
-      if (currentActiveId === conversationId && remaining[0]) {
-        await handleOpenConversation(remaining[0].id);
-        return;
-      }
-
-      if (currentActiveId === conversationId) {
-        setActiveConversation(null);
-        setPublicConversation(null);
-        setViewMode(isAuthenticated ? "owner" : "guest");
-        router.push("/");
-      }
-    } catch (error) {
-      console.error(error);
-      toast.error("Unable to delete that chat.");
-    }
-  }, [
-    deleteConversation,
-    handleOpenConversation,
-    isAuthenticated,
-    router,
-    setActiveConversation,
-  ]);
-
   const handleShareChange = useCallback(async (makePublic: boolean) => {
     const conversationId = useChatStore.getState().activeConversationId;
     if (!conversationId || !isAuthenticated) {
@@ -409,69 +331,6 @@ export function ChatApp({ requestedConversationId }: ChatAppProps) {
       setIsShareUpdating(false);
     }
   }, [isAuthenticated, upsertConversation]);
-
-  const handleRenameConversation = useCallback(async (conversationId: string, title: string) => {
-    const nextTitle = title.trim();
-    if (!nextTitle) {
-      return;
-    }
-
-    const currentConversation = useChatStore
-      .getState()
-      .conversations
-      .find((conversation) => conversation.id === conversationId);
-
-    if (!currentConversation || currentConversation.title === nextTitle) {
-      return;
-    }
-
-    upsertConversation({
-      ...currentConversation,
-      title: nextTitle,
-      updatedAt: new Date(),
-    });
-
-    try {
-      if (isAuthenticated) {
-        const updated = normalizeConversation(
-          await updateConversationRequest(conversationId, { title: nextTitle }),
-          currentConversation.messages,
-          useChatStore.getState().defaultChatMode,
-        );
-        upsertConversation(updated);
-      }
-    } catch (error) {
-      console.error(error);
-      upsertConversation(currentConversation);
-      toast.error("Unable to rename that chat.");
-    }
-  }, [isAuthenticated, upsertConversation]);
-
-  const handleShareConversation = useCallback(async (conversationId: string) => {
-    if (!isAuthenticated) {
-      toast.info("Sign in to share chats.");
-      return;
-    }
-
-    const loaded = await readConversation(conversationId);
-    if (!loaded || loaded.access !== "owner") {
-      toast.error("Unable to open that chat.");
-      return;
-    }
-
-    upsertConversation(loaded.conversation);
-    setActiveConversation(loaded.conversation.id);
-    setPublicConversation(null);
-    setViewMode("owner");
-    setShareDialogConversationId(loaded.conversation.id);
-    navigateToConversation(conversationId);
-  }, [
-    isAuthenticated,
-    navigateToConversation,
-    readConversation,
-    setActiveConversation,
-    upsertConversation,
-  ]);
 
   if (viewMode === "loading") {
     return <LoadingState />;
@@ -505,28 +364,15 @@ export function ChatApp({ requestedConversationId }: ChatAppProps) {
           }
         }}
       />
-      <SidebarProvider defaultOpen={viewMode !== "public"}>
-        <div className="flex h-svh w-full overflow-hidden bg-[var(--background)] text-[var(--foreground)]">
-          {viewMode !== "public" && (
-            <AppSidebar
-              onCreateConversation={handleCreateConversation}
-              onOpenConversation={handleOpenConversation}
-              onRenameConversation={handleRenameConversation}
-              onShareConversation={handleShareConversation}
-              onDeleteConversation={handleDeleteConversation}
-            />
-          )}
-          <ChatWindow
-            conversationOverride={viewMode === "public" ? publicConversation : null}
-            readOnly={viewMode === "public"}
-            canShare={viewMode === "owner" && isAuthenticated}
-            onShareChange={handleShareChange}
-            isShareUpdating={isShareUpdating}
-            shareDialogConversationId={shareDialogConversationId}
-            onShareDialogHandled={() => setShareDialogConversationId(null)}
-          />
-        </div>
-      </SidebarProvider>
+      <ChatWindow
+        conversationOverride={viewMode === "public" ? publicConversation : null}
+        readOnly={viewMode === "public"}
+        canShare={viewMode === "owner" && isAuthenticated}
+        onShareChange={handleShareChange}
+        isShareUpdating={isShareUpdating}
+        shareDialogConversationId={shareDialogConversationId}
+        onShareDialogHandled={() => setShareDialogConversationId(null)}
+      />
     </>
   );
 }
