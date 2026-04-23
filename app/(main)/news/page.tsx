@@ -1,7 +1,9 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { ArrowRightIcon, CalendarDays, ClockIcon, NewspaperIcon } from "lucide-react";
+import { NewspaperIcon } from "lucide-react";
 import { SidebarInset } from "@/components/ui/sidebar";
+import { NewsCards } from "@/components/news/NewsCards";
+import { NewsHero } from "@/components/news/NewsHero";
 import { getCachedPublicBlogPosts } from "@/lib/blog";
 import { buildPublicPageMetadata } from "@/lib/seo";
 
@@ -11,22 +13,6 @@ export const metadata: Metadata = buildPublicPageMetadata({
   path: "/news",
   keywords: ["Curator news", "Curator updates", "FRC AI updates"],
 });
-
-function formatDate(value?: Date | string | null) {
-  if (!value) return null;
-  const date = value instanceof Date ? value : new Date(value);
-  return date.toLocaleDateString(undefined, { month: "long", day: "numeric", year: "numeric" });
-}
-
-function readingTime(content: string) {
-  const words = content.trim().split(/\s+/).length;
-  return Math.max(1, Math.ceil(words / 200));
-}
-
-function isNew(value?: Date | string | null) {
-  if (!value) return false;
-  return Date.now() - new Date(value).getTime() < 7 * 24 * 60 * 60 * 1000;
-}
 
 export default async function NewsPage({
   searchParams,
@@ -78,48 +64,8 @@ export default async function NewsPage({
           </div>
         ) : (
           <>
-            {/* Hero — latest post */}
-            {latest && (
-              <Link
-                href={`/news/${latest.slug}?from=${encodeURIComponent(backHref)}`}
-                className="group relative overflow-hidden rounded-[1.75rem] border border-border/60 bg-card/72 p-6 shadow-[var(--shadow-float)] backdrop-blur-xl transition-colors hover:border-white/10 hover:bg-card/85 sm:p-8"
-              >
-                <div className="flex flex-wrap items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.13em] text-muted-foreground">
-                  <NewspaperIcon className="size-3.5" />
-                  Latest update
-                  {isNew(latest.publishedAt ?? latest.createdAt) && (
-                    <span className="rounded-full bg-blue-500/15 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.12em] text-blue-400">
-                      New
-                    </span>
-                  )}
-                </div>
-                <h2 className="mt-3 text-2xl font-semibold tracking-tight text-foreground sm:text-3xl">
-                  {latest.title}
-                </h2>
-                <p className="mt-2.5 max-w-2xl text-[14px] leading-6 text-muted-foreground sm:text-[15px] sm:leading-7">
-                  {latest.summary}
-                </p>
-                <div className="mt-4 flex flex-wrap items-center gap-3 text-[12px] text-muted-foreground">
-                  {formatDate(latest.publishedAt ?? latest.createdAt) && (
-                    <span className="inline-flex items-center gap-1.5">
-                      <CalendarDays className="size-3.5" />
-                      {formatDate(latest.publishedAt ?? latest.createdAt)}
-                    </span>
-                  )}
-                  {latest.authorName && <span>By {latest.authorName}</span>}
-                  <span className="inline-flex items-center gap-1.5">
-                    <ClockIcon className="size-3.5" />
-                    {readingTime(latest.content)} min read
-                  </span>
-                </div>
-                <div className="mt-5 inline-flex items-center gap-2 text-[13px] font-medium text-foreground sm:text-sm">
-                  Read update
-                  <ArrowRightIcon className="size-4 transition-transform group-hover:translate-x-0.5" />
-                </div>
-              </Link>
-            )}
+            {latest && <NewsHero post={latest} backHref={backHref} />}
 
-            {/* Older posts grid */}
             {older.length > 0 && (
               <section>
                 <div className="mb-4 flex items-center justify-between gap-3">
@@ -130,44 +76,7 @@ export default async function NewsPage({
                     {posts.length} total
                   </span>
                 </div>
-                <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-                  {older.map((post) => (
-                    <Link
-                      key={post.id}
-                      href={`/news/${post.slug}?from=${encodeURIComponent(backHref)}`}
-                      className="group flex flex-col rounded-[1.5rem] border border-border/60 bg-card/64 p-5 shadow-[var(--shadow-card)] transition-colors hover:border-white/10 hover:bg-card/78"
-                    >
-                      <div className="flex items-center gap-2 text-[10px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
-                        <NewspaperIcon className="size-3" />
-                        Update
-                        {isNew(post.publishedAt ?? post.createdAt) && (
-                          <span className="rounded-full bg-blue-500/15 px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-[0.12em] text-blue-400">
-                            New
-                          </span>
-                        )}
-                      </div>
-                      <h3 className="mt-3 text-[17px] font-semibold leading-tight tracking-tight text-foreground">
-                        {post.title}
-                      </h3>
-                      <p className="mt-2 flex-1 text-[13px] leading-5 text-muted-foreground">
-                        {post.summary}
-                      </p>
-                      <div className="mt-4 flex flex-wrap items-center gap-2.5 text-[11px] text-muted-foreground">
-                        {formatDate(post.publishedAt ?? post.createdAt) && (
-                          <span>{formatDate(post.publishedAt ?? post.createdAt)}</span>
-                        )}
-                        <span className="inline-flex items-center gap-1">
-                          <ClockIcon className="size-3" />
-                          {readingTime(post.content)} min
-                        </span>
-                      </div>
-                      <div className="mt-4 inline-flex items-center gap-1.5 text-[12px] font-medium text-foreground">
-                        Read
-                        <ArrowRightIcon className="size-3.5 transition-transform group-hover:translate-x-0.5" />
-                      </div>
-                    </Link>
-                  ))}
-                </div>
+                <NewsCards posts={older} backHref={backHref} />
               </section>
             )}
           </>

@@ -1,22 +1,11 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { CalendarDays, ClockIcon, NewspaperIcon } from "lucide-react";
 import { notFound } from "next/navigation";
 import { SidebarInset } from "@/components/ui/sidebar";
-import { BlogMarkdown } from "@/components/blog/BlogMarkdown";
+import { NewsArticleBody } from "@/components/news/NewsArticleBody";
 import { getCachedPublicBlogPost } from "@/lib/blog";
 import { buildPublicPageMetadata } from "@/lib/seo";
 
-function formatDate(value?: Date | string | null) {
-  if (!value) return null;
-  const date = value instanceof Date ? value : new Date(value);
-  return date.toLocaleDateString(undefined, { month: "long", day: "numeric", year: "numeric" });
-}
-
-function readingTime(content: string) {
-  const words = content.trim().split(/\s+/).length;
-  return Math.max(1, Math.ceil(words / 200));
-}
 
 export async function generateMetadata({
   params,
@@ -77,43 +66,14 @@ export default async function NewsArticlePage({
           </Link>
         </div>
 
-        {/* Article */}
-        <article className="rounded-[1.75rem] border border-border/60 bg-card/72 p-6 shadow-[var(--shadow-float)] backdrop-blur-xl sm:p-10">
-          <div className="flex flex-wrap items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.13em] text-muted-foreground">
-            <NewspaperIcon className="size-3.5" />
-            Curator update
-          </div>
-
-          <h1 className="mt-4 text-[1.9rem] font-semibold leading-[1.05] tracking-tight text-foreground sm:mt-5 sm:text-4xl">
-            {post.title}
-          </h1>
-
-          <p className="mt-3 text-[14px] leading-6 text-muted-foreground sm:mt-4 sm:text-[16px] sm:leading-7">
-            {post.summary}
-          </p>
-
-          <div className="mt-4 flex flex-wrap items-center gap-3 text-[12px] text-muted-foreground">
-            {formatDate(post.publishedAt ?? post.createdAt) && (
-              <span className="inline-flex items-center gap-1.5">
-                <CalendarDays className="size-3.5" />
-                {formatDate(post.publishedAt ?? post.createdAt)}
-              </span>
-            )}
-            {post.authorName && (
-              <span className="inline-flex items-center gap-1.5 rounded-full border border-border/50 bg-white/[0.04] px-2.5 py-0.5 text-[11px]">
-                {post.authorName}
-              </span>
-            )}
-            <span className="inline-flex items-center gap-1.5">
-              <ClockIcon className="size-3.5" />
-              {readingTime(post.content)} min read
-            </span>
-          </div>
-
-          <div className="mt-6 border-t border-border/50 pt-6 sm:mt-8 sm:pt-8">
-            <BlogMarkdown content={post.content} />
-          </div>
-        </article>
+        <NewsArticleBody
+          title={post.title}
+          summary={post.summary}
+          content={post.content}
+          authorName={post.authorName}
+          publishedAt={post.publishedAt}
+          createdAt={post.createdAt}
+        />
 
       </div>
     </SidebarInset>
