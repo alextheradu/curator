@@ -1,12 +1,13 @@
 "use client";
 
 import Image from "next/image";
+import { usePathname, useRouter } from "next/navigation";
 import { isToday, isYesterday, subWeeks, subMonths } from "date-fns";
 import { useMemo, useState } from "react";
 import { motion } from "framer-motion";
 import {
   MessageCircleIcon,
-  MessageSquareIcon,
+  NewspaperIcon,
   PanelLeftIcon,
   PenSquareIcon,
   SearchIcon,
@@ -14,10 +15,15 @@ import {
   XIcon,
 } from "lucide-react";
 import { signIn, useSession } from "next-auth/react";
+import { NewsBadge } from "@/components/news/NewsBadge";
+import { useSidebarActions } from "@/hooks/useSidebarActions";
 import {
   Dialog,
   DialogClose,
   DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import {
@@ -86,23 +92,22 @@ function stringToHue(value: string): number {
 }
 
 interface AppSidebarProps {
-  onCreateConversation: () => void | Promise<void>;
-  onOpenConversation: (id: string) => void | Promise<void>;
-  onRenameConversation: (id: string, title: string) => void | Promise<void>;
-  onShareConversation: (id: string) => void | Promise<void>;
-  onDeleteConversation: (id: string) => void | Promise<void>;
+  latestNewsPublishedAt: string | null;
 }
 
-export function AppSidebar({
-  onCreateConversation,
-  onOpenConversation,
-  onRenameConversation,
-  onShareConversation,
-  onDeleteConversation,
-}: AppSidebarProps) {
+export function AppSidebar({ latestNewsPublishedAt }: AppSidebarProps) {
+  const router = useRouter();
+  const pathname = usePathname();
+  const {
+    createConversation,
+    openConversation,
+    renameConversation,
+    shareConversation,
+    deleteConversation,
+  } = useSidebarActions();
   const { data: session } = useSession();
-  const userLabel = session?.user?.name?.trim() || session?.user?.email || "Signed in";
-  const avatarHueSource = session?.user?.name?.trim() || session?.user?.email || "";
+  const userLabel = session?.user?.preferredName?.trim() || session?.user?.name?.trim() || session?.user?.email || "Signed in";
+  const avatarHueSource = session?.user?.preferredName?.trim() || session?.user?.name?.trim() || session?.user?.email || "";
   const avatarUrl = session?.user?.image?.trim() || "";
   const { toggleSidebar, setOpenMobile } = useSidebar();
   const [searchOpen, setSearchOpen] = useState(false);
@@ -117,9 +122,6 @@ export function AppSidebar({
 
   const grouped = groupConversationsByDate(conversations);
 
-  const handleDeleteOne = (id: string) => {
-    void onDeleteConversation(id);
-  };
 
   const groups: { label: string; items: Conversation[] }[] = [
     { label: "Today", items: grouped.today },
@@ -167,6 +169,12 @@ export function AppSidebar({
         }}
       >
         <DialogContent className="max-w-[calc(100vw-2rem)] gap-0 overflow-hidden rounded-[1.6rem] border border-white/6 bg-[#2f2f2f] p-0 text-white shadow-[0_28px_90px_rgba(0,0,0,0.42)] [&>button]:hidden sm:max-h-[430px] sm:max-w-[580px]">
+          <DialogHeader className="sr-only">
+            <DialogTitle>Search chats</DialogTitle>
+            <DialogDescription>
+              Search your existing conversations or start a new chat.
+            </DialogDescription>
+          </DialogHeader>
           <div className="border-b border-white/8 px-5 py-4">
             <div className="flex items-center gap-3">
               <motion.div
@@ -210,7 +218,7 @@ export function AppSidebar({
                 setSearchOpen(false);
                 setSearchQuery("");
                 setOpenMobile(false);
-                void onCreateConversation();
+                void createConversation();
               }}
               className="flex w-full items-center gap-3 rounded-xl bg-white/[0.08] px-3 py-2.5 text-left text-white transition-colors hover:bg-white/[0.1]"
             >
@@ -240,7 +248,7 @@ export function AppSidebar({
                             setSearchOpen(false);
                             setSearchQuery("");
                             setOpenMobile(false);
-                            void onOpenConversation(conversation.id);
+                            void openConversation(conversation.id);
                           }}
                           className="flex w-full items-start gap-3 rounded-xl px-3 py-2 text-left text-white transition-colors hover:bg-white/[0.035]"
                         >
@@ -269,34 +277,20 @@ export function AppSidebar({
       <Sidebar collapsible="icon">
         {/* Header */}
         <SidebarHeader className="pb-0 pt-3">
-          <SidebarMenu>
-            <SidebarMenuItem className="flex flex-row items-center justify-between">
-              <div className="group/logo relative flex items-center justify-center">
-                <SidebarMenuButton
-                  className="size-8 !px-0 items-center justify-center group-data-[collapsible=icon]:group-hover/logo:opacity-0"
-                  tooltip="Curator"
-                  onClick={() => {
-                    setOpenMobile(false);
-                    void onCreateConversation();
-                  }}
-                >
-                  <MessageSquareIcon className="size-4 text-sidebar-foreground/50" />
-                </SidebarMenuButton>
-                <button
-                  type="button"
-                  className="pointer-events-none absolute inset-0 flex size-8 items-center justify-center rounded-md opacity-0 group-data-[collapsible=icon]:pointer-events-auto group-data-[collapsible=icon]:group-hover/logo:opacity-100 hover:bg-sidebar-accent"
-                  onClick={() => toggleSidebar()}
-                  title="Open sidebar"
-                  aria-label="Open sidebar"
-                >
-                  <PanelLeftIcon className="size-4" />
-                </button>
-              </div>
-              <div className="group-data-[collapsible=icon]:hidden">
-                <SidebarTrigger className="text-sidebar-foreground/60 transition-colors duration-150 hover:text-sidebar-foreground" />
-              </div>
-            </SidebarMenuItem>
-          </SidebarMenu>
+          <div className="flex items-center justify-end px-2 group-data-[collapsible=icon]:hidden">
+            <SidebarTrigger className="text-sidebar-foreground/60 transition-colors duration-150 hover:text-sidebar-foreground" />
+          </div>
+          <div className="hidden items-center justify-center px-2 group-data-[collapsible=icon]:flex">
+            <button
+              type="button"
+              className="flex size-8 items-center justify-center rounded-md text-sidebar-foreground/60 transition-colors duration-150 hover:bg-sidebar-accent hover:text-sidebar-foreground"
+              onClick={() => toggleSidebar()}
+              title="Open sidebar"
+              aria-label="Open sidebar"
+            >
+              <PanelLeftIcon className="size-4" />
+            </button>
+          </div>
         </SidebarHeader>
 
         {/* Content */}
@@ -309,7 +303,7 @@ export function AppSidebar({
                     className="h-9 justify-start gap-2.5 rounded-xl border border-sidebar-border px-4 text-[13px] text-sidebar-foreground/70 transition-colors duration-150 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground"
                     onClick={() => {
                       setOpenMobile(false);
-                      void onCreateConversation();
+                      void createConversation();
                     }}
                     tooltip="New Chat"
                   >
@@ -325,6 +319,23 @@ export function AppSidebar({
                   >
                     <SearchIcon className="size-4" />
                     <span className="font-medium">Search chats</span>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+                <SidebarMenuItem>
+                  <SidebarMenuButton
+                    isActive={pathname.startsWith("/news")}
+                    className="h-9 justify-start gap-2.5 rounded-xl border border-sidebar-border px-4 text-[13px] text-sidebar-foreground/70 transition-colors duration-150 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground data-[active=true]:bg-sidebar-accent/60 data-[active=true]:text-sidebar-foreground"
+                    tooltip="News"
+                    onClick={() => {
+                      setOpenMobile(false);
+                      const fromId = useChatStore.getState().activeConversationId;
+                      const from = fromId ? `/c/${fromId}` : "/";
+                      router.push(`/news?from=${encodeURIComponent(from)}`);
+                    }}
+                  >
+                    <NewspaperIcon className="size-4" />
+                    <span className="font-medium">News</span>
+                    <NewsBadge latestPublishedAt={latestNewsPublishedAt} />
                   </SidebarMenuButton>
                 </SidebarMenuItem>
               </SidebarMenu>
@@ -360,16 +371,16 @@ export function AppSidebar({
                               isActive={conv.id === activeConversationId}
                               onClick={() => {
                                 setOpenMobile(false);
-                                void onOpenConversation(conv.id);
+                                void openConversation(conv.id);
                               }}
                               onRename={(title) => {
-                                void onRenameConversation(conv.id, title);
+                                void renameConversation(conv.id, title);
                               }}
                               onShare={() => {
                                 setOpenMobile(false);
-                                void onShareConversation(conv.id);
+                                void shareConversation(conv.id);
                               }}
-                              onDelete={() => handleDeleteOne(conv.id)}
+                              onDelete={() => void deleteConversation(conv.id)}
                             />
                           </SidebarMenuItem>
                         ))}
@@ -387,9 +398,9 @@ export function AppSidebar({
           <SidebarMenu>
             <SidebarMenuItem>
               {session?.user ? (
-                <div className="flex items-center gap-1">
+                <div className="flex w-full items-center gap-1 group-data-[collapsible=icon]:justify-center">
                   <SidebarMenuButton
-                    className="h-8 flex-1 rounded-lg bg-transparent px-2 text-sidebar-foreground/70 transition-colors duration-150 hover:text-sidebar-foreground"
+                    className="h-8 flex-1 rounded-lg bg-transparent px-2 text-sidebar-foreground/70 transition-colors duration-150 hover:text-sidebar-foreground group-data-[collapsible=icon]:hidden"
                   >
                     {avatarUrl && !avatarLoadFailed ? (
                       <Image
@@ -414,7 +425,7 @@ export function AppSidebar({
 
                   <button
                     type="button"
-                    className="flex size-8 shrink-0 items-center justify-center rounded-lg text-sidebar-foreground/50 transition-colors duration-150 hover:bg-sidebar-accent hover:text-sidebar-foreground"
+                    className="flex size-8 shrink-0 items-center justify-center rounded-lg text-sidebar-foreground/50 transition-colors duration-150 hover:bg-sidebar-accent hover:text-sidebar-foreground group-data-[collapsible=icon]:mx-auto"
                     title="Settings"
                     aria-label="Settings"
                     onClick={() => setSettingsOpen(true)}
@@ -423,9 +434,9 @@ export function AppSidebar({
                   </button>
                 </div>
               ) : (
-                <div className="flex items-center gap-1">
+                <div className="flex w-full items-center gap-1 group-data-[collapsible=icon]:justify-center">
                   <SidebarMenuButton
-                    className="h-8 flex-1 rounded-lg border border-sidebar-border text-[13px] text-sidebar-foreground/60 transition-colors hover:bg-sidebar-accent/50 hover:text-sidebar-foreground"
+                    className="h-8 flex-1 rounded-lg border border-sidebar-border text-[13px] text-sidebar-foreground/60 transition-colors hover:bg-sidebar-accent/50 hover:text-sidebar-foreground group-data-[collapsible=icon]:hidden"
                     onClick={() => signIn("google", { callbackUrl: "/" })}
                     tooltip="Sign in"
                   >
@@ -433,7 +444,7 @@ export function AppSidebar({
                   </SidebarMenuButton>
                   <button
                     type="button"
-                    className="flex size-8 shrink-0 items-center justify-center rounded-lg text-sidebar-foreground/50 transition-colors duration-150 hover:bg-sidebar-accent hover:text-sidebar-foreground"
+                    className="flex size-8 shrink-0 items-center justify-center rounded-lg text-sidebar-foreground/50 transition-colors duration-150 hover:bg-sidebar-accent hover:text-sidebar-foreground group-data-[collapsible=icon]:mx-auto"
                     title="Settings"
                     aria-label="Settings"
                     onClick={() => setSettingsOpen(true)}
