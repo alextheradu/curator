@@ -141,6 +141,21 @@ export const rateLimitBuckets = pgTable("rate_limit_buckets", {
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
 
+export const blogPosts = pgTable("blog_posts", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  slug: text("slug").notNull().unique(),
+  title: text("title").notNull(),
+  summary: text("summary").notNull(),
+  content: text("content").notNull().default(""),
+  authorId: text("author_id").references(() => users.id, { onDelete: "set null" }),
+  published: boolean("published").notNull().default(false),
+  publishedAt: timestamp("published_at"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+export type BlogPost = typeof blogPosts.$inferSelect;
+
 export type Citation = {
   type: "doc" | "web";
   label: string;
