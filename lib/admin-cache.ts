@@ -130,6 +130,7 @@ export async function getCachedAdminUsers(search?: string | null, filter?: strin
         .select({
           id: users.id,
           name: users.name,
+          preferredName: users.preferredName,
           email: users.email,
           image: users.image,
           isAdmin: users.isAdmin,
@@ -145,7 +146,11 @@ export async function getCachedAdminUsers(search?: string | null, filter?: strin
         .leftJoin(messages, eq(messages.conversationId, conversations.id))
         .where(
           searchValue
-            ? or(ilike(users.name, `%${searchValue}%`), ilike(users.email, `%${searchValue}%`))
+            ? or(
+                ilike(users.name, `%${searchValue}%`),
+                ilike(users.preferredName, `%${searchValue}%`),
+                ilike(users.email, `%${searchValue}%`),
+              )
             : undefined,
         )
         .groupBy(users.id, bannedEmails.reason)

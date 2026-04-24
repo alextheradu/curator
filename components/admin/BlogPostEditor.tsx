@@ -52,6 +52,7 @@ type EditorTab = "write" | "preview" | "settings";
 interface AdminAuthorRow {
   id: string;
   name: string | null;
+  preferredName: string | null;
   email: string;
   isAdmin: boolean;
 }
@@ -107,6 +108,10 @@ function formatDate(value?: string | null) {
     day: "numeric",
     year: "numeric",
   });
+}
+
+function getAuthorDisplayName(author?: Pick<AdminAuthorRow, "preferredName" | "name" | "email"> | null) {
+  return author?.preferredName?.trim() || author?.name?.trim() || author?.email || null;
 }
 
 async function readJson<T>(response: Response): Promise<T> {
@@ -221,8 +226,7 @@ export function BlogPostEditor() {
     [authors, form.authorId],
   );
 
-  const selectedAuthorName = selectedAuthor?.name
-    ?? selectedAuthor?.email
+  const selectedAuthorName = getAuthorDisplayName(selectedAuthor)
     ?? (selectedPost?.authorId === form.authorId ? selectedPost.authorName : null);
 
   const hasDraftContent = Boolean(
@@ -621,7 +625,7 @@ export function BlogPostEditor() {
                       <option value="">No author</option>
                       {authors.map((author) => (
                         <option key={author.id} value={author.id}>
-                          {author.name?.trim() || author.email}
+                          {getAuthorDisplayName(author) ?? author.email}
                         </option>
                       ))}
                     </select>
