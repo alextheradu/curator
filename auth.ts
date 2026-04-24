@@ -6,6 +6,7 @@ import { pgTable, text, timestamp } from "drizzle-orm/pg-core";
 import { db } from "@/lib/db";
 import { withSystemDbAccess } from "@/lib/db/access";
 import { DEFAULT_CHAT_MODE, readUserAccountSettings } from "@/lib/account-settings";
+import { isAdminEmail } from "@/lib/admin-emails";
 import { accounts, bannedEmails, sessions, verificationTokens } from "@/lib/db/schema";
 
 type GoogleProfile = {
@@ -15,13 +16,6 @@ type GoogleProfile = {
   picture?: string;
   email_verified?: boolean;
 };
-
-function isAdminEmail(email?: string | null) {
-  return (process.env.ADMIN_EMAILS ?? "")
-    .split(",")
-    .map((value) => value.trim().toLowerCase())
-    .includes((email ?? "").toLowerCase());
-}
 
 // Keep Auth.js compatible with live databases that have not applied newer
 // app-specific columns on `users` yet.

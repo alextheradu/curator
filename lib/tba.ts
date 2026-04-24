@@ -27,6 +27,10 @@ const TBA_HINTS = [
   "won",
   "champion",
   "champions",
+  "championship",
+  "worlds",
+  "world championship",
+  "champs",
   "ranking",
   "rankings",
   "record",
@@ -41,8 +45,11 @@ const TBA_HINTS = [
   "playoffs",
   "qualifications",
   "qualified",
+  "assigned",
+  "assignment",
   "wins",
   "losses",
+  "division",
 ];
 
 const TEAM_SCOPED_TBA_HINTS = [
@@ -63,6 +70,12 @@ const TEAM_SCOPED_TBA_HINTS = [
   "district",
   "dcmp",
   "championship",
+  "worlds",
+  "world championship",
+  "champs",
+  "division",
+  "assigned",
+  "assignment",
 ];
 
 const TEAM_SCOPED_REFERENCES = [
@@ -71,6 +84,13 @@ const TEAM_SCOPED_REFERENCES = [
   "we",
   "us",
   "our",
+  "my",
+  "i",
+  "me",
+  "i'd",
+  "i'm",
+  "i'll",
+  "i've",
 ];
 
 export function shouldRunTbaLookup(query: string) {
@@ -211,6 +231,50 @@ function summarizeTeamEvents(events: Array<Record<string, unknown>>) {
       event.end_date as string | null | undefined,
     )} - ${location || "location unavailable"}`;
   }).join("\n");
+}
+
+function isChampionshipDivisionQuery(lower: string) {
+  const asksForDivision = /\bdivision\b/.test(lower);
+  const asksForAssignment = /\bassign(?:ed|ment|ments)?\b/.test(lower);
+  const asksForChampionship = /\bchampionship\b|\bworlds\b|\bworld championship\b|\bcmp\b|\bchamps\b/.test(lower);
+
+  return asksForChampionship && (asksForDivision || asksForAssignment);
+}
+
+function getChampionshipDivisionEvent(events: Array<Record<string, unknown>>) {
+  const championshipEvents = events.filter((event) => {
+    const name = typeof event.name === "string" ? event.name.toLowerCase() : "";
+    return Number(event.event_type) === 3 || name.includes("division");
+  });
+
+  return championshipEvents.find((event) => {
+    const name = typeof event.name === "string" ? event.name.toLowerCase() : "";
+    return name.includes("division");
+  }) ?? championshipEvents[0] ?? null;
+}
+
+function summarizeChampionshipDivisionAssignment(
+  teamNumber: number,
+  event: Record<string, unknown> | null,
+  events: Array<Record<string, unknown>>,
+  seasonYear: number,
+) {
+  if (!event) {
+    return [
+      `No ${seasonYear} FIRST Championship division assignment was found in The Blue Alliance events for team ${teamNumber}.`,
+      "",
+      `Team ${teamNumber}'s listed ${seasonYear} events:`,
+      summarizeTeamEvents(events),
+    ].join("\n");
+  }
+
+  return [
+    `Team ${teamNumber} is assigned to ${event.name ?? event.key} (${event.key ?? "unknown"}) for the ${seasonYear} FIRST Championship.`,
+    `Dates: ${formatDateRange(
+      event.start_date as string | null | undefined,
+      event.end_date as string | null | undefined,
+    )}`,
+  ].join("\n");
 }
 
 function summarizeEvent(event: Record<string, unknown>) {
@@ -561,7 +625,25 @@ export async function buildTbaContext(
   const matchKey = matchKeyMatch?.[1]?.toLowerCase() ?? null;
 
   try {
-    if (!eventKey && /district|regional|championship|dcmp|cmp|event/i.test(lower)) {
+    if (teamNumber && isChampionshipDivisionQuery(lower)) {
+      onStatus?.(`Fetching team ${teamNumber}'s ${seasonYear} Championship division from The Blue Alliance...`);
+      const { data: teamEvents } = await callTbaTool<Array<Record<string, unknown>>>("get_team_events", {
+        team: String(teamNumber),
+        year: seasonYear,
+      });
+      const divisionEvent = getChampionshipDivisionEvent(teamEvents);
+      const citationUrl = divisionEvent?.key ? getEventUrl(String(divisionEvent.key)) : getTeamUrl(teamNumber);
+
+      return {
+        contextBlock: makeContext(
+          `Championship division assignment for team ${teamNumber}`,
+          summarizeChampionshipDivisionAssignment(teamNumber, divisionEvent, teamEvents, seasonYear),
+        ),
+        citations: [{ type: "web", label: "thebluealliance.com", url: citationUrl }],
+      };
+    }
+
+    if (!eventKey && /district|regional|championship|dcmp|cmp|worlds|world championship|event/i.test(lower)) {
       onStatus?.(`Matching your question to a ${seasonYear} event on The Blue Alliance...`);
       eventKey = (await resolveEventKeyFromQuery(query, seasonYear)) ?? null;
     }

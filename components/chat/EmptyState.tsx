@@ -18,8 +18,7 @@ const SUGGESTION_POOL = [
   "Summarize common wiring mistakes on FRC robots.",
   "Explain backup robot rules and how they're picked.",
   "Explain what a drive coach is responsible for during a match.",
-];
-
+]; 
 const VISIBLE_SUGGESTION_COUNT = 4;
 const GREETING_PREFIXES = [
   "Howdy",
@@ -33,6 +32,7 @@ const GREETING_PREFIXES = [
   "Ahoy",
   "Hola",
   "Bonjour",
+  "Ask about FRC",
 ];
 
 function selectRandomSuggestions(count: number) {
@@ -73,7 +73,7 @@ export function EmptyState({ onPromptSelect }: Props) {
 
   return (
     <div className="flex w-full flex-1 flex-col">
-      <div className="flex flex-1 flex-col items-center justify-center gap-2 px-4 pb-2 pt-3 sm:gap-3 sm:pb-4 sm:pt-0">
+      <div className="flex flex-col items-center justify-start gap-2 px-1 pb-5 pt-6 text-center sm:gap-3 sm:pb-8 sm:pt-10">
         <motion.div
           initial={{ opacity: 0, scale: 0.85 }}
           animate={{ opacity: 1, scale: 1 }}
@@ -108,7 +108,7 @@ export function EmptyState({ onPromptSelect }: Props) {
         </motion.div>
       </div>
 
-      <div className="mx-auto w-full max-w-3xl px-4 pb-3 sm:pb-6">
+      <div className="w-full px-1 pb-3 sm:pb-6">
         <div className="mb-1.5 flex items-center justify-between px-1 sm:mb-2">
           <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
             Quick starts

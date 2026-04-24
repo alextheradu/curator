@@ -500,10 +500,9 @@ export async function POST(request: NextRequest) {
             : false;
           const shouldCheckUserTeamTba = Boolean(
             lastUser
-            && userTeamNumber
             && (
               shouldRunTbaLookup(lastUser.content)
-              || shouldForceTeamTba
+              || (userTeamNumber && shouldForceTeamTba)
             )
           );
 

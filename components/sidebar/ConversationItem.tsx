@@ -36,10 +36,18 @@ export function ConversationItem({
   const [draftTitle, setDraftTitle] = useState(conversation.title);
   const rowRef = useRef<HTMLDivElement | null>(null);
   const inputRef = useRef<HTMLInputElement | null>(null);
+  const clickTimeoutRef = useRef<number | null>(null);
   const touchStartRef = useRef<{ x: number; y: number } | null>(null);
   const didScrollRef = useRef(false);
   const isTyping = typingTitleConversationId === conversation.id;
   const displayTitle = isTyping ? typingTitle : conversation.title;
+
+  const clearPendingClick = () => {
+    if (clickTimeoutRef.current !== null) {
+      window.clearTimeout(clickTimeoutRef.current);
+      clickTimeoutRef.current = null;
+    }
+  };
 
   useEffect(() => {
     if (isEditing) {
@@ -47,6 +55,8 @@ export function ConversationItem({
       inputRef.current?.select();
     }
   }, [isEditing]);
+
+  useEffect(() => clearPendingClick, []);
 
   const startEditing = () => {
     setDraftTitle(conversation.title);
@@ -80,6 +90,7 @@ export function ConversationItem({
         if (isEditing) return;
         event.preventDefault();
         event.stopPropagation();
+        clearPendingClick();
         updateMenuAnchor(event.clientX);
         setMenuOpen(true);
       }}
@@ -98,14 +109,30 @@ export function ConversationItem({
             didScrollRef.current = true;
           }
         }}
-        onClick={() => {
-          if (!isEditing && !didScrollRef.current) {
-            onClick();
+        onTouchEnd={() => {
+          touchStartRef.current = null;
+        }}
+        onTouchCancel={() => {
+          touchStartRef.current = null;
+          didScrollRef.current = false;
+        }}
+        onClick={(event) => {
+          if (isEditing || didScrollRef.current || menuOpen) {
+            return;
           }
+
+          event.preventDefault();
+          event.stopPropagation();
+          clearPendingClick();
+          clickTimeoutRef.current = window.setTimeout(() => {
+            clickTimeoutRef.current = null;
+            onClick();
+          }, 180);
         }}
         onDoubleClick={(e) => {
           e.preventDefault();
           e.stopPropagation();
+          clearPendingClick();
           startEditing();
         }}
         className="h-8 rounded-lg px-2 text-[13px] text-sidebar-foreground/70 transition-colors duration-150 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground data-[active=true]:bg-sidebar-accent data-[active=true]:text-sidebar-accent-foreground"
@@ -156,6 +183,7 @@ export function ConversationItem({
             onClick={(event: React.MouseEvent<HTMLButtonElement>) => {
               event.preventDefault();
               event.stopPropagation();
+              clearPendingClick();
               updateMenuAnchor(event.currentTarget.getBoundingClientRect().left + event.currentTarget.offsetWidth / 2);
               setMenuOpen(true);
             }}

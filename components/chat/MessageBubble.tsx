@@ -74,7 +74,7 @@ export function MessageBubble({ message, isStreaming, onOpenCitation }: Props) {
             <AssistantMarkdown content={normalizedContent} isStreaming={isStreaming} />
 
             {message.citations && message.citations.length > 0 && (
-              <div className="flex flex-wrap content-start items-start gap-2 pt-1">
+              <div className="flex flex-wrap content-start items-center gap-1 pt-1">
                 {message.citations.map((citation, index) => (
                   <CitationBadge
                     key={index}
