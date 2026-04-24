@@ -1,10 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requireAdmin } from "@/lib/admin-auth";
+import { isAdminEmail } from "@/lib/admin-emails";
 import { getCachedAdminBlogPosts } from "@/lib/blog";
 import { revalidateBlogDerivedCaches } from "@/lib/cache-tags";
 import { withAdminDbAccess } from "@/lib/db/access";
-import { blogPosts } from "@/lib/db/schema";
+import { blogPosts, users } from "@/lib/db/schema";
 import { applyRateLimitHeaders, enforceRequestRateLimit } from "@/lib/rate-limit";
+import { eq } from "drizzle-orm";
 import { z } from "zod";
 
 const BlogPostSchema = z.object({
@@ -18,6 +20,7 @@ const BlogPostSchema = z.object({
   title: z.string().trim().min(1, "Title is required.").max(300, "Title is too long."),
   summary: z.string().trim().min(1, "Summary is required.").max(600, "Summary is too long."),
   content: z.string().trim().min(1, "Content is required."),
+  authorId: z.string().min(1).nullable().optional(),
   published: z.boolean(),
 });
 
@@ -63,6 +66,19 @@ export async function POST(req: NextRequest) {
   }
 
   const { slug, title, summary, content, published } = parsed.data;
+  const authorId = parsed.data.authorId === undefined ? adminAuth.userId : parsed.data.authorId;
+
+  if (authorId) {
+    const [author] = await withAdminDbAccess(adminAuth.userId, (tx) => tx
+      .select({ id: users.id, email: users.email, isAdmin: users.isAdmin })
+      .from(users)
+      .where(eq(users.id, authorId))
+      .limit(1));
+
+    if (!author || (!author.isAdmin && !isAdminEmail(author.email))) {
+      return NextResponse.json({ error: "Selected author must be an admin user." }, { status: 400, headers });
+    }
+  }
 
   try {
     const [created] = await withAdminDbAccess(adminAuth.userId, (tx) => tx
@@ -72,7 +88,7 @@ export async function POST(req: NextRequest) {
         title,
         summary,
         content,
-        authorId: adminAuth.userId,
+        authorId,
         published,
         publishedAt: published ? new Date() : null,
       })

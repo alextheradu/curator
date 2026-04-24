@@ -1,5 +1,6 @@
 import { unstable_cache } from "next/cache";
 import { and, count, desc, eq, ilike, or } from "drizzle-orm";
+import { isAdminEmail } from "@/lib/admin-emails";
 import { withAdminDbAccess, withDbAccessContext } from "@/lib/db/access";
 import { bannedEmails, conversations, documents, messages, reports, users } from "@/lib/db/schema";
 import {
@@ -150,7 +151,12 @@ export async function getCachedAdminUsers(search?: string | null, filter?: strin
         .groupBy(users.id, bannedEmails.reason)
         .orderBy(desc(users.createdAt)));
 
-      return rows.filter((user) => {
+      const rowsWithEnvAdmins = rows.map((user) => ({
+        ...user,
+        isAdmin: user.isAdmin || isAdminEmail(user.email),
+      }));
+
+      return rowsWithEnvAdmins.filter((user) => {
         if (filterValue === "admin") return user.isAdmin;
         if (filterValue === "banned") return user.emailBanned;
         return true;

@@ -710,7 +710,7 @@ export function ChatWindow({
               animate={{ opacity: 1, y: 0, scale: 1 }}
               exit={{ opacity: 0, y: -12, scale: 0.985 }}
               transition={{ duration: 0.28, ease: [0.22, 1, 0.36, 1] }}
-              className="flex flex-1"
+              className="mx-auto flex min-h-full w-full max-w-3xl flex-col px-3 pb-24 pt-6 sm:px-4 sm:pb-40 sm:pt-8 md:px-6"
             >
               <EmptyState onPromptSelect={handleSend} />
             </motion.div>
@@ -723,7 +723,6 @@ export function ChatWindow({
               transition={{ duration: 0.24, ease: [0.22, 1, 0.36, 1] }}
               className="mx-auto flex min-h-full w-full max-w-3xl flex-col px-3 pb-24 sm:px-4 sm:pb-40 md:px-6"
             >
-              <div className="flex-1" />
               <div className="flex flex-col gap-4 pt-4 sm:gap-6 sm:pt-8">
                 {messages.map((message) => (
                   <MessageBubble

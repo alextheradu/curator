@@ -5,6 +5,7 @@ import {
   revalidateReportDerivedCaches,
   revalidateUserDerivedCaches,
 } from "@/lib/cache-tags";
+import { isAdminEmail } from "@/lib/admin-emails";
 import { withAdminDbAccess } from "@/lib/db/access";
 import { db } from "@/lib/db";
 import { users, bannedEmails } from "@/lib/db/schema";
@@ -12,10 +13,6 @@ import { applyRateLimitHeaders, enforceRequestRateLimit } from "@/lib/rate-limit
 import { eq } from "drizzle-orm";
 
 type Params = { params: Promise<{ id: string }> };
-
-function getSuperAdminEmails() {
-  return (process.env.ADMIN_EMAILS ?? "").split(",").map((e) => e.trim().toLowerCase());
-}
 
 export async function PATCH(req: NextRequest, { params }: Params) {
   const adminAuth = await requireAdmin(req);
@@ -36,7 +33,7 @@ export async function PATCH(req: NextRequest, { params }: Params) {
   const [target] = await db.select().from(users).where(eq(users.id, id)).limit(1);
   if (!target) return NextResponse.json({ error: "User not found" }, { status: 404, headers });
 
-  if (target.email && getSuperAdminEmails().includes(target.email.toLowerCase())) {
+  if (isAdminEmail(target.email)) {
     return NextResponse.json({ error: "Cannot modify a superadmin" }, { status: 403, headers });
   }
 
@@ -97,7 +94,7 @@ export async function DELETE(req: NextRequest, { params }: Params) {
   const [target] = await db.select({ email: users.email }).from(users).where(eq(users.id, id)).limit(1);
   if (!target) return NextResponse.json({ error: "Not found" }, { status: 404, headers });
 
-  if (target.email && getSuperAdminEmails().includes(target.email.toLowerCase())) {
+  if (isAdminEmail(target.email)) {
     return NextResponse.json({ error: "Cannot delete a superadmin" }, { status: 403, headers });
   }
 
