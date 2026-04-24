@@ -467,7 +467,10 @@ export function ChatWindow({
   const showConversationChrome = readOnly || !isEmpty;
 
   return (
-    <SidebarInset className="flex min-h-svh max-h-svh flex-col overflow-hidden bg-background">
+    <SidebarInset
+      className="flex h-screen min-h-0 max-h-screen flex-col overflow-hidden bg-background"
+      style={{ height: "100dvh", maxHeight: "100dvh" }}
+    >
       <div ref={swipeContainerRef} className="contents">
       <Suspense>
         <TosModal open={showTosModal} onAccept={handleAcceptTos} />
@@ -537,7 +540,7 @@ export function ChatWindow({
         </DialogContent>
       </Dialog>
 
-      <div className="border-b border-border/40 bg-background/92 px-3 py-2 backdrop-blur md:px-6 md:py-2.5">
+      <div className="shrink-0 border-b border-border/40 bg-background/92 px-3 py-2 backdrop-blur md:px-6 md:py-2.5">
         <div className="flex w-full items-center gap-2.5 sm:gap-3">
           <div className="flex shrink-0 items-center justify-center md:hidden">
             {!readOnly && <SidebarTrigger className="text-muted-foreground" />}
@@ -692,7 +695,7 @@ export function ChatWindow({
         </div>
       </div>
 
-      <div ref={containerRef} className="relative flex min-h-0 flex-1 flex-col overflow-x-hidden overflow-y-auto overscroll-contain">
+      <div ref={containerRef} className="relative flex min-h-0 flex-1 basis-0 flex-col overflow-x-hidden overflow-y-auto overscroll-contain">
         <AnimatePresence mode="popLayout">
           {isEmpty && readOnly ? (
             <div className="mx-auto flex w-full max-w-3xl flex-1 flex-col items-center justify-center gap-3 px-4 pb-40 pt-16 text-center">
@@ -710,7 +713,7 @@ export function ChatWindow({
               animate={{ opacity: 1, y: 0, scale: 1 }}
               exit={{ opacity: 0, y: -12, scale: 0.985 }}
               transition={{ duration: 0.28, ease: [0.22, 1, 0.36, 1] }}
-              className="mx-auto flex min-h-full w-full max-w-3xl flex-col px-3 pb-24 pt-6 sm:px-4 sm:pb-40 sm:pt-8 md:px-6"
+              className="mx-auto flex min-h-full w-full max-w-3xl flex-col px-3 py-4 sm:px-4 sm:py-8 md:px-6"
             >
               <EmptyState onPromptSelect={handleSend} />
             </motion.div>
@@ -755,7 +758,7 @@ export function ChatWindow({
         </AnimatePresence>
       </div>
 
-      <div className="sticky inset-x-0 bottom-0 z-20 mt-auto bg-gradient-to-t from-background via-background/96 to-transparent px-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))] pt-4 sm:px-4 sm:pb-[calc(1rem+env(safe-area-inset-bottom))] sm:pt-6 md:px-6">
+      <div className="sticky inset-x-0 bottom-0 z-20 mt-auto shrink-0 bg-gradient-to-t from-background via-background/96 to-transparent px-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))] pt-4 sm:px-4 sm:pb-[calc(1rem+env(safe-area-inset-bottom))] sm:pt-6 md:px-6">
         <div className="mx-auto w-full max-w-3xl">
           {readOnly ? (
             <div className="rounded-2xl border border-border/40 bg-card/70 px-4 py-3 text-sm text-muted-foreground shadow-[var(--shadow-composer)]">
