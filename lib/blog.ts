@@ -11,6 +11,7 @@ import { withAdminDbAccess, withDbAccessContext } from "@/lib/db/access";
 import { blogPosts, users } from "@/lib/db/schema";
 
 const BLOG_ADMIN_CACHE_USER_ID = "admin-blog-cache";
+const authorDisplayName = sql<string | null>`coalesce(nullif(trim(${users.preferredName}), ''), nullif(trim(${users.name}), ''))`;
 
 type CachedDateValue = Date | string;
 
@@ -91,7 +92,7 @@ export async function getCachedAdminBlogPosts() {
         summary: blogPosts.summary,
         content: blogPosts.content,
         authorId: blogPosts.authorId,
-        authorName: sql<string | null>`coalesce(${users.preferredName}, ${users.name})`,
+        authorName: authorDisplayName,
         published: blogPosts.published,
         publishedAt: blogPosts.publishedAt,
         createdAt: blogPosts.createdAt,
@@ -120,7 +121,7 @@ export async function getCachedPublicBlogPosts() {
         title: blogPosts.title,
         summary: blogPosts.summary,
         content: blogPosts.content,
-        authorName: sql<string | null>`coalesce(${users.preferredName}, ${users.name})`,
+        authorName: authorDisplayName,
         publishedAt: blogPosts.publishedAt,
         createdAt: blogPosts.createdAt,
         updatedAt: blogPosts.updatedAt,
@@ -150,7 +151,7 @@ export async function getCachedPublicBlogPost(slug: string) {
           title: blogPosts.title,
           summary: blogPosts.summary,
           content: blogPosts.content,
-          authorName: sql<string | null>`coalesce(${users.preferredName}, ${users.name})`,
+          authorName: authorDisplayName,
           publishedAt: blogPosts.publishedAt,
           createdAt: blogPosts.createdAt,
           updatedAt: blogPosts.updatedAt,
