@@ -1,6 +1,6 @@
 import { auth } from "@/auth";
 import { withSessionDbAccess } from "@/lib/db/access";
-import { conversations } from "@/lib/db/schema";
+import { conversations, projects } from "@/lib/db/schema";
 import { revalidateConversationDerivedCaches } from "@/lib/cache-tags";
 import { getCachedPublicConversation, revalidatePublicConversation } from "@/lib/public-conversations";
 import { applyRateLimitHeaders, enforceRequestRateLimit } from "@/lib/rate-limit";
@@ -44,16 +44,33 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
   }
   const { id } = await params;
   const body = await req.json();
+  const hasProjectId = Object.prototype.hasOwnProperty.call(body, "projectId");
+  const nextProjectId = hasProjectId && (typeof body.projectId === "string" || body.projectId === null)
+    ? body.projectId
+    : undefined;
 
-  const [updated] = await withSessionDbAccess(session, (tx) => tx.update(conversations)
-    .set({
-      ...(typeof body.title === "string" ? { title: body.title } : {}),
-      ...(typeof body.seasonYear === "number" ? { seasonYear: body.seasonYear } : {}),
-      ...(typeof body.isPublic === "boolean" ? { isPublic: body.isPublic } : {}),
-      updatedAt: new Date(),
-    })
-    .where(and(eq(conversations.id, id), eq(conversations.userId, session.user.id)))
-    .returning());
+  const [updated] = await withSessionDbAccess(session, async (tx) => {
+    if (nextProjectId) {
+      const [project] = await tx
+        .select({ id: projects.id })
+        .from(projects)
+        .where(and(eq(projects.id, nextProjectId), eq(projects.userId, session.user.id)))
+        .limit(1);
+
+      if (!project) return [];
+    }
+
+    return tx.update(conversations)
+      .set({
+        ...(typeof body.title === "string" ? { title: body.title } : {}),
+        ...(typeof body.seasonYear === "number" ? { seasonYear: body.seasonYear } : {}),
+        ...(typeof body.isPublic === "boolean" ? { isPublic: body.isPublic } : {}),
+        ...(nextProjectId !== undefined ? { projectId: nextProjectId } : {}),
+        updatedAt: new Date(),
+      })
+      .where(and(eq(conversations.id, id), eq(conversations.userId, session.user.id)))
+      .returning();
+  });
 
   if (!updated) {
     return NextResponse.json({ error: "Not found" }, { status: 404 });

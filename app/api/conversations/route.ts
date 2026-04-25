@@ -1,10 +1,10 @@
 import { auth } from "@/auth";
 import { withSessionDbAccess } from "@/lib/db/access";
-import { conversations, messages } from "@/lib/db/schema";
+import { conversations, messages, projects } from "@/lib/db/schema";
 import { revalidateConversationDerivedCaches } from "@/lib/cache-tags";
 import { applyRateLimitHeaders, enforceRequestRateLimit } from "@/lib/rate-limit";
 import { DEFAULT_SEASON_YEAR } from "@/lib/seasons";
-import { asc, desc, eq, inArray } from "drizzle-orm";
+import { and, asc, desc, eq, inArray } from "drizzle-orm";
 import { NextResponse } from "next/server";
 
 function buildSearchDescription(content: string) {
@@ -74,11 +74,27 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "Too many conversations created. Please slow down." }, { status: 429, headers });
   }
 
-  const { title = "New Chat", seasonYear = DEFAULT_SEASON_YEAR } = await req.json();
-  const [conv] = await withSessionDbAccess(session, (tx) => tx
-    .insert(conversations)
-    .values({ userId: session.user.id, title, seasonYear })
-    .returning());
+  const { title = "New Chat", seasonYear = DEFAULT_SEASON_YEAR, projectId = null } = await req.json();
+  const [conv] = await withSessionDbAccess(session, async (tx) => {
+    if (projectId) {
+      const [project] = await tx
+        .select({ id: projects.id })
+        .from(projects)
+        .where(and(eq(projects.id, projectId), eq(projects.userId, session.user.id)))
+        .limit(1);
+
+      if (!project) return [];
+    }
+
+    return tx
+      .insert(conversations)
+      .values({ userId: session.user.id, title, seasonYear, projectId })
+      .returning();
+  });
+
+  if (!conv) {
+    return NextResponse.json({ error: "Project not found" }, { status: 404, headers });
+  }
 
   revalidateConversationDerivedCaches();
   return NextResponse.json(conv, { headers });

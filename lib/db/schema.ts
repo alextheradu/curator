@@ -1,5 +1,5 @@
 import {
-  pgTable, text, timestamp, integer, jsonb, uuid, boolean, pgEnum,
+  pgTable, text, timestamp, integer, jsonb, uuid, boolean, pgEnum, index,
 } from "drizzle-orm/pg-core";
 
 export const users = pgTable("users", {
@@ -45,15 +45,31 @@ export const verificationTokens = pgTable("verification_tokens", {
   expires: timestamp("expires", { mode: "date" }).notNull(),
 });
 
+export const projects = pgTable("projects", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  userId: text("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  name: text("name").notNull().default("New project"),
+  icon: text("icon").notNull().default("folder"),
+  color: text("color").notNull().default("teal"),
+  contextSummary: text("context_summary").notNull().default(""),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+}, (table) => [
+  index("projects_user_updated_idx").on(table.userId, table.updatedAt),
+]);
+
 export const conversations = pgTable("conversations", {
   id: uuid("id").primaryKey().defaultRandom(),
   userId: text("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  projectId: uuid("project_id").references(() => projects.id, { onDelete: "set null" }),
   title: text("title").notNull().default("New Chat"),
   seasonYear: integer("season_year").notNull().default(2026),
   isPublic: boolean("is_public").notNull().default(false),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
-});
+}, (table) => [
+  index("conversations_project_id_idx").on(table.projectId),
+]);
 
 export const messages = pgTable("messages", {
   id: uuid("id").primaryKey().defaultRandom(),
@@ -169,6 +185,7 @@ export type Citation = {
 };
 
 export type BlogPost = typeof blogPosts.$inferSelect;
+export type ProjectRecord = typeof projects.$inferSelect;
 export type DocumentScope = "season" | "general";
 export type ReportStatus = "pending" | "reviewed" | "dismissed";
 export type ReportSource = "user_report" | "auto_moderation";

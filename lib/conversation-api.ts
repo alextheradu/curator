@@ -1,5 +1,6 @@
 import type { Citation } from "@/lib/db/schema";
 import type { ConversationRecord, MessageRecord } from "@/lib/conversations";
+import type { ProjectRecord } from "@/lib/projects";
 import type { Conversation } from "@/lib/store";
 
 type ConversationAccess = "owner" | "public";
@@ -23,7 +24,37 @@ export async function fetchConversationList() {
   return readJson<ConversationRecord[]>(response);
 }
 
-export async function createConversation(payload?: { title?: string; seasonYear?: number }) {
+export async function fetchProjects() {
+  const response = await fetch("/api/projects", { cache: "no-store" });
+  return readJson<ProjectRecord[]>(response);
+}
+
+export async function createProject(payload: { name: string; icon: string; color: string }) {
+  const response = await fetch("/api/projects", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload),
+  });
+
+  return readJson<ProjectRecord>(response);
+}
+
+export async function updateProject(id: string, payload: { name: string; icon: string; color: string }) {
+  const response = await fetch(`/api/projects/${id}`, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload),
+  });
+
+  return readJson<ProjectRecord>(response);
+}
+
+export async function deleteProject(id: string) {
+  const response = await fetch(`/api/projects/${id}`, { method: "DELETE" });
+  return readJson<{ ok: true }>(response);
+}
+
+export async function createConversation(payload?: { title?: string; seasonYear?: number; projectId?: string | null }) {
   const response = await fetch("/api/conversations", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -47,7 +78,7 @@ export async function fetchConversationMessages(id: string) {
 
 export async function updateConversation(
   id: string,
-  payload: Partial<Pick<ConversationRecord, "title" | "seasonYear" | "isPublic">>
+  payload: Partial<Pick<ConversationRecord, "title" | "seasonYear" | "isPublic" | "projectId">>
 ) {
   const response = await fetch(`/api/conversations/${id}`, {
     method: "PATCH",

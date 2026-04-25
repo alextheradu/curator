@@ -21,6 +21,7 @@ export interface Conversation {
   id: string;
   title: string;
   searchDescription?: string | null;
+  projectId: string | null;
   messages: Message[];
   createdAt: Date;
   updatedAt: Date;
@@ -96,6 +97,7 @@ export const useChatStore = create<ChatStore>()(
               id,
               title: "New Chat",
               searchDescription: null,
+              projectId: null,
               messages: [],
               createdAt: new Date(),
               updatedAt: new Date(),

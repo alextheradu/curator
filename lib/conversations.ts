@@ -7,6 +7,7 @@ export type ConversationRecord = {
   searchDescription?: string | null;
   seasonYear: number;
   isPublic: boolean;
+  projectId?: string | null;
   chatMode?: ChatMode;
   createdAt: string | Date;
   updatedAt: string | Date;
@@ -42,6 +43,7 @@ export function normalizeConversation(
     searchDescription: conversation.searchDescription ?? null,
     seasonYear: conversation.seasonYear,
     isPublic: conversation.isPublic,
+    projectId: conversation.projectId ?? null,
     chatMode: conversation.chatMode ?? fallbackChatMode,
     createdAt: new Date(conversation.createdAt),
     updatedAt: new Date(conversation.updatedAt),
