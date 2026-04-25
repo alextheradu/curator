@@ -5,6 +5,8 @@ interface StreamOptions {
   temperature?: number;
   seasonYear?: number;
   chatMode?: "rookie" | "veteran";
+  conversationId?: string;
+  projectId?: string | null;
   signal?: AbortSignal;
   onToken: (token: string) => void;
   onStatus?: (status: string) => void;
@@ -14,14 +16,14 @@ interface StreamOptions {
 }
 
 export async function streamOpenRouterChat({
-  messages, temperature = 0.2, seasonYear, chatMode = "veteran", signal,
+  messages, temperature = 0.2, seasonYear, chatMode = "veteran", conversationId, projectId, signal,
   onToken, onStatus, onDone, onError, onAuthRequired,
 }: StreamOptions) {
   try {
     const response = await fetch("/api/chat", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ messages, temperature, seasonYear, chatMode }),
+      body: JSON.stringify({ messages, temperature, seasonYear, chatMode, conversationId, projectId }),
       signal,
     });
 
