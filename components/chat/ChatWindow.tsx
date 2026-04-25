@@ -299,6 +299,7 @@ export function ChatWindow({
 
     const currentConversation = useChatStore.getState().activeConversation();
     const seasonYear = currentConversation?.seasonYear ?? DEFAULT_SEASON_YEAR;
+    const projectId = currentConversation?.projectId ?? null;
     const chatMode = useChatStore.getState().defaultChatMode;
     const history = (currentConversation?.messages ?? [])
       .filter((message) => message.role !== "system")
@@ -311,6 +312,8 @@ export function ChatWindow({
       temperature,
       seasonYear,
       chatMode,
+      conversationId,
+      projectId,
       signal: controller.signal,
       onToken: (token) => {
         accumulated += token;

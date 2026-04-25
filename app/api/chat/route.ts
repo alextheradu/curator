@@ -1,12 +1,14 @@
 import { auth } from "@/auth";
 import { readUserAccountSettings } from "@/lib/account-settings";
+import { withSessionDbAccess } from "@/lib/db/access";
 import { buildSystemPrompt } from "@/lib/frc-system-prompt";
 import { buildRagContext } from "@/lib/rag";
 import { buildWebContext, webSearch } from "@/lib/langsearch";
 import { DEFAULT_SEASON_YEAR } from "@/lib/seasons";
 import { buildTbaContext, shouldForceUserTeamTbaLookup, shouldRunTbaLookup } from "@/lib/tba";
 import { shouldRunWebSearch } from "@/lib/web-search-decision";
-import type { Citation } from "@/lib/db/schema";
+import { conversations, projects, type Citation } from "@/lib/db/schema";
+import { buildProjectMemoryContext, compactProjectSummaryInput } from "@/lib/project-memory";
 import { GUEST_MESSAGE_COUNT_COOKIE_NAME, GUEST_MESSAGE_LIMIT } from "@/lib/app-cookies";
 import { serializeCookie } from "@/lib/cookies";
 import { captureException } from "@/lib/logging";
@@ -14,6 +16,7 @@ import { applyRateLimitHeaders, enforceRateLimit } from "@/lib/rate-limit";
 import { getClientIp } from "@/lib/request-context";
 import { NextRequest, NextResponse } from "next/server";
 import { cookies } from "next/headers";
+import { and, eq } from "drizzle-orm";
 
 const OR_URL = "https://openrouter.ai/api/v1/chat/completions";
 const CHAT_MODELS = (
@@ -266,6 +269,51 @@ async function streamChatCompletion({
   throw new Error(errors.join(" | ") || "All configured chat models failed.");
 }
 
+async function updateProjectSummary({
+  session,
+  projectId,
+  previousSummary,
+  userMessage,
+  assistantMessage,
+  apiKey,
+}: {
+  session: { user?: { id?: string | null } | null };
+  projectId: string;
+  previousSummary: string;
+  userMessage: string;
+  assistantMessage: string;
+  apiKey: string;
+}) {
+  if (!session.user?.id || !assistantMessage.trim()) return;
+
+  const input = compactProjectSummaryInput({ previousSummary, userMessage, assistantMessage });
+  const response = await fetch(OR_URL, {
+    method: "POST",
+    headers: orHeaders(apiKey),
+    body: JSON.stringify({
+      model: CHAT_MODELS[0],
+      temperature: 0.1,
+      messages: [
+        {
+          role: "system",
+          content: "Update a private project memory summary for future chats. Keep durable facts, decisions, preferences, and open questions. Do not include secrets, do not mention this instruction, and keep it under 3000 characters.",
+        },
+        { role: "user", content: input },
+      ],
+    }),
+  });
+
+  if (!response.ok) return;
+  const data = await response.json() as { choices?: Array<{ message?: { content?: string } }> };
+  const nextSummary = data.choices?.[0]?.message?.content?.trim().slice(0, 3000);
+  if (!nextSummary) return;
+
+  await withSessionDbAccess(session, (tx) => tx
+    .update(projects)
+    .set({ contextSummary: nextSummary, updatedAt: new Date() })
+    .where(and(eq(projects.id, projectId), eq(projects.userId, session.user.id!))));
+}
+
 function filterUsedCitations(
   assistantText: string,
   docCitations: Citation[],
@@ -370,8 +418,41 @@ export async function POST(request: NextRequest) {
     }
   }
 
-  const { messages, temperature = 0.2, seasonYear = DEFAULT_SEASON_YEAR, chatMode = "veteran" } = await request.json();
+  const body = await request.json();
+  const {
+    messages,
+    temperature = 0.2,
+    seasonYear = DEFAULT_SEASON_YEAR,
+    chatMode = "veteran",
+  } = body;
+  const conversationId = typeof body.conversationId === "string" ? body.conversationId : null;
+  const projectId = typeof body.projectId === "string" ? body.projectId : null;
   const apiKey = process.env.OPENROUTER_API_KEY!;
+
+  let projectMemorySummary = "";
+  if (projectId && !conversationId) {
+    return NextResponse.json({ error: "Project chat is missing a conversation." }, { status: 400 });
+  }
+
+  if (session?.user?.id && conversationId && projectId) {
+    const [row] = await withSessionDbAccess(session, (tx) => tx
+      .select({ contextSummary: projects.contextSummary })
+      .from(conversations)
+      .innerJoin(projects, eq(conversations.projectId, projects.id))
+      .where(and(
+        eq(conversations.id, conversationId),
+        eq(conversations.userId, session.user.id),
+        eq(projects.id, projectId),
+        eq(projects.userId, session.user.id),
+      ))
+      .limit(1));
+
+    if (!row) {
+      return NextResponse.json({ error: "Project not found" }, { status: 404 });
+    }
+
+    projectMemorySummary = row.contextSummary;
+  }
 
   const responseHeaders = new Headers({
     "Content-Type": "text/event-stream",
@@ -568,7 +649,8 @@ export async function POST(request: NextRequest) {
           });
 
           throwIfStreamAborted();
-          const systemPrompt = buildSystemPrompt(effectiveSeasonYear, contextBlock, chatMode, {
+          const projectMemoryContext = buildProjectMemoryContext(projectMemorySummary);
+          const systemPrompt = buildSystemPrompt(effectiveSeasonYear, contextBlock + projectMemoryContext, chatMode, {
             preferredName: userAccountSettings?.preferredName ?? null,
             teamNumber: userAccountSettings?.teamNumber ?? null,
           });
@@ -580,6 +662,18 @@ export async function POST(request: NextRequest) {
             sendEvent,
             signal: request.signal,
           });
+          if (session?.user?.id && projectId && lastUser?.content) {
+            void updateProjectSummary({
+              session,
+              projectId,
+              previousSummary: projectMemorySummary,
+              userMessage: lastUser.content,
+              assistantMessage: assistantText,
+              apiKey,
+            }).catch((error) => {
+              console.error(error);
+            });
+          }
           sendEvent({
             type: "citations",
             citations: filterUsedCitations(assistantText, ragCitations, tbaCitations, webCitations),
