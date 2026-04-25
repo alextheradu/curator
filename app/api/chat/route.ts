@@ -277,14 +277,15 @@ async function updateProjectSummary({
   assistantMessage,
   apiKey,
 }: {
-  session: { user?: { id?: string | null } | null };
+  session: { user?: { id?: string | null; isAdmin?: boolean | null } };
   projectId: string;
   previousSummary: string;
   userMessage: string;
   assistantMessage: string;
   apiKey: string;
 }) {
-  if (!session.user?.id || !assistantMessage.trim()) return;
+  const userId = session.user?.id;
+  if (!userId || !assistantMessage.trim()) return;
 
   const input = compactProjectSummaryInput({ previousSummary, userMessage, assistantMessage });
   const response = await fetch(OR_URL, {
@@ -311,7 +312,7 @@ async function updateProjectSummary({
   await withSessionDbAccess(session, (tx) => tx
     .update(projects)
     .set({ contextSummary: nextSummary, updatedAt: new Date() })
-    .where(and(eq(projects.id, projectId), eq(projects.userId, session.user.id!))));
+    .where(and(eq(projects.id, projectId), eq(projects.userId, userId))));
 }
 
 function filterUsedCitations(

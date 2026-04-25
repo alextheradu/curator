@@ -15,7 +15,7 @@ import {
   updateConversation as updateConversationRequest,
 } from "@/lib/conversation-api";
 import { normalizeConversation, normalizeMessage } from "@/lib/conversations";
-import { normalizeProject, type Project } from "@/lib/projects";
+import { isProjectColorKey, isProjectIconKey, normalizeProject, type Project } from "@/lib/projects";
 import { useChatStore } from "@/lib/store";
 
 export function useSidebarActions() {
@@ -172,7 +172,13 @@ export function useSidebarActions() {
     const previous = useChatStore.getState().projects.find((project) => project.id === projectId);
     if (!previous) return;
 
-    const optimistic: Project = { ...previous, ...payload, updatedAt: new Date() };
+    const optimistic: Project = {
+      ...previous,
+      name: payload.name,
+      icon: isProjectIconKey(payload.icon) ? payload.icon : previous.icon,
+      color: isProjectColorKey(payload.color) ? payload.color : previous.color,
+      updatedAt: new Date(),
+    };
     upsertProject(optimistic);
 
     try {
