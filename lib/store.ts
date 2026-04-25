@@ -2,6 +2,7 @@ import { create } from "zustand";
 import { persist } from "zustand/middleware";
 import { generateChatTitle } from "./utils";
 import type { Citation } from "./db/schema";
+import type { Project } from "./projects";
 import { DEFAULT_SEASON_YEAR } from "./seasons";
 import { randomUuid } from "./uuid";
 
@@ -31,6 +32,7 @@ export interface Conversation {
 }
 
 interface ChatStore {
+  projects: Project[];
   conversations: Conversation[];
   activeConversationId: string | null;
   streamingContent: string;
@@ -61,6 +63,10 @@ interface ChatStore {
   setSettingsOpen: (open: boolean) => void;
   setTemperature: (temp: number) => void;
   resetSettings: () => void;
+  replaceProjects: (projects: Project[]) => void;
+  upsertProject: (project: Project) => void;
+  deleteProject: (projectId: string) => void;
+  moveConversationToProject: (conversationId: string, projectId: string | null) => void;
   replaceConversations: (convs: Conversation[]) => void;
   upsertConversation: (conversation: Conversation) => void;
   updateConversation: (conversationId: string, patch: Partial<Omit<Conversation, "id" | "messages">>) => void;
@@ -78,6 +84,7 @@ function sortConversations(conversations: Conversation[]) {
 export const useChatStore = create<ChatStore>()(
   persist(
     (set, get) => ({
+      projects: [],
       conversations: [],
       activeConversationId: null,
       streamingContent: "",
@@ -208,6 +215,30 @@ export const useChatStore = create<ChatStore>()(
         })),
       })),
 
+      replaceProjects: (projects) => set({ projects }),
+
+      upsertProject: (project) => set((s) => ({
+        projects: [project, ...s.projects.filter((item) => item.id !== project.id)]
+          .sort((a, b) => b.updatedAt.getTime() - a.updatedAt.getTime()),
+      })),
+
+      deleteProject: (projectId) => set((s) => ({
+        projects: s.projects.filter((project) => project.id !== projectId),
+        conversations: s.conversations.map((conversation) =>
+          conversation.projectId === projectId ? { ...conversation, projectId: null } : conversation
+        ),
+      })),
+
+      moveConversationToProject: (conversationId, projectId) => set((s) => ({
+        conversations: sortConversations(
+          s.conversations.map((conversation) =>
+            conversation.id === conversationId
+              ? { ...conversation, projectId, updatedAt: new Date() }
+              : conversation
+          )
+        ),
+      })),
+
       replaceConversations: (convs) => set((s) => {
         const existingMessages = new Map(s.conversations.map((conversation) => [conversation.id, conversation.messages]));
         const merged = sortConversations(
@@ -279,6 +310,7 @@ export const useChatStore = create<ChatStore>()(
       name: "curator-chat-store",
       partialize: (s) => ({
         conversations: s.conversations,
+        projects: s.projects,
         activeConversationId: s.activeConversationId,
         temperature: s.temperature,
         sidebarOpen: s.sidebarOpen,
