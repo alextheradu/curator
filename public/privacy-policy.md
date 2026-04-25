@@ -1,7 +1,7 @@
 # Privacy Policy
 
 **Curator — FRC AI Assistant**
-**Last updated: April 23, 2026**
+**Last updated: April 25, 2026**
 
 ## 1. Overview
 
@@ -21,6 +21,7 @@ This Privacy Policy explains how Curator ("the Service", "we", "us") collects, u
 - **From Google OAuth:** your name, email address, and profile picture URL
 - **Onboarding profile:** your preferred name and optional FRC team number
 - **Conversation history:** all messages you send and receive, stored in our database so they persist across devices
+- **Projects:** project names, icon/color choices, chat-to-project organization, and hidden AI-generated project context summaries derived from chats inside each project
 - **Moderation records:** if your account is suspended, we store the affected email address, suspension status, timestamp, and any admin-entered reason tied to that action
 - **Sharing preferences:** whether a conversation has been marked public by you
 - **Admin-authored blog content:** if you are an admin, blog post drafts and publication metadata you create may be stored in our database and, when published, shown publicly with your preferred name (or your account name if no preferred name is set)
@@ -46,6 +47,7 @@ This Privacy Policy explains how Curator ("the Service", "we", "us") collects, u
 
 - To provide and improve the Service
 - To authenticate you and persist your conversation history
+- To organize your saved chats into personal projects and apply hidden project-scoped context only within those projects
 - To store and apply your saved preferred name, optional team number, onboarding status, account-level chat style preference, and account-level Terms of Service acceptance
 - To honor your choice to publish or unpublish shared chat links
 - To let admins draft, edit, publish, and remove public blog posts about Curator updates
@@ -79,6 +81,7 @@ We do **not** sell your data, use it for advertising, or share it with third par
 ## 5. Data Storage
 
 - User data and conversation history are stored in a self-hosted PostgreSQL database.
+- Project metadata, chat project assignments, and hidden project context summaries are stored in PostgreSQL with your account data.
 - Saved onboarding fields, including preferred name, optional team number, onboarding completion time, and Terms of Service acceptance time, are stored in the same PostgreSQL account record.
 - Public/private sharing status for authenticated conversations is stored alongside the conversation record in PostgreSQL.
 - Admin-authored blog posts, publication timestamps, and the associated author account reference are stored in PostgreSQL.
@@ -95,6 +98,7 @@ We do **not** sell your data, use it for advertising, or share it with third par
 - **Guest data:** stored only in your browser's `localStorage`. Cleared when you clear your browser data.
 - **Offline app cache:** stored in your browser until the browser clears site data, the service worker replaces the cache during an update, or you manually remove the site's stored data.
 - **Authenticated user data:** retained for as long as your account exists. This includes saved onboarding profile fields, chat-mode preference, Terms of Service acceptance state, and conversation history. You may delete your account and all associated data at any time from the Settings page.
+- **Projects:** retained for as long as your account exists unless you delete a project. Deleting a project removes its project metadata and hidden summary while returning its chats to normal history.
 - **Moderation data:** moderation reports and banned-email records are retained until they are manually cleared, no longer needed for safety or abuse review, or your account and related moderation history are deleted.
 - **Account export packages:** generated on demand from your current account data when you request an export from Settings and not stored by the Service after the response is delivered.
 - **Public shared chats:** remain publicly accessible until you make the chat private again or delete it.
@@ -133,7 +137,7 @@ You have the right to:
 - Access the data we hold about you
 - Delete your account and all associated data
 - Make a shared chat private again or delete it to remove public access
-- Export your account data, including chats, saved onboarding/account settings, and support requests associated with your signed-in account
+- Export your account data, including chats, project metadata, hidden project summaries, saved onboarding/account settings, and support requests associated with your signed-in account
 
 We may retain limited moderation records when reasonably necessary to enforce the Terms, investigate abuse, or document account suspensions.
 

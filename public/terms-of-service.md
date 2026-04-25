@@ -1,7 +1,7 @@
 # Terms of Service
 
 **Curator — FRC AI Assistant**
-**Last updated: April 23, 2026**
+**Last updated: April 25, 2026**
 
 ## 1. Acceptance of Terms
 
@@ -18,6 +18,8 @@ The Service also includes a public blog where Curator admins may publish product
 The Service may also be installed to your device home screen as a web app. Installed/offline behavior is still subject to browser support and the limits described in the Privacy Policy.
 
 Public pages of the Service may also notify participating search engines when those public URLs are added, updated, or removed so that search results can refresh more quickly.
+
+Signed-in users can organize saved chats into personal projects. Project chats may use hidden, AI-generated project context summaries derived only from chats in that project to keep future project chats focused.
 
 ## 3. No Warranty — AI Limitations
 
@@ -37,7 +39,7 @@ You agree not to:
 
 ## 5. User Accounts
 
-You may use the Service as a guest for a limited number of messages. Creating an account via Google OAuth is required for continued use, to persist conversation history, to save account-level defaults such as your preferred name, optional team number, preferred chat style, and accepted-terms status, and to use public chat sharing. If you choose to make a chat public, anyone with that link may view the conversation until you disable sharing or delete the chat. You are responsible for maintaining the security of your account and for any content you choose to share publicly.
+You may use the Service as a guest for a limited number of messages. Creating an account via Google OAuth is required for continued use, to persist conversation history, to save account-level defaults such as your preferred name, optional team number, preferred chat style, and accepted-terms status, to create projects, and to use public chat sharing. If you choose to make a chat public, anyone with that link may view the conversation until you disable sharing or delete the chat. You are responsible for maintaining the security of your account and for any names, chat content, or other information you choose to place in projects or share publicly.
 
 ## 6. Intellectual Property
 
