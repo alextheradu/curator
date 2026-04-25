@@ -126,6 +126,7 @@ export function AppSidebar({ latestNewsPublishedAt }: AppSidebarProps) {
   } = useSidebarActions();
   const { data: session, status } = useSession();
   const isSessionLoading = status === "loading";
+  const canUseProjects = Boolean(session?.user);
   const userLabel = session?.user?.preferredName?.trim() || session?.user?.name?.trim() || session?.user?.email || "Signed in";
   const avatarHueSource = session?.user?.preferredName?.trim() || session?.user?.name?.trim() || session?.user?.email || "";
   const avatarUrl = session?.user?.image?.trim() || "";
@@ -444,7 +445,7 @@ export function AppSidebar({ latestNewsPublishedAt }: AppSidebarProps) {
             </SidebarGroupContent>
           </SidebarGroup>
 
-          {session?.user && (
+          {!isSessionLoading && (
             <SidebarGroup className="group-data-[collapsible=icon]:hidden">
               <SidebarGroupLabel className="text-[10px] font-semibold uppercase tracking-[0.12em] text-sidebar-foreground/70">
                 Projects
@@ -454,59 +455,65 @@ export function AppSidebar({ latestNewsPublishedAt }: AppSidebarProps) {
                   <SidebarMenuItem>
                     <SidebarMenuButton
                       onClick={() => {
+                        if (!canUseProjects) {
+                          void signIn("google", { callbackUrl: "/" });
+                          return;
+                        }
                         openNewProjectDialog();
                       }}
                       className="h-8 rounded-lg px-2 text-[13px] text-sidebar-foreground/70 transition-colors duration-150 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground"
                     >
                       <FolderPlusIcon className="size-4" />
-                      <span>New project</span>
+                      <span>{canUseProjects ? "New project" : "Sign in for projects"}</span>
                     </SidebarMenuButton>
                   </SidebarMenuItem>
-                  <div className="mt-1 flex flex-col gap-1">
-                    {projectSections.map(({ project, conversations: projectConversations }) => (
-                      <SidebarMenuItem key={project.id}>
-                        <ProjectRow
-                          project={project}
-                          count={projectConversations.length}
-                          expanded={expandedProjectIds.has(project.id)}
-                          onToggle={() => toggleExpandedProject(project.id)}
-                          onNewChat={() => {
-                            setOpenMobile(false);
-                            setExpandedProjectIds((current) => new Set(current).add(project.id));
-                            void createConversation(project.id);
-                          }}
-                          onEdit={() => {
-                            openEditProjectDialog(project);
-                          }}
-                          onDelete={() => setDeleteProjectId(project.id)}
-                        >
-                          {projectConversations.map((conv) => (
-                            <SidebarMenuItem key={conv.id}>
-                              <ConversationItem
-                                conversation={conv}
-                                isActive={conv.id === activeConversationId}
-                                projects={projects.filter((item) => item.id !== project.id)}
-                                onClick={() => {
-                                  setOpenMobile(false);
-                                  void openConversation(conv.id);
-                                }}
-                                onRename={(title) => {
-                                  void renameConversation(conv.id, title);
-                                }}
-                                onShare={() => {
-                                  setOpenMobile(false);
-                                  void shareConversation(conv.id);
-                                }}
-                                onDelete={() => void deleteConversation(conv.id)}
-                                onMoveToProject={(projectId) => void moveConversationToProject(conv.id, projectId)}
-                                onRemoveFromProject={() => void moveConversationToProject(conv.id, null)}
-                              />
-                            </SidebarMenuItem>
-                          ))}
-                        </ProjectRow>
-                      </SidebarMenuItem>
-                    ))}
-                  </div>
+                  {canUseProjects && (
+                    <div className="mt-1 flex flex-col gap-1">
+                      {projectSections.map(({ project, conversations: projectConversations }) => (
+                        <SidebarMenuItem key={project.id}>
+                          <ProjectRow
+                            project={project}
+                            count={projectConversations.length}
+                            expanded={expandedProjectIds.has(project.id)}
+                            onToggle={() => toggleExpandedProject(project.id)}
+                            onNewChat={() => {
+                              setOpenMobile(false);
+                              setExpandedProjectIds((current) => new Set(current).add(project.id));
+                              void createConversation(project.id);
+                            }}
+                            onEdit={() => {
+                              openEditProjectDialog(project);
+                            }}
+                            onDelete={() => setDeleteProjectId(project.id)}
+                          >
+                            {projectConversations.map((conv) => (
+                              <SidebarMenuItem key={conv.id}>
+                                <ConversationItem
+                                  conversation={conv}
+                                  isActive={conv.id === activeConversationId}
+                                  projects={projects.filter((item) => item.id !== project.id)}
+                                  onClick={() => {
+                                    setOpenMobile(false);
+                                    void openConversation(conv.id);
+                                  }}
+                                  onRename={(title) => {
+                                    void renameConversation(conv.id, title);
+                                  }}
+                                  onShare={() => {
+                                    setOpenMobile(false);
+                                    void shareConversation(conv.id);
+                                  }}
+                                  onDelete={() => void deleteConversation(conv.id)}
+                                  onMoveToProject={(projectId) => void moveConversationToProject(conv.id, projectId)}
+                                  onRemoveFromProject={() => void moveConversationToProject(conv.id, null)}
+                                />
+                              </SidebarMenuItem>
+                            ))}
+                          </ProjectRow>
+                        </SidebarMenuItem>
+                      ))}
+                    </div>
+                  )}
                 </SidebarMenu>
               </SidebarGroupContent>
             </SidebarGroup>

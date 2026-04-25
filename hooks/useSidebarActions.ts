@@ -54,6 +54,13 @@ export function useSidebarActions() {
   }, [isAuthenticated, router, setActiveConversation, upsertConversation]);
 
   const openConversation = useCallback(async (conversationId: string) => {
+    const localConversation = useChatStore.getState().conversations.find((conversation) => conversation.id === conversationId);
+
+    if (localConversation) {
+      setActiveConversation(conversationId);
+      router.push(`/c/${conversationId}`);
+    }
+
     try {
       if (isAuthenticated) {
         const detail = await fetchConversation(conversationId);
@@ -72,7 +79,9 @@ export function useSidebarActions() {
       } else {
         setActiveConversation(conversationId);
       }
-      router.push(`/c/${conversationId}`);
+      if (!localConversation) {
+        router.push(`/c/${conversationId}`);
+      }
     } catch {
       toast.error("Unable to open that chat.");
     }
