@@ -16,7 +16,7 @@ interface MainLayoutProps {
 export function MainLayout({ children, latestNewsPublishedAt }: MainLayoutProps) {
   return (
     <SidebarProvider>
-      <div className="flex h-svh w-full overflow-hidden bg-[var(--background)] text-[var(--foreground)]">
+      <div className="flex h-svh w-full overflow-hidden overscroll-none bg-[var(--background)] text-[var(--foreground)]">
         <AppSidebar latestNewsPublishedAt={latestNewsPublishedAt} />
         <Suspense>
           <SettingsModal />

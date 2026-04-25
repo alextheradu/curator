@@ -150,12 +150,16 @@
   body {
     overflow-x: hidden;
     overflow-y: auto;
+    overscroll-behavior: none;
+    -webkit-overflow-scrolling: auto;
     position: relative;
   }
 
   html {
     overflow-x: hidden;
     overflow-y: auto;
+    overscroll-behavior: none;
+    -webkit-overflow-scrolling: auto;
   }
 
   h1, h2, h3, h4, h5, h6 {
@@ -198,6 +202,11 @@ textarea:focus-visible {
 
 @utility overscroll-contain {
   overscroll-behavior: contain;
+}
+
+@utility overscroll-none {
+  overscroll-behavior: none;
+  -webkit-overflow-scrolling: auto;
 }
 
 /* Scrollbar styling */
