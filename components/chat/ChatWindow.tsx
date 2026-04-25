@@ -5,7 +5,7 @@ import Image from "next/image";
 import { lazy, Suspense, useCallback, useEffect, useRef, useState } from "react";
 import { useSession } from "next-auth/react";
 import { AnimatePresence, motion } from "framer-motion";
-import { CopyIcon, GlobeIcon, LinkIcon, LockIcon, NewspaperIcon, Share2Icon } from "lucide-react";
+import { CopyIcon, GlobeIcon, LinkIcon, LockIcon, Share2Icon } from "lucide-react";
 import { MessageBubble } from "./MessageBubble";
 import { StreamingIndicator } from "./StreamingIndicator";
 import { EmptyState } from "./EmptyState";
@@ -540,27 +540,47 @@ export function ChatWindow({
         </DialogContent>
       </Dialog>
 
-      <div className="shrink-0 border-b border-border/40 bg-background/92 px-3 py-2 backdrop-blur md:px-6 md:py-2.5">
-        <div className="flex w-full items-center gap-2.5 sm:gap-3">
-          <div className="flex shrink-0 items-center justify-center md:hidden">
-            {!readOnly && <SidebarTrigger className="text-muted-foreground" />}
-          </div>
+      <AnimatePresence initial={false}>
+        {!showConversationChrome && !readOnly && (
+          <motion.div
+            key="blank-mobile-sidebar-trigger"
+            initial={{ opacity: 0, y: -8 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -8 }}
+            transition={{ duration: 0.2, ease: [0.22, 1, 0.36, 1] }}
+            className="absolute left-3 top-[calc(0.75rem+env(safe-area-inset-top))] z-30 md:hidden"
+          >
+            <SidebarTrigger className="rounded-xl border border-border/50 bg-background/80 text-muted-foreground shadow-sm backdrop-blur" />
+          </motion.div>
+        )}
 
-          <div className="mx-auto flex min-w-0 flex-1 max-w-3xl items-center gap-2.5 sm:gap-3">
-            <div className="flex shrink-0 items-center justify-center">
-              <Image
-                src="/logo.png"
-                alt="Curator"
-                width={32}
-                height={32}
-                priority
-                className="h-7 w-7 object-contain sm:h-8 sm:w-8"
-                style={{ filter: "drop-shadow(0 0 7px rgba(120,40,40,0.22))" }}
-              />
-            </div>
+        {showConversationChrome && (
+          <motion.div
+            key="conversation-topbar"
+            initial={{ opacity: 0, y: -12 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -12 }}
+            transition={{ duration: 0.24, ease: [0.22, 1, 0.36, 1] }}
+            className="shrink-0 border-b border-border/40 bg-background/92 px-3 py-2 backdrop-blur md:px-6 md:py-2.5"
+          >
+            <div className="flex w-full items-center gap-2.5 sm:gap-3">
+              <div className="flex shrink-0 items-center justify-center md:hidden">
+                {!readOnly && <SidebarTrigger className="text-muted-foreground" />}
+              </div>
 
-            <AnimatePresence initial={false} mode="wait">
-              {showConversationChrome ? (
+              <div className="mx-auto flex min-w-0 max-w-3xl flex-1 items-center gap-2.5 sm:gap-3">
+                <div className="flex shrink-0 items-center justify-center">
+                  <Image
+                    src="/logo.png"
+                    alt="Curator"
+                    width={32}
+                    height={32}
+                    priority
+                    className="h-7 w-7 object-contain sm:h-8 sm:w-8"
+                    style={{ filter: "drop-shadow(0 0 7px rgba(120,40,40,0.22))" }}
+                  />
+                </div>
+
                 <motion.div
                   key="conversation-meta"
                   initial={{ opacity: 0, x: 12 }}
@@ -609,93 +629,61 @@ export function ChatWindow({
                     </span>
                   )}
                 </motion.div>
-              ) : (
-                <motion.div
-                  key="blank-meta"
-                  initial={{ opacity: 0, x: -12 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  exit={{ opacity: 0, x: 12 }}
-                  transition={{ duration: 0.22, ease: [0.22, 1, 0.36, 1] }}
-                  className="min-w-0 flex-1"
-                >
-                  <div className="truncate text-[13px] font-semibold text-foreground sm:text-sm">
-                    Curator
-                  </div>
-                  <div className="mt-0.5 truncate text-[11px] text-muted-foreground">
-                    Read updates or start a new FRC question.
-                  </div>
-                </motion.div>
-              )}
-            </AnimatePresence>
-            <div className="flex shrink-0 items-center gap-2">
-              <AnimatePresence initial={false} mode="wait">
-                {readOnly ? (
-                  <motion.div
-                    key="readonly-action"
-                    initial={{ opacity: 0, x: 12 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    exit={{ opacity: 0, x: 12 }}
-                    transition={{ duration: 0.22, ease: [0.22, 1, 0.36, 1] }}
-                  >
-                    <Link
-                      href="/"
-                      className="inline-flex h-8 shrink-0 items-center rounded-xl border border-border/60 px-2.5 text-xs font-medium text-foreground transition-colors hover:bg-muted sm:px-3"
-                    >
-                      <span className="hidden sm:inline">Start your own chat</span>
-                      <span className="sm:hidden">Start chat</span>
-                    </Link>
-                  </motion.div>
-                ) : !showConversationChrome ? (
-                  <motion.div
-                    key="blank-action"
-                    initial={{ opacity: 0, x: 12 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    exit={{ opacity: 0, x: 12 }}
-                    transition={{ duration: 0.22, ease: [0.22, 1, 0.36, 1] }}
-                  >
-                    <Link
-                      href="/blog"
-                      className="inline-flex h-8 shrink-0 items-center gap-1.5 rounded-xl border border-border/60 px-2.5 text-xs font-medium text-foreground transition-colors hover:bg-muted sm:px-3"
-                    >
-                      <NewspaperIcon className="size-3.5" />
-                      <span>Blog</span>
-                    </Link>
-                  </motion.div>
-                ) : (
-                  <motion.div
-                    key="share-action"
-                    initial={{ opacity: 0, x: 12 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    exit={{ opacity: 0, x: 12 }}
-                    transition={{ duration: 0.22, ease: [0.22, 1, 0.36, 1] }}
-                  >
-                    <Button
-                      variant="outline"
-                      aria-label="Share"
-                      onClick={() => {
-                        if (canShare) {
-                          setShareDialogOpen(true);
-                          return;
-                        }
+                <div className="flex shrink-0 items-center gap-2">
+                  <AnimatePresence initial={false} mode="wait">
+                    {readOnly ? (
+                      <motion.div
+                        key="readonly-action"
+                        initial={{ opacity: 0, x: 12 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        exit={{ opacity: 0, x: 12 }}
+                        transition={{ duration: 0.22, ease: [0.22, 1, 0.36, 1] }}
+                      >
+                        <Link
+                          href="/"
+                          className="inline-flex h-8 shrink-0 items-center rounded-xl border border-border/60 px-2.5 text-xs font-medium text-foreground transition-colors hover:bg-muted sm:px-3"
+                        >
+                          <span className="hidden sm:inline">Start your own chat</span>
+                          <span className="sm:hidden">Start chat</span>
+                        </Link>
+                      </motion.div>
+                    ) : (
+                      <motion.div
+                        key="share-action"
+                        initial={{ opacity: 0, x: 12 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        exit={{ opacity: 0, x: 12 }}
+                        transition={{ duration: 0.22, ease: [0.22, 1, 0.36, 1] }}
+                      >
+                        <Button
+                          variant="outline"
+                          aria-label="Share"
+                          onClick={() => {
+                            if (canShare) {
+                              setShareDialogOpen(true);
+                              return;
+                            }
 
-                        setShowAuthModal(true);
-                        toast.info("Sign in to share chats.");
-                      }}
-                      disabled={!conversation || messages.length === 0 || isShareUpdating}
-                      className="h-8 shrink-0 px-2 text-xs sm:px-3 sm:text-sm"
-                    >
-                      <Share2Icon className="size-4" />
-                      <span className="hidden sm:inline">Share</span>
-                    </Button>
-                  </motion.div>
-                )}
-              </AnimatePresence>
+                            setShowAuthModal(true);
+                            toast.info("Sign in to share chats.");
+                          }}
+                          disabled={!conversation || messages.length === 0 || isShareUpdating}
+                          className="h-8 shrink-0 px-2 text-xs sm:px-3 sm:text-sm"
+                        >
+                          <Share2Icon className="size-4" />
+                          <span className="hidden sm:inline">Share</span>
+                        </Button>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+                </div>
+              </div>
             </div>
-          </div>
-        </div>
-      </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
-      <div ref={containerRef} className="relative flex min-h-0 flex-1 basis-0 flex-col overflow-x-hidden overflow-y-auto overscroll-contain">
+      <div ref={containerRef} className="relative flex min-h-0 flex-1 basis-0 flex-col overflow-x-hidden overflow-y-auto overscroll-none">
         <AnimatePresence mode="popLayout">
           {isEmpty && readOnly ? (
             <div className="mx-auto flex w-full max-w-3xl flex-1 flex-col items-center justify-center gap-3 px-4 pb-40 pt-16 text-center">

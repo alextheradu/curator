@@ -33,6 +33,7 @@ const GREETING_PREFIXES = [
   "Hola",
   "Bonjour",
   "Ask about FRC",
+  "Beep boop",
 ];
 
 function selectRandomSuggestions(count: number) {
@@ -72,8 +73,8 @@ export function EmptyState({ onPromptSelect }: Props) {
   const greeting = greetingName ? `${greetingPrefix}, ${greetingName}!` : `${greetingPrefix}!`;
 
   return (
-    <div className="flex w-full flex-1 flex-col">
-      <div className="flex flex-col items-center justify-start gap-2 px-1 pb-5 pt-6 text-center sm:gap-3 sm:pb-8 sm:pt-10">
+    <div className="flex w-full flex-1 flex-col justify-center">
+      <div className="flex flex-col items-center justify-start gap-2 px-1 pb-5 pt-0 text-center sm:gap-3 sm:pb-8">
         <motion.div
           initial={{ opacity: 0, scale: 0.85 }}
           animate={{ opacity: 1, scale: 1 }}
@@ -108,7 +109,7 @@ export function EmptyState({ onPromptSelect }: Props) {
         </motion.div>
       </div>
 
-      <div className="w-full px-1 pb-3 sm:pb-6">
+      <div className="w-full px-1 pb-0">
         <div className="mb-1.5 flex items-center justify-between px-1 sm:mb-2">
           <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
             Quick starts
