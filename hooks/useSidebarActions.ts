@@ -5,12 +5,17 @@ import { useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
 import { toast } from "sonner";
 import {
+  createConversation as createConversationRequest,
+  createProject as createProjectRequest,
   deleteConversation as deleteConversationRequest,
+  deleteProject as deleteProjectRequest,
   fetchConversation,
   fetchConversationMessages,
+  updateProject as updateProjectRequest,
   updateConversation as updateConversationRequest,
 } from "@/lib/conversation-api";
 import { normalizeConversation, normalizeMessage } from "@/lib/conversations";
+import { normalizeProject, type Project } from "@/lib/projects";
 import { useChatStore } from "@/lib/store";
 
 export function useSidebarActions() {
@@ -21,13 +26,32 @@ export function useSidebarActions() {
     setActiveConversation,
     upsertConversation,
     deleteConversation,
+    upsertProject,
+    deleteProject,
+    moveConversationToProject,
     setShareDialogConversationId,
   } = useChatStore();
 
-  const createConversation = useCallback(async () => {
+  const createConversation = useCallback(async (projectId?: string | null) => {
+    if (isAuthenticated && projectId) {
+      try {
+        const created = normalizeConversation(
+          await createConversationRequest({ projectId }),
+          [],
+          useChatStore.getState().defaultChatMode,
+        );
+        upsertConversation(created);
+        setActiveConversation(created.id);
+        router.push(`/c/${created.id}`);
+        return;
+      } catch {
+        toast.error("Unable to create a project chat.");
+      }
+    }
+
     setActiveConversation(null);
     router.push("/");
-  }, [router, setActiveConversation]);
+  }, [isAuthenticated, router, setActiveConversation, upsertConversation]);
 
   const openConversation = useCallback(async (conversationId: string) => {
     try {
@@ -128,11 +152,82 @@ export function useSidebarActions() {
     }
   }, [isAuthenticated, router, setActiveConversation, setShareDialogConversationId, upsertConversation]);
 
+  const createProject = useCallback(async (payload: { name: string; icon: string; color: string }) => {
+    if (!isAuthenticated) {
+      toast.info("Sign in to create projects.");
+      return null;
+    }
+
+    try {
+      const project = normalizeProject(await createProjectRequest(payload));
+      upsertProject(project);
+      return project;
+    } catch {
+      toast.error("Unable to create that project.");
+      return null;
+    }
+  }, [isAuthenticated, upsertProject]);
+
+  const updateProject = useCallback(async (projectId: string, payload: { name: string; icon: string; color: string }) => {
+    const previous = useChatStore.getState().projects.find((project) => project.id === projectId);
+    if (!previous) return;
+
+    const optimistic: Project = { ...previous, ...payload, updatedAt: new Date() };
+    upsertProject(optimistic);
+
+    try {
+      upsertProject(normalizeProject(await updateProjectRequest(projectId, payload)));
+    } catch {
+      upsertProject(previous);
+      toast.error("Unable to update that project.");
+    }
+  }, [upsertProject]);
+
+  const deleteProjectAction = useCallback(async (projectId: string) => {
+    const previousProjects = useChatStore.getState().projects;
+    const previousConversations = useChatStore.getState().conversations;
+    deleteProject(projectId);
+
+    try {
+      if (isAuthenticated) {
+        await deleteProjectRequest(projectId);
+      }
+    } catch {
+      useChatStore.setState({ projects: previousProjects, conversations: previousConversations });
+      toast.error("Unable to delete that project.");
+    }
+  }, [deleteProject, isAuthenticated]);
+
+  const moveConversationToProjectAction = useCallback(async (conversationId: string, projectId: string | null) => {
+    const previous = useChatStore.getState().conversations.find((conversation) => conversation.id === conversationId);
+    if (!previous) return;
+
+    moveConversationToProject(conversationId, projectId);
+
+    try {
+      if (isAuthenticated) {
+        const updated = normalizeConversation(
+          await updateConversationRequest(conversationId, { projectId }),
+          previous.messages,
+          useChatStore.getState().defaultChatMode,
+        );
+        upsertConversation(updated);
+      }
+    } catch {
+      moveConversationToProject(conversationId, previous.projectId);
+      toast.error(projectId ? "Unable to move that chat." : "Unable to remove that chat from the project.");
+    }
+  }, [isAuthenticated, moveConversationToProject, upsertConversation]);
+
   return {
     createConversation,
     openConversation,
     renameConversation,
     deleteConversation: deleteConversationAction,
     shareConversation,
+    createProject,
+    updateProject,
+    deleteProject: deleteProjectAction,
+    moveConversationToProject: moveConversationToProjectAction,
   };
 }
