@@ -4,6 +4,7 @@ import { withSessionDbAccess } from "@/lib/db/access";
 import {
   conversations,
   messages,
+  projects,
   reports,
   supportRequests,
   users,
@@ -66,8 +67,13 @@ export async function GET() {
     }
   })();
 
-  const [user, conversationRows, supportRows, reportRows] = await Promise.all([
+  const [user, projectRows, conversationRows, supportRows, reportRows] = await Promise.all([
     userPromise,
+    withSessionDbAccess(session, (tx) => tx
+      .select()
+      .from(projects)
+      .where(eq(projects.userId, session.user.id))
+      .orderBy(desc(projects.updatedAt))),
     withSessionDbAccess(session, (tx) => tx
       .select()
       .from(conversations)
@@ -110,6 +116,15 @@ export async function GET() {
       teamNumber: user?.teamNumber ?? null,
       onboardedAt: user?.onboardedAt ?? null,
     },
+    projects: projectRows.map((project) => ({
+      id: project.id,
+      name: project.name,
+      icon: project.icon,
+      color: project.color,
+      contextSummary: project.contextSummary,
+      createdAt: project.createdAt,
+      updatedAt: project.updatedAt,
+    })),
     conversations: conversationRows.map((conversation) => ({
       ...conversation,
       messages: messagesByConversation.get(conversation.id) ?? [],
