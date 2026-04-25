@@ -186,7 +186,11 @@ export function ChatApp({ requestedConversationId }: ChatAppProps) {
 
           const [rows, projectRows] = await Promise.all([
             fetchConversationList(),
-            fetchProjects(),
+            fetchProjects().catch((error) => {
+              console.error(error);
+              toast.error("Unable to load your projects.");
+              return [];
+            }),
           ]);
           if (cancelled) return;
 
