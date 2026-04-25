@@ -6,6 +6,7 @@ import { isToday, isYesterday, subWeeks, subMonths } from "date-fns";
 import { useMemo, useState } from "react";
 import { motion } from "framer-motion";
 import {
+  FolderPlusIcon,
   MessageCircleIcon,
   NewspaperIcon,
   PanelLeftIcon,
@@ -17,6 +18,16 @@ import {
 import { signIn, useSession } from "next-auth/react";
 import { NewsBadge } from "@/components/news/NewsBadge";
 import { useSidebarActions } from "@/hooks/useSidebarActions";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import {
   Dialog,
   DialogClose,
@@ -43,8 +54,12 @@ import {
 } from "@/components/ui/sidebar";
 
 import { ConversationItem } from "./ConversationItem";
+import { ProjectDialog } from "./ProjectDialog";
+import { ProjectRow } from "./ProjectRow";
+import { deriveProjectSidebar } from "@/lib/sidebar-projects";
 import { useChatStore } from "@/lib/store";
 import type { Conversation } from "@/lib/store";
+import type { Project } from "@/lib/projects";
 
 function getConversationDescription(conversation: Conversation) {
   if (conversation.searchDescription?.trim()) {
@@ -104,6 +119,10 @@ export function AppSidebar({ latestNewsPublishedAt }: AppSidebarProps) {
     renameConversation,
     shareConversation,
     deleteConversation,
+    createProject,
+    updateProject,
+    deleteProject: deleteProjectAction,
+    moveConversationToProject,
   } = useSidebarActions();
   const { data: session, status } = useSession();
   const isSessionLoading = status === "loading";
@@ -115,13 +134,20 @@ export function AppSidebar({ latestNewsPublishedAt }: AppSidebarProps) {
   const [searchQuery, setSearchQuery] = useState("");
   const [isSearchFocused, setIsSearchFocused] = useState(false);
   const [avatarLoadFailed, setAvatarLoadFailed] = useState(false);
+  const [projectDialogOpen, setProjectDialogOpen] = useState(false);
+  const [projectDialogVersion, setProjectDialogVersion] = useState(0);
+  const [editingProject, setEditingProject] = useState<Project | null>(null);
+  const [deleteProjectId, setDeleteProjectId] = useState<string | null>(null);
+  const [expandedProjectIds, setExpandedProjectIds] = useState<Set<string>>(() => new Set());
   const {
+    projects,
     conversations,
     activeConversationId,
     setSettingsOpen,
   } = useChatStore();
 
-  const grouped = groupConversationsByDate(conversations);
+  const { projects: projectSections, history } = deriveProjectSidebar(projects, conversations);
+  const grouped = groupConversationsByDate(history);
 
 
   const groups: { label: string; items: Conversation[] }[] = [
@@ -131,6 +157,34 @@ export function AppSidebar({ latestNewsPublishedAt }: AppSidebarProps) {
     { label: "Last 30 days", items: grouped.lastMonth },
     { label: "Older", items: grouped.older },
   ].filter((g) => g.items.length > 0);
+
+  const toggleExpandedProject = (projectId: string) => {
+    setExpandedProjectIds((current) => {
+      const next = new Set(current);
+      if (next.has(projectId)) {
+        next.delete(projectId);
+      } else {
+        next.add(projectId);
+      }
+      return next;
+    });
+  };
+
+  const projectToDelete = deleteProjectId
+    ? projects.find((project) => project.id === deleteProjectId) ?? null
+    : null;
+
+  const openNewProjectDialog = () => {
+    setEditingProject(null);
+    setProjectDialogVersion((version) => version + 1);
+    setProjectDialogOpen(true);
+  };
+
+  const openEditProjectDialog = (project: Project) => {
+    setEditingProject(project);
+    setProjectDialogVersion((version) => version + 1);
+    setProjectDialogOpen(true);
+  };
 
   const filteredConversations = useMemo(() => {
     const query = searchQuery.trim().toLowerCase();
@@ -160,6 +214,53 @@ export function AppSidebar({ latestNewsPublishedAt }: AppSidebarProps) {
 
   return (
     <>
+      <ProjectDialog
+        key={`${editingProject?.id ?? "new"}-${projectDialogVersion}`}
+        open={projectDialogOpen}
+        project={editingProject}
+        onOpenChange={(open) => {
+          setProjectDialogOpen(open);
+          if (!open) {
+            setEditingProject(null);
+          }
+        }}
+        onSubmit={async (payload) => {
+          if (editingProject) {
+            await updateProject(editingProject.id, payload);
+            return;
+          }
+
+          const project = await createProject(payload);
+          if (project) {
+            setExpandedProjectIds((current) => new Set(current).add(project.id));
+          }
+        }}
+      />
+      <AlertDialog open={Boolean(deleteProjectId)} onOpenChange={(open) => !open && setDeleteProjectId(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete project?</AlertDialogTitle>
+            <AlertDialogDescription>
+              {projectToDelete
+                ? `${projectToDelete.name} will be removed. Its chats will move back to History.`
+                : "This project will be removed. Its chats will move back to History."}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => {
+                if (deleteProjectId) {
+                  void deleteProjectAction(deleteProjectId);
+                }
+                setDeleteProjectId(null);
+              }}
+            >
+              Delete project
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
       <Dialog
         open={searchOpen}
         onOpenChange={(open) => {
@@ -343,8 +444,76 @@ export function AppSidebar({ latestNewsPublishedAt }: AppSidebarProps) {
             </SidebarGroupContent>
           </SidebarGroup>
 
+          {session?.user && (
+            <SidebarGroup className="group-data-[collapsible=icon]:hidden">
+              <SidebarGroupLabel className="text-[10px] font-semibold uppercase tracking-[0.12em] text-sidebar-foreground/70">
+                Projects
+              </SidebarGroupLabel>
+              <SidebarGroupContent>
+                <SidebarMenu>
+                  <SidebarMenuItem>
+                    <SidebarMenuButton
+                      onClick={() => {
+                        openNewProjectDialog();
+                      }}
+                      className="h-8 rounded-lg px-2 text-[13px] text-sidebar-foreground/70 transition-colors duration-150 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground"
+                    >
+                      <FolderPlusIcon className="size-4" />
+                      <span>New project</span>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                  <div className="mt-1 flex flex-col gap-1">
+                    {projectSections.map(({ project, conversations: projectConversations }) => (
+                      <SidebarMenuItem key={project.id}>
+                        <ProjectRow
+                          project={project}
+                          count={projectConversations.length}
+                          expanded={expandedProjectIds.has(project.id)}
+                          onToggle={() => toggleExpandedProject(project.id)}
+                          onNewChat={() => {
+                            setOpenMobile(false);
+                            setExpandedProjectIds((current) => new Set(current).add(project.id));
+                            void createConversation(project.id);
+                          }}
+                          onEdit={() => {
+                            openEditProjectDialog(project);
+                          }}
+                          onDelete={() => setDeleteProjectId(project.id)}
+                        >
+                          {projectConversations.map((conv) => (
+                            <SidebarMenuItem key={conv.id}>
+                              <ConversationItem
+                                conversation={conv}
+                                isActive={conv.id === activeConversationId}
+                                projects={projects.filter((item) => item.id !== project.id)}
+                                onClick={() => {
+                                  setOpenMobile(false);
+                                  void openConversation(conv.id);
+                                }}
+                                onRename={(title) => {
+                                  void renameConversation(conv.id, title);
+                                }}
+                                onShare={() => {
+                                  setOpenMobile(false);
+                                  void shareConversation(conv.id);
+                                }}
+                                onDelete={() => void deleteConversation(conv.id)}
+                                onMoveToProject={(projectId) => void moveConversationToProject(conv.id, projectId)}
+                                onRemoveFromProject={() => void moveConversationToProject(conv.id, null)}
+                              />
+                            </SidebarMenuItem>
+                          ))}
+                        </ProjectRow>
+                      </SidebarMenuItem>
+                    ))}
+                  </div>
+                </SidebarMenu>
+              </SidebarGroupContent>
+            </SidebarGroup>
+          )}
+
           {/* History grouped by date */}
-          {conversations.length === 0 ? (
+          {history.length === 0 ? (
             <SidebarGroup className="group-data-[collapsible=icon]:hidden">
               <SidebarGroupContent>
                 <div className="px-2 text-[13px] text-sidebar-foreground/50">
@@ -382,6 +551,8 @@ export function AppSidebar({ latestNewsPublishedAt }: AppSidebarProps) {
                                 void shareConversation(conv.id);
                               }}
                               onDelete={() => void deleteConversation(conv.id)}
+                              projects={projects}
+                              onMoveToProject={(projectId) => void moveConversationToProject(conv.id, projectId)}
                             />
                           </SidebarMenuItem>
                         ))}

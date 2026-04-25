@@ -1,15 +1,19 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { MoreHorizontal, Pencil, Share2, Trash2 } from "lucide-react";
+import { FolderInput, FolderMinus, MoreHorizontal, Pencil, Share2, Trash2 } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuSeparator,
+  DropdownMenuSub,
+  DropdownMenuSubContent,
+  DropdownMenuSubTrigger,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { SidebarMenuButton, SidebarMenuAction } from "@/components/ui/sidebar";
+import type { Project } from "@/lib/projects";
 import { useChatStore, type Conversation } from "@/lib/store";
 
 interface Props {
@@ -19,6 +23,9 @@ interface Props {
   onRename: (title: string) => void;
   onShare: () => void;
   onDelete: () => void;
+  projects?: Project[];
+  onMoveToProject?: (projectId: string) => void;
+  onRemoveFromProject?: () => void;
 }
 
 export function ConversationItem({
@@ -28,6 +35,9 @@ export function ConversationItem({
   onRename,
   onShare,
   onDelete,
+  projects = [],
+  onMoveToProject,
+  onRemoveFromProject,
 }: Props) {
   const { typingTitleConversationId, typingTitle } = useChatStore();
   const [isEditing, setIsEditing] = useState(false);
@@ -215,6 +225,38 @@ export function ConversationItem({
               <Share2 className="size-4" />
               Share
             </DropdownMenuItem>
+            {projects.length > 0 && (
+              <DropdownMenuSub>
+                <DropdownMenuSubTrigger>
+                  <FolderInput className="size-4" />
+                  Move to project
+                </DropdownMenuSubTrigger>
+                <DropdownMenuSubContent className="w-44 rounded-xl border border-border/60 bg-card/95">
+                  {projects.map((project) => (
+                    <DropdownMenuItem
+                      key={project.id}
+                      onSelect={(e) => {
+                        e.preventDefault();
+                        onMoveToProject?.(project.id);
+                      }}
+                    >
+                      <span className="truncate">{project.name}</span>
+                    </DropdownMenuItem>
+                  ))}
+                </DropdownMenuSubContent>
+              </DropdownMenuSub>
+            )}
+            {conversation.projectId && (
+              <DropdownMenuItem
+                onSelect={(e) => {
+                  e.preventDefault();
+                  onRemoveFromProject?.();
+                }}
+              >
+                <FolderMinus className="size-4" />
+                Remove from project
+              </DropdownMenuItem>
+            )}
             <DropdownMenuSeparator />
             <DropdownMenuItem
               className="text-destructive focus:bg-destructive/10 focus:text-destructive"

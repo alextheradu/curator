@@ -11,11 +11,13 @@ import {
   fetchConversation,
   fetchConversationList,
   fetchConversationMessages,
+  fetchProjects,
   transferGuestConversation,
   updateConversation as updateConversationRequest,
 } from "@/lib/conversation-api";
 import { normalizeConversation, normalizeMessage } from "@/lib/conversations";
 import { REOPEN_ONBOARDING_EVENT } from "@/lib/onboarding";
+import { normalizeProject } from "@/lib/projects";
 import type { Conversation } from "@/lib/store";
 import { useChatStore } from "@/lib/store";
 
@@ -60,6 +62,7 @@ export function ChatApp({ requestedConversationId }: ChatAppProps) {
   const {
     setActiveConversation,
     setDefaultChatMode,
+    replaceProjects,
     replaceConversations,
     upsertConversation,
     clearAllConversations,
@@ -181,9 +184,13 @@ export function ChatApp({ requestedConversationId }: ChatAppProps) {
             }
           }
 
-          const rows = await fetchConversationList();
+          const [rows, projectRows] = await Promise.all([
+            fetchConversationList(),
+            fetchProjects(),
+          ]);
           if (cancelled) return;
 
+          replaceProjects(projectRows.map((project) => normalizeProject(project)));
           replaceConversations(
             rows.map((conversation) =>
               normalizeConversation(conversation, [], useChatStore.getState().defaultChatMode)
@@ -292,6 +299,7 @@ export function ChatApp({ requestedConversationId }: ChatAppProps) {
     isAuthenticated,
     navigateToConversation,
     readConversation,
+    replaceProjects,
     replaceConversations,
     requestedConversationId,
     router,
