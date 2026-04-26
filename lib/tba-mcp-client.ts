@@ -4,7 +4,147 @@ import path from "node:path";
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { StdioClientTransport } from "@modelcontextprotocol/sdk/client/stdio.js";
 
-type TbaToolName =
+export type OpenAiTool = {
+  type: "function";
+  function: {
+    name: string;
+    description: string;
+    parameters: Record<string, unknown>;
+  };
+};
+
+export const TBA_TOOLS: OpenAiTool[] = [
+  {
+    type: "function",
+    function: {
+      name: "get_team",
+      description: "Get information about an FRC team (name, location, rookie year). Use for any question about a specific team.",
+      parameters: {
+        type: "object",
+        properties: {
+          team: { type: "string", description: "Team number like '254' or team key like 'frc254'." },
+        },
+        required: ["team"],
+      },
+    },
+  },
+  {
+    type: "function",
+    function: {
+      name: "get_team_events",
+      description: "Get events a team is attending in a season — including district events, regionals, and championship division assignments.",
+      parameters: {
+        type: "object",
+        properties: {
+          team: { type: "string", description: "Team number like '254' or team key like 'frc254'." },
+          year: { type: "number", description: "Season year, e.g. 2026." },
+        },
+        required: ["team", "year"],
+      },
+    },
+  },
+  {
+    type: "function",
+    function: {
+      name: "get_events_by_year",
+      description: "Get all FRC events for a season. Use to find an event key when you only know a partial name or location.",
+      parameters: {
+        type: "object",
+        properties: {
+          year: { type: "number", description: "Season year, e.g. 2026." },
+        },
+        required: ["year"],
+      },
+    },
+  },
+  {
+    type: "function",
+    function: {
+      name: "get_event",
+      description: "Get details for a specific FRC event (name, dates, location) given its event key.",
+      parameters: {
+        type: "object",
+        properties: {
+          event: { type: "string", description: "Event key like '2026njski'." },
+        },
+        required: ["event"],
+      },
+    },
+  },
+  {
+    type: "function",
+    function: {
+      name: "get_event_alliances",
+      description: "Get playoff alliance selections and results for an event. Use to find the winner or alliance compositions.",
+      parameters: {
+        type: "object",
+        properties: {
+          event: { type: "string", description: "Event key like '2026mrcmp'." },
+        },
+        required: ["event"],
+      },
+    },
+  },
+  {
+    type: "function",
+    function: {
+      name: "get_event_rankings",
+      description: "Get qualification rankings for an FRC event.",
+      parameters: {
+        type: "object",
+        properties: {
+          event: { type: "string", description: "Event key like '2026njski'." },
+        },
+        required: ["event"],
+      },
+    },
+  },
+  {
+    type: "function",
+    function: {
+      name: "get_event_matches",
+      description: "Get the match schedule and scores for an FRC event.",
+      parameters: {
+        type: "object",
+        properties: {
+          event: { type: "string", description: "Event key like '2026njski'." },
+        },
+        required: ["event"],
+      },
+    },
+  },
+  {
+    type: "function",
+    function: {
+      name: "get_team_event_status",
+      description: "Get a team's ranking, alliance selection, and playoff status at a specific event.",
+      parameters: {
+        type: "object",
+        properties: {
+          team: { type: "string", description: "Team number like '254' or team key like 'frc254'." },
+          event: { type: "string", description: "Event key like '2026njski'." },
+        },
+        required: ["team", "event"],
+      },
+    },
+  },
+  {
+    type: "function",
+    function: {
+      name: "get_match",
+      description: "Get full data for a specific match including scores and teams.",
+      parameters: {
+        type: "object",
+        properties: {
+          match: { type: "string", description: "Match key like '2026njski_qm1'." },
+        },
+        required: ["match"],
+      },
+    },
+  },
+];
+
+export type TbaToolName =
   | "get_team"
   | "get_team_events"
   | "get_events_by_year"
