@@ -248,7 +248,12 @@ export function ChatApp({ requestedConversationId }: ChatAppProps) {
           if (!cancelled) {
             console.error(error);
             toast.error("Unable to load your chats.");
-            setViewMode("not-found");
+            replaceProjects([]);
+            replaceConversations([]);
+            setActiveConversation(null);
+            setPublicConversation(null);
+            setViewMode("owner");
+            router.replace("/");
           }
           return;
         }

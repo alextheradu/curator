@@ -711,7 +711,7 @@ export function ChatWindow({
           ) : (
             <motion.div
               key={`${conversation?.id ?? "messages"}-${readOnly ? "readonly" : "editable"}`}
-              initial={{ opacity: 0, y: 10, scale: 0.995 }}
+              initial={{ opacity: 0, scale: 0.995 }}
               animate={{ opacity: 1, y: 0, scale: 1 }}
               exit={{ opacity: 0, y: -8, scale: 0.992 }}
               transition={{ duration: 0.24, ease: [0.22, 1, 0.36, 1] }}

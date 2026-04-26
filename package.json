@@ -4,15 +4,18 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "build": "rm -rf .next && next build",
-    "start": "node scripts/start-next.js",
+    "dev:local": "next dev -p 3001",
+    "build": "rm -rf .next && node scripts/run-with-env.mjs .env next build",
+    "start": "node scripts/run-with-env.mjs .env node scripts/start-next.js",
     "site:check-assets": "node scripts/check-site-assets.mjs",
     "indexnow:submit": "node scripts/indexnow-submit.mjs",
     "lint": "eslint",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "drizzle-kit migrate",
     "db:studio": "drizzle-kit studio",
-    "test": "vitest run"
+    "test": "vitest run",
+    "db:migrate:dev": "node scripts/run-with-env.mjs .env.development.local drizzle-kit migrate",
+    "db:studio:dev": "node scripts/run-with-env.mjs .env.development.local drizzle-kit studio"
   },
   "browserslist": [
     "Chrome >= 109",

@@ -687,35 +687,51 @@ export async function buildTbaContext(
       };
     }
 
-    if (teamNumber && eventKey) {
+    const isWinnerQuery = lower.includes("who won") || lower.includes("winner") || lower.includes("won ") || lower.includes("champion");
+
+    if (teamNumber && eventKey && !isWinnerQuery) {
       if (lower.includes("rank")) {
         onStatus?.(`Fetching rankings for ${eventKey} from The Blue Alliance...`);
-        const { data } = await callTbaTool<Record<string, unknown>>("get_event_rankings", { event: eventKey });
+        const { data } = await callTbaTool<Record<string, unknown> | null>("get_event_rankings", { event: eventKey });
         return {
-          contextBlock: makeContext(`Rankings for ${eventKey}`, summarizeRankings(data, teamKey ?? undefined)),
+          contextBlock: makeContext(`Rankings for ${eventKey}`, data ? summarizeRankings(data, teamKey ?? undefined) : "Rankings are not yet available for this event."),
           citations: [{ type: "web", label: "thebluealliance.com", url: getEventUrl(eventKey) }],
         };
       }
 
       onStatus?.(`Fetching team ${teamNumber}'s status for ${eventKey} from The Blue Alliance...`);
-      const { data } = await callTbaTool<Record<string, unknown>>("get_team_event_status", {
+      const { data } = await callTbaTool<Record<string, unknown> | null>("get_team_event_status", {
         team: String(teamNumber),
         event: eventKey,
       });
 
       return {
-        contextBlock: makeContext(`Status for team ${teamNumber} at ${eventKey}`, summarizeTeamEventStatus(data)),
+        contextBlock: makeContext(
+          `Status for team ${teamNumber} at ${eventKey}`,
+          data ? summarizeTeamEventStatus(data) : "No status data available for this team at this event.",
+        ),
         citations: [{ type: "web", label: "thebluealliance.com", url: getEventUrl(eventKey) }],
       };
     }
 
     if (eventKey) {
-      if (lower.includes("who won") || lower.includes("winner") || lower.includes("won ") || lower.includes("champion")) {
+      if (isWinnerQuery) {
         onStatus?.(`Fetching playoff alliances for ${eventKey} from The Blue Alliance...`);
-        const [{ data: alliances }, { data: event }] = await Promise.all([
-          callTbaTool<Array<Record<string, unknown>>>("get_event_alliances", { event: eventKey }),
+        const [{ data: alliancesRaw }, { data: event }] = await Promise.all([
+          callTbaTool<Array<Record<string, unknown>> | null>("get_event_alliances", { event: eventKey }),
           callTbaTool<Record<string, unknown>>("get_event", { event: eventKey }),
         ]);
+        const eventName = String(event.name ?? eventKey);
+        const citationUrl = getEventUrl(eventKey);
+
+        if (!Array.isArray(alliancesRaw) || alliancesRaw.length === 0) {
+          return {
+            contextBlock: makeContext(`Alliance data for ${eventKey}`, `${eventName}: alliance selection has not yet occurred or playoff data is unavailable.`),
+            citations: [{ type: "web", label: "thebluealliance.com", url: citationUrl }],
+          };
+        }
+
+        const alliances = alliancesRaw;
         const winner = alliances.find((alliance) => {
           const status = alliance.status as Record<string, unknown> | undefined;
           return status?.status === "won";
@@ -724,35 +740,37 @@ export async function buildTbaContext(
           ? winner.picks.filter((pick): pick is string => typeof pick === "string")
           : [];
         const winnerLabel = typeof winner?.name === "string" ? winner.name : "Winning alliance";
-        const eventName = String(event.name ?? eventKey);
         onStatus?.("Resolving team names for the winning alliance...");
         const teamDisplays = await getTeamDisplays(winnerTeamKeys);
 
+        const directAnswer = winner
+          ? buildWinningAllianceSentence(eventName, winnerLabel, teamDisplays.map((team) => team.display))
+          : `${eventName} playoffs are in progress — no winner yet. [TBA 1]`;
+
         return {
-          contextBlock: makeContext(`Winning alliance for ${eventKey}`, summarizeWinningAlliance(alliances)),
-          citations: [{ type: "web", label: "thebluealliance.com", url: getEventUrl(eventKey) }],
-          directAnswer: buildWinningAllianceSentence(
-            eventName,
-            winnerLabel,
-            teamDisplays.map((team) => team.display),
+          contextBlock: makeContext(
+            `${eventName} winner`,
+            `${directAnswer}\n\n${summarizeWinningAlliance(alliances)}`,
           ),
+          citations: [{ type: "web", label: "thebluealliance.com", url: citationUrl }],
+          directAnswer,
         };
       }
 
       if (lower.includes("rank")) {
         onStatus?.(`Fetching rankings for ${eventKey} from The Blue Alliance...`);
-        const { data } = await callTbaTool<Record<string, unknown>>("get_event_rankings", { event: eventKey });
+        const { data } = await callTbaTool<Record<string, unknown> | null>("get_event_rankings", { event: eventKey });
         return {
-          contextBlock: makeContext(`Rankings for ${eventKey}`, summarizeRankings(data)),
+          contextBlock: makeContext(`Rankings for ${eventKey}`, data ? summarizeRankings(data) : "Rankings are not yet available for this event."),
           citations: [{ type: "web", label: "thebluealliance.com", url: getEventUrl(eventKey) }],
         };
       }
 
       if (lower.includes("match") || lower.includes("schedule")) {
         onStatus?.(`Fetching match schedule for ${eventKey} from The Blue Alliance...`);
-        const { data } = await callTbaTool<Array<Record<string, unknown>>>("get_event_matches", { event: eventKey });
+        const { data } = await callTbaTool<Array<Record<string, unknown>> | null>("get_event_matches", { event: eventKey });
         return {
-          contextBlock: makeContext(`Matches for ${eventKey}`, summarizeMatches(data)),
+          contextBlock: makeContext(`Matches for ${eventKey}`, Array.isArray(data) ? summarizeMatches(data) : "Match schedule is not yet available for this event."),
           citations: [{ type: "web", label: "thebluealliance.com", url: getEventUrl(eventKey) }],
         };
       }
