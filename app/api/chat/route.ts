@@ -3,10 +3,10 @@ import { readUserAccountSettings } from "@/lib/account-settings";
 import { withSessionDbAccess } from "@/lib/db/access";
 import { buildSystemPrompt } from "@/lib/frc-system-prompt";
 import { buildRagContext } from "@/lib/rag";
-import { buildWebContext, webSearch } from "@/lib/langsearch";
+import { webSearch } from "@/lib/langsearch";
 import { DEFAULT_SEASON_YEAR } from "@/lib/seasons";
-import { buildTbaContext, shouldForceUserTeamTbaLookup, shouldRunTbaLookup } from "@/lib/tba";
-import { shouldRunWebSearch } from "@/lib/web-search-decision";
+import { isTbaMcpEnabled } from "@/lib/tba";
+import { callTbaTool, TBA_TOOLS, type TbaToolName, type OpenAiTool } from "@/lib/tba-mcp-client";
 import { conversations, projects, type Citation } from "@/lib/db/schema";
 import { buildProjectMemoryContext, compactProjectSummaryInput } from "@/lib/project-memory";
 import { GUEST_MESSAGE_COUNT_COOKIE_NAME, GUEST_MESSAGE_LIMIT } from "@/lib/app-cookies";
@@ -108,6 +108,161 @@ function describeAnswerInputs(
   return parts.length > 0 ? joinNaturalList(parts) : "";
 }
 
+type ToolCall = {
+  id: string;
+  type: "function";
+  function: { name: string; arguments: string };
+};
+
+type ChatMessage =
+  | { role: "system" | "user" | "assistant"; content: string | null; tool_calls?: ToolCall[] }
+  | { role: "tool"; tool_call_id: string; content: string };
+
+const WEB_SEARCH_TOOL: OpenAiTool = {
+  type: "function",
+  function: {
+    name: "web_search",
+    description: "Search the web for current FRC news, announcements, or supplementary context not available from The Blue Alliance. Use for recent news, rule Q&As, team updates, or anything TBA doesn't cover.",
+    parameters: {
+      type: "object",
+      properties: {
+        query: { type: "string", description: "A specific search query for current FRC content." },
+      },
+      required: ["query"],
+    },
+  },
+};
+
+function getTbaUserFacingUrl(toolName: string, args: Record<string, unknown>): string {
+  const base = "https://www.thebluealliance.com";
+  const teamArg = typeof args.team === "string" ? args.team.replace(/^frc/i, "") : null;
+  const eventArg = typeof args.event === "string" ? args.event.toLowerCase() : null;
+  const matchArg = typeof args.match === "string" ? args.match.toLowerCase() : null;
+  const yearArg = typeof args.year === "number" ? args.year : null;
+
+  if (matchArg) return `${base}/match/${matchArg}`;
+  if (toolName === "get_team_event_status" && eventArg) return `${base}/event/${eventArg}`;
+  if (eventArg) return `${base}/event/${eventArg}`;
+  if (teamArg) return `${base}/team/${teamArg}`;
+  if (yearArg) return `${base}/events/${yearArg}`;
+  return base;
+}
+
+async function runToolLoop({
+  apiKey,
+  messages,
+  tools,
+  seasonYear,
+  sendEvent,
+  signal,
+}: {
+  apiKey: string;
+  messages: ChatMessage[];
+  tools: OpenAiTool[];
+  seasonYear: number;
+  sendEvent: (payload: unknown) => void;
+  signal?: AbortSignal;
+}): Promise<{ messages: ChatMessage[]; tbaCitations: Citation[]; webCitations: Citation[] }> {
+  const tbaCitations: Citation[] = [];
+  const webCitations: Citation[] = [];
+  let current: ChatMessage[] = [...messages];
+  const MAX_ITERATIONS = 4;
+
+  for (let iteration = 0; iteration < MAX_ITERATIONS; iteration++) {
+    if (signal?.aborted) throw createAbortError();
+
+    let responseMessage: { content: string | null; tool_calls?: ToolCall[] } | null = null;
+    let finishReason: string | null = null;
+
+    for (const model of CHAT_MODELS) {
+      if (signal?.aborted) throw createAbortError();
+      const timeoutSignal = AbortSignal.timeout(30_000);
+      const combinedSignal = signal ? AbortSignal.any([signal, timeoutSignal]) : timeoutSignal;
+
+      try {
+        const resp = await fetch(OR_URL, {
+          method: "POST",
+          headers: orHeaders(apiKey),
+          body: JSON.stringify({
+            model,
+            messages: current,
+            tools,
+            tool_choice: "auto",
+            temperature: 0,
+            max_tokens: 512,
+          }),
+          signal: combinedSignal,
+        });
+
+        if (!resp.ok) continue;
+
+        const data = await resp.json() as {
+          choices?: Array<{
+            finish_reason: string;
+            message: { role: string; content: string | null; tool_calls?: ToolCall[] };
+          }>;
+        };
+
+        const choice = data.choices?.[0];
+        if (!choice) continue;
+
+        responseMessage = choice.message;
+        finishReason = choice.finish_reason;
+        break;
+      } catch {
+        continue;
+      }
+    }
+
+    if (!responseMessage || finishReason !== "tool_calls" || !responseMessage.tool_calls?.length) {
+      break;
+    }
+
+    current.push({ role: "assistant", content: responseMessage.content ?? null, tool_calls: responseMessage.tool_calls });
+
+    for (const toolCall of responseMessage.tool_calls) {
+      const { name, arguments: argsStr } = toolCall.function;
+      let resultContent: string;
+
+      try {
+        const args = JSON.parse(argsStr) as Record<string, unknown>;
+
+        if (name === "web_search") {
+          const query = typeof args.query === "string" ? args.query : String(args.query ?? "");
+          sendEvent({ type: "status", message: "Running a live web search..." });
+          const results = await webSearch(query, 5, seasonYear);
+          const offset = webCitations.length;
+
+          for (const result of results) {
+            try {
+              const domain = new URL(result.url).hostname.replace("www.", "");
+              webCitations.push({ type: "web", label: domain, url: result.url });
+            } catch {
+              // ignore malformed urls
+            }
+          }
+
+          resultContent = results.length === 0
+            ? "No web results found."
+            : results.map((r, i) => `[WEB ${offset + i + 1}] ${r.title}\n${r.snippet}\nURL: ${r.url}`).join("\n\n");
+        } else {
+          sendEvent({ type: "status", message: "Fetching live data from The Blue Alliance..." });
+          const result = await callTbaTool(name as TbaToolName, args);
+          const citationUrl = getTbaUserFacingUrl(name, args);
+          tbaCitations.push({ type: "web", label: "thebluealliance.com", url: citationUrl });
+          resultContent = JSON.stringify(result.data);
+        }
+      } catch (err) {
+        resultContent = err instanceof Error ? err.message : "Tool call failed.";
+      }
+
+      current.push({ role: "tool", tool_call_id: toolCall.id, content: resultContent });
+    }
+  }
+
+  return { messages: current, tbaCitations, webCitations };
+}
+
 async function streamChatCompletion({
   apiKey,
   messages,
@@ -116,7 +271,7 @@ async function streamChatCompletion({
   signal,
 }: {
   apiKey: string;
-  messages: Array<{ role: string; content: string }>;
+  messages: ChatMessage[];
   temperature: number;
   sendEvent: (payload: unknown) => void;
   signal?: AbortSignal;
@@ -377,14 +532,15 @@ function filterUsedCitations(
     }
   }
 
-  if (!used.some((citation) => citation.label === "thebluealliance.com") && tbaCitations.length > 0 && mentionsTbaEvidence) {
+  if (!used.some((citation) => citation.label === "thebluealliance.com") && tbaCitations.length > 0) {
     for (const citation of tbaCitations) {
       addCitation(citation);
     }
   }
 
   if (used.length === 0 && (docCitations.length > 0 || tbaCitations.length > 0 || webCitations.length > 0)) {
-    for (const citation of [...docCitations, ...tbaCitations, ...webCitations]) {
+    const liveSourcesExist = tbaCitations.length > 0 || webCitations.length > 0;
+    for (const citation of liveSourcesExist ? [...tbaCitations, ...webCitations] : docCitations) {
       addCitation(citation);
     }
   }
@@ -548,7 +704,7 @@ export async function POST(request: NextRequest) {
           let ragBestScore = 0;
           let ragCitations: Citation[] = [];
           let tbaCitations: Citation[] = [];
-          const webCitations: Citation[] = [];
+          let webCitations: Citation[] = [];
 
           if (lastUser) {
             throwIfStreamAborted();
@@ -576,69 +732,45 @@ export async function POST(request: NextRequest) {
           }
 
           throwIfStreamAborted();
-          const userTeamNumber = userAccountSettings?.teamNumber ?? null;
-          const shouldForceTeamTba = lastUser
-            ? shouldForceUserTeamTbaLookup(lastUser.content)
-            : false;
-          const shouldCheckUserTeamTba = Boolean(
-            lastUser
-            && (
-              shouldRunTbaLookup(lastUser.content)
-              || (userTeamNumber && shouldForceTeamTba)
-            )
-          );
+          const projectMemoryContext = buildProjectMemoryContext(projectMemorySummary);
+          const systemPrompt = buildSystemPrompt(effectiveSeasonYear, contextBlock + projectMemoryContext, chatMode, {
+            preferredName: userAccountSettings?.preferredName ?? null,
+            teamNumber: userAccountSettings?.teamNumber ?? null,
+          });
 
-          if (lastUser && shouldCheckUserTeamTba) {
+          let fullMessages: ChatMessage[] = [
+            { role: "system", content: systemPrompt },
+            ...(messages as ChatMessage[]),
+          ];
+
+          if (lastUser) {
             throwIfStreamAborted();
-            sendEvent({ type: "status", message: "Checking live team context from The Blue Alliance..." });
+            const tools = isTbaMcpEnabled()
+              ? [...TBA_TOOLS, WEB_SEARCH_TOOL]
+              : [WEB_SEARCH_TOOL];
 
             try {
-              const tbaContext = await buildTbaContext(lastUser.content, effectiveSeasonYear, {
-                userTeamNumber,
-                forceLookup: shouldForceTeamTba,
-                onStatus: (message) => sendEvent({ type: "status", message }),
+              const toolResult = await runToolLoop({
+                apiKey,
+                messages: fullMessages,
+                tools,
+                seasonYear: effectiveSeasonYear,
+                sendEvent,
+                signal: request.signal,
               });
-              contextBlock += tbaContext.contextBlock;
-              tbaCitations = tbaContext.citations;
-              console.log("[tba]", JSON.stringify({ q: lastUser.content.slice(0,60), len: tbaContext.contextBlock.length, cit: tbaCitations.length }));
-
-              if (tbaCitations.length > 0) {
-                sendEvent({
-                  type: "status",
-                  message: `Found ${tbaCitations.length} live TBA ${pluralize(tbaCitations.length, "result")}.`,
-                });
+              fullMessages = toolResult.messages;
+              tbaCitations = toolResult.tbaCitations;
+              webCitations = toolResult.webCitations;
+              const found = [
+                toolResult.tbaCitations.length > 0 ? `${toolResult.tbaCitations.length} TBA ${pluralize(toolResult.tbaCitations.length, "result")}` : null,
+                toolResult.webCitations.length > 0 ? `${toolResult.webCitations.length} web ${pluralize(toolResult.webCitations.length, "result")}` : null,
+              ].filter(Boolean).join(" and ");
+              if (found) {
+                sendEvent({ type: "status", message: `Found ${found}.` });
               }
-            } catch {
-              sendEvent({ type: "status", message: "TBA lookup is unavailable, continuing without it..." });
-            }
-          }
-
-          if (lastUser && shouldRunWebSearch(lastUser.content, ragHitCount, ragBestScore)) {
-            throwIfStreamAborted();
-            sendEvent({ type: "status", message: "Checking whether a live web search is needed..." });
-
-            try {
-              const webResults = await webSearch(lastUser.content, 5, effectiveSeasonYear, {
-                onStatus: (message) => sendEvent({ type: "status", message }),
-              });
-              contextBlock += buildWebContext(webResults);
-
-              for (const result of webResults) {
-                try {
-                  const domain = new URL(result.url).hostname.replace("www.", "");
-                  webCitations.push({ type: "web", label: domain, url: result.url });
-                } catch {
-                  // Ignore malformed URLs from providers.
-                }
-              }
-              if (webResults.length > 0) {
-                sendEvent({
-                  type: "status",
-                  message: `Found ${webResults.length} live web ${pluralize(webResults.length, "result")}.`,
-                });
-              }
-            } catch {
-              sendEvent({ type: "status", message: "Web search is unavailable, continuing without it..." });
+            } catch (error) {
+              if (isAbortError(error)) throw error;
+              sendEvent({ type: "status", message: "Live data lookup is unavailable, continuing without it..." });
             }
           }
 
@@ -651,12 +783,6 @@ export async function POST(request: NextRequest) {
           });
 
           throwIfStreamAborted();
-          const projectMemoryContext = buildProjectMemoryContext(projectMemorySummary);
-          const systemPrompt = buildSystemPrompt(effectiveSeasonYear, contextBlock + projectMemoryContext, chatMode, {
-            preferredName: userAccountSettings?.preferredName ?? null,
-            teamNumber: userAccountSettings?.teamNumber ?? null,
-          });
-          const fullMessages = [{ role: "system", content: systemPrompt }, ...messages];
           const assistantText = await streamChatCompletion({
             apiKey,
             messages: fullMessages,
