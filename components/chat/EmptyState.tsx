@@ -45,7 +45,6 @@ const GREETING_PREFIXES = [
   "Hello hello",
   "What's cookin'",
   "How goes it",
-  "Aloha",
 ];
 
 function selectRandomSuggestions(count: number) {
