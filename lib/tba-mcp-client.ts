@@ -78,12 +78,12 @@ export async function callTbaTool<T = JsonObject>(
   }
 
   const structured = result.structuredContent as { data?: T; url?: string } | undefined;
-  if (!structured?.data) {
-    throw new Error(`TBA MCP tool ${name} returned no structured data.`);
+  if (!structured || !("data" in structured)) {
+    throw new Error(`TBA MCP tool ${name} returned no structured content.`);
   }
 
   return {
-    data: structured.data,
+    data: structured.data as T,
     url: structured.url,
   };
 }

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -41,6 +42,9 @@ export function ProjectDialog({ open, project = null, onOpenChange, onSubmit }: 
     try {
       await onSubmit(payload);
       onOpenChange(false);
+    } catch (error) {
+      console.error(error);
+      toast.error("Unable to save this project right now.");
     } finally {
       setIsSaving(false);
     }

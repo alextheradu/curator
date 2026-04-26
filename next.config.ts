@@ -50,6 +50,7 @@ const securityHeaders = [
 ];
 
 const nextConfig: NextConfig = {
+  allowedDevOrigins: ["dev.curatorfrc.com"],
   env: {
     NEXT_PUBLIC_APP_BUILD_ID: appBuildId,
   },

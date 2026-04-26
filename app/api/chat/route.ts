@@ -600,6 +600,7 @@ export async function POST(request: NextRequest) {
               });
               contextBlock += tbaContext.contextBlock;
               tbaCitations = tbaContext.citations;
+              console.log("[tba]", JSON.stringify({ q: lastUser.content.slice(0,60), len: tbaContext.contextBlock.length, cit: tbaCitations.length }));
 
               if (tbaCitations.length > 0) {
                 sendEvent({

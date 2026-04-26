@@ -29,7 +29,7 @@ This Privacy Policy explains how Curator ("the Service", "we", "us") collects, u
 - **Account metadata:** account creation date, last active date
 
 ### 2c. All users
-- **Chat messages:** message content is sent to OpenRouter (our LLM provider) for processing. See OpenRouter's privacy policy at openrouter.ai/privacy.
+- **Chat messages and AI processing:** message content is sent to OpenRouter (our LLM provider) for processing. Depending on the model/provider OpenRouter routes your request to (especially some free models), prompt and response data may be logged, retained, or used by that provider for abuse monitoring, service improvement, or model training under their terms. Do not submit secrets or highly sensitive information in chats. See OpenRouter's privacy policy at openrouter.ai/privacy.
 - **Team context lookups:** if your saved team number is available and a chat needs live event context, relevant query data is sent to The Blue Alliance through our server-side integration.
 - **Public shared chats:** if an authenticated user chooses to make a chat public, that conversation becomes accessible to anyone with the chat URL until the owner turns sharing off or deletes the chat.
 - **Search queries:** if web search is triggered, your query is sent to LangSearch. See LangSearch's privacy policy for details.
@@ -69,7 +69,7 @@ We do **not** sell your data, use it for advertising, or share it with third par
 | Service | Purpose | Their Privacy Policy |
 |---------|---------|---------------------|
 | Google OAuth | Authentication | policies.google.com/privacy |
-| OpenRouter | LLM inference | openrouter.ai/privacy |
+| OpenRouter | LLM routing and inference; upstream model providers may process and retain prompts/responses under their own terms | openrouter.ai/privacy |
 | The Blue Alliance | Live team, event, rankings, and match context | thebluealliance.com/privacy |
 | LangSearch | Web search | (see LangSearch docs) |
 | Sentry | Error monitoring, performance tracing, logs, and Session Replay | sentry.io/privacy/ |
@@ -98,6 +98,7 @@ We do **not** sell your data, use it for advertising, or share it with third par
 - **Guest data:** stored only in your browser's `localStorage`. Cleared when you clear your browser data.
 - **Offline app cache:** stored in your browser until the browser clears site data, the service worker replaces the cache during an update, or you manually remove the site's stored data.
 - **Authenticated user data:** retained for as long as your account exists. This includes saved onboarding profile fields, chat-mode preference, Terms of Service acceptance state, and conversation history. You may delete your account and all associated data at any time from the Settings page.
+- **OpenRouter/upstream model-provider data:** prompts and model outputs sent for inference may be retained by OpenRouter and/or the selected upstream model provider according to their own retention and training policies (which can vary by model tier, including free models).
 - **Projects:** retained for as long as your account exists unless you delete a project. Deleting a project removes its project metadata and hidden summary while returning its chats to normal history.
 - **Moderation data:** moderation reports and banned-email records are retained until they are manually cleared, no longer needed for safety or abuse review, or your account and related moderation history are deleted.
 - **Account export packages:** generated on demand from your current account data when you request an export from Settings and not stored by the Service after the response is delivered.
