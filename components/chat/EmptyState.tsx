@@ -32,8 +32,20 @@ const GREETING_PREFIXES = [
   "Ahoy",
   "Hola",
   "Bonjour",
-  "Ask about FRC",
   "Beep boop",
+  "Sup",
+  "Greetings",
+  "Heyo",
+  "Salutations",
+  "Ready when you are",
+  "At your service",
+  "Fancy seeing you here",
+  "Good to see you",
+  "Look who it is",
+  "Hello hello",
+  "What's cookin'",
+  "How goes it",
+  "Aloha",
 ];
 
 function selectRandomSuggestions(count: number) {
