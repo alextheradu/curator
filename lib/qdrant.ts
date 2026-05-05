@@ -60,7 +60,7 @@ export async function searchChunks(vector: number[], limit = 5) {
 export async function searchChunksForSeason(vector: number[], limit = 5, seasonYear?: number) {
   const result = await getClient().search(COLLECTION, {
     vector,
-    limit: seasonYear ? Math.max(limit * 4, 24) : limit,
+    limit: seasonYear ? Math.max(limit * 2, 12) : limit,
     with_payload: true,
     ...(seasonYear
       ? {

@@ -100,6 +100,17 @@ export function ChatWindow({
 
   const { setOpenMobile: setSidebarOpenMobile } = useSidebar();
 
+  const [factCheckEnabled, setFactCheckEnabled] = useState(false);
+
+  useEffect(() => {
+    setFactCheckEnabled(localStorage.getItem("curator:factCheck") === "true");
+  }, []);
+
+  const handleFactCheckChange = useCallback((enabled: boolean) => {
+    setFactCheckEnabled(enabled);
+    localStorage.setItem("curator:factCheck", String(enabled));
+  }, []);
+
   const abortRef = useRef<AbortController | null>(null);
   const pendingMessageRef = useRef<string | null>(null);
   const swipeTouchRef = useRef<{ x: number; y: number } | null>(null);
@@ -314,6 +325,7 @@ export function ChatWindow({
       chatMode,
       conversationId,
       projectId,
+      factCheck: factCheckEnabled,
       signal: controller.signal,
       onToken: (token) => {
         accumulated += token;
@@ -322,10 +334,10 @@ export function ChatWindow({
       onStatus: (status) => {
         setStreamStatus(status);
       },
-      onDone: async (citations: Citation[]) => {
+      onDone: async (citations: Citation[], factCheck?: { accurate: boolean; note: string }) => {
         abortRef.current = null;
         setStreamStatus("");
-        finalizeStreamingMessage(conversationId, citations);
+        finalizeStreamingMessage(conversationId, citations, factCheck);
         await persistLatestAssistantMessage(conversationId, citations);
         scrollToBottom();
       },
@@ -346,6 +358,7 @@ export function ChatWindow({
   }, [
     activeConversationId,
     addMessage,
+    factCheckEnabled,
     finalizeStreamingMessage,
     isAuthenticated,
     isStreaming,
@@ -762,6 +775,8 @@ export function ChatWindow({
               disabled={false}
               isStreaming={isStreaming}
               compact={isEmpty}
+              factCheckEnabled={factCheckEnabled}
+              onFactCheckChange={handleFactCheckChange}
             />
           )}
         </div>

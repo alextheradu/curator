@@ -14,6 +14,7 @@ export interface Message {
   content: string;
   timestamp: Date;
   citations?: Citation[];
+  factCheck?: { accurate: boolean; note: string };
 }
 
 export type ChatMode = "rookie" | "veteran";
@@ -49,7 +50,7 @@ interface ChatStore {
   addMessage: (conversationId: string, message: Omit<Message, "id" | "timestamp">) => string;
   startStreaming: () => void;
   updateStreamingContent: (content: string) => void;
-  finalizeStreamingMessage: (conversationId: string, citations?: Citation[]) => void;
+  finalizeStreamingMessage: (conversationId: string, citations?: Citation[], factCheck?: { accurate: boolean; note: string }) => void;
   resetStreamingState: () => void;
   setTypingTitle: (conversationId: string, title: string) => void;
   clearTypingTitle: () => void;
@@ -145,13 +146,14 @@ export const useChatStore = create<ChatStore>()(
 
       updateStreamingContent: (content) => set({ streamingContent: content, isStreaming: true }),
 
-      finalizeStreamingMessage: (conversationId, citations) => {
+      finalizeStreamingMessage: (conversationId, citations, factCheck) => {
         const { streamingContent } = get();
         if (!streamingContent) { set({ streamingContent: "", isStreaming: false }); return; }
         const msg: Message = {
           id: randomUuid(), role: "assistant",
           content: streamingContent, timestamp: new Date(),
           ...(citations?.length && { citations }),
+          ...(factCheck && { factCheck }),
         };
         set((s) => ({
           streamingContent: "", isStreaming: false,
