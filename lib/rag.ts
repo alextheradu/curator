@@ -1,8 +1,39 @@
-import { embedBatch, embedText } from "./embeddings";
+import { embedBatch } from "./embeddings";
 import { searchChunksForSeason, searchGeneralChunks } from "./qdrant";
 import type { Citation } from "./db/schema";
 import { parseSeasonYearsFromText } from "./seasons";
 import { buildDocumentViewHref } from "./utils";
+
+export const RAG_SEARCH_TOOL = {
+  type: "function" as const,
+  function: {
+    name: "search_documents",
+    description:
+      "Search indexed FRC official documents (game manuals, team updates, inspection checklists, Q&As) for rules, definitions, and regulations. "
+      + "Before calling: think about what exact terminology appears in official FRC documents — section names, rule keywords like 'bumper', 'ranking point', 'inspection criteria', 'gracious professionalism', etc. "
+      + "Read the available document descriptions to pick the best query. "
+      + "Call this when the user's question involves a rule, a definition, or anything that should be cited from an official source. "
+      + "You may request up to 20 results; use more for broad multi-rule questions, fewer for specific targeted lookups.",
+    parameters: {
+      type: "object" as const,
+      properties: {
+        query: {
+          type: "string",
+          description: "Search query using FRC official terminology. Be specific—include rule names, section labels, or exact phrases you expect to find in the document.",
+        },
+        limit: {
+          type: "number",
+          description: "Number of document chunks to return (1–20). Default 6. Increase for broad questions covering multiple rules.",
+        },
+        season_year: {
+          type: "number",
+          description: "FRC season year to search within (e.g. 2024, 2025). Omit to search the current season context.",
+        },
+      },
+      required: ["query"],
+    },
+  },
+};
 
 export interface RagContext {
   contextBlock: string;
@@ -175,7 +206,7 @@ function buildSearchVariants(query: string) {
     }
   }
 
-  return [...variants].slice(0, 10);
+  return [...variants].slice(0, 4);
 }
 
 function buildQueryProfile(query: string) {
@@ -333,13 +364,20 @@ async function searchChunksForScope(queryEmbedding: number[], seasonYear?: numbe
 export async function buildRagContext(
   query: string,
   preferredSeasonYear?: number,
-  options?: RagStatusOptions,
+  options?: RagStatusOptions & { limit?: number; sourceOffset?: number },
 ): Promise<RagContext> {
   const onStatus = options?.onStatus;
-  let queryEmbedding: number[];
+  const resultLimit = Math.min(Math.max(options?.limit ?? 6, 1), 20);
+  const sourceOffset = options?.sourceOffset ?? 0;
+
+  // Build variants synchronously before any IO so all embeddings batch into one API call.
+  const searchVariants = buildSearchVariants(query);
+  const allQueries = [query, ...searchVariants.slice(1)];
+
+  let allEmbeddings: number[][];
   try {
     onStatus?.("Embedding your question for document search...");
-    queryEmbedding = await embedText(query);
+    allEmbeddings = await embedBatch(allQueries);
   } catch {
     return {
       contextBlock: "",
@@ -350,6 +388,9 @@ export async function buildRagContext(
     };
   }
 
+  const queryEmbedding = allEmbeddings[0]!;
+  const alternateEmbeddings = allEmbeddings.slice(1);
+
   const explicitSeasonYears = parseSeasonYearsFromText(query);
   const explicitSeasonYear = explicitSeasonYears[0] ?? null;
   let selectedSeasonYear: number | null = explicitSeasonYear ?? preferredSeasonYear ?? null;
@@ -358,30 +399,30 @@ export async function buildRagContext(
   try {
     if (explicitSeasonYear) {
       onStatus?.(`Checking ${explicitSeasonYear} season documents and evergreen references...`);
-      results = await searchChunksForScope(queryEmbedding, selectedSeasonYear, 12);
+      results = await searchChunksForScope(queryEmbedding, selectedSeasonYear, 8);
     } else if (preferredSeasonYear) {
       // Keep the conversation pinned to its selected season unless the user names a different one.
       onStatus?.(`Checking ${preferredSeasonYear} season documents and evergreen references...`);
-      results = await searchChunksForScope(queryEmbedding, preferredSeasonYear, 12);
+      results = await searchChunksForScope(queryEmbedding, preferredSeasonYear, 8);
     } else {
       onStatus?.("Checking indexed documents across seasons...");
       const broadResults = await searchChunksForSeason(queryEmbedding, 18);
       selectedSeasonYear = pickDominantSeason(broadResults, preferredSeasonYear);
       if (selectedSeasonYear) {
         onStatus?.(`Narrowing document search to ${selectedSeasonYear} season sources...`);
+        results = await searchChunksForScope(queryEmbedding, selectedSeasonYear, 8);
+      } else {
+        results = broadResults.slice(0, 8);
       }
-      results = await searchChunksForScope(queryEmbedding, selectedSeasonYear, 12);
     }
 
-    const searchVariants = buildSearchVariants(query);
-    if (searchVariants.length > 1) {
+    // Skip cross-checking if primary search already found high-confidence matches.
+    const bestInitialScore = results.length > 0 ? Math.max(...results.map((r) => r.score)) : 0;
+    if (alternateEmbeddings.length > 0 && bestInitialScore < 0.85) {
       onStatus?.("Cross-checking likely team update and manual wording...");
-      const alternateQueries = searchVariants.slice(1);
-      const alternateEmbeddings = await embedBatch(alternateQueries);
       const alternateResults = await Promise.all(
-        alternateEmbeddings.map((embedding) => searchChunksForScope(embedding, selectedSeasonYear, 18))
+        alternateEmbeddings.map((embedding) => searchChunksForScope(embedding, selectedSeasonYear, 8))
       );
-
       results = [...results, ...alternateResults.flat()];
     }
   } catch {
@@ -417,7 +458,7 @@ export async function buildRagContext(
   const rerankedResults = rerankResults([...uniqueResults.values()], query);
   const citations: Citation[] = [];
   const sourceBlocks: string[] = [];
-  const filteredResults = rerankedResults.slice(0, 6);
+  const filteredResults = rerankedResults.slice(0, resultLimit);
 
   for (let i = 0; i < filteredResults.length; i++) {
     const { payload } = filteredResults[i];
@@ -434,7 +475,7 @@ export async function buildRagContext(
     });
 
     sourceBlocks.push(
-      `[SOURCE ${i + 1}]
+      `[SOURCE ${sourceOffset + i + 1}]
 Document: ${payload.doc_name}
 Exact page: ${payload.page_number}
 Quoted excerpt candidate: "${quote}"

@@ -9,6 +9,7 @@ const appBuildId =
   || `${Date.now()}`;
 
 function buildCsp(): string {
+  const isDev = process.env.NODE_ENV === "development";
   const minioEndpoint = process.env.MINIO_ENDPOINT?.trim() ?? "";
   let minioOrigin = "";
   try {
@@ -20,10 +21,11 @@ function buildCsp(): string {
   }
 
   const frameSrc = ["'self'", minioOrigin].filter(Boolean).join(" ");
+  const scriptSrcExtras = isDev ? " 'unsafe-eval'" : "";
 
   return [
     "default-src 'self'",
-    "script-src 'self' 'unsafe-inline' https://www.googletagmanager.com https://static.cloudflareinsights.com",
+    `script-src 'self' 'unsafe-inline'${scriptSrcExtras} https://www.googletagmanager.com https://static.cloudflareinsights.com`,
     "worker-src 'self' blob:",
     "style-src 'self' 'unsafe-inline'",
     "img-src 'self' data: https:",

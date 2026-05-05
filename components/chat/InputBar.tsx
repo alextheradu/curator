@@ -1,9 +1,17 @@
 "use client";
 
 import { useRef, useState, useEffect, KeyboardEvent } from "react";
-import { ArrowUpIcon, SquareIcon } from "lucide-react";
+import { ArrowUpIcon, MoreHorizontalIcon, SquareIcon } from "lucide-react";
 import { AnimatePresence, motion } from "framer-motion";
 import { cn } from "@/lib/utils";
+import {
+  DropdownMenu,
+  DropdownMenuCheckboxItem,
+  DropdownMenuContent,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 interface Props {
   onSend: (message: string) => void;
@@ -11,9 +19,11 @@ interface Props {
   disabled?: boolean;
   isStreaming?: boolean;
   compact?: boolean;
+  factCheckEnabled?: boolean;
+  onFactCheckChange?: (enabled: boolean) => void;
 }
 
-export function InputBar({ onSend, onStop, disabled, isStreaming, compact = false }: Props) {
+export function InputBar({ onSend, onStop, disabled, isStreaming, compact = false, factCheckEnabled = false, onFactCheckChange }: Props) {
   const [value, setValue] = useState("");
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const [focused, setFocused] = useState(false);
@@ -90,8 +100,34 @@ export function InputBar({ onSend, onStop, disabled, isStreaming, compact = fals
                 animate={{ opacity: 1, scale: 1 }}
                 exit={{ opacity: 0, scale: 0.8 }}
                 transition={{ duration: 0.18, ease: [0.22, 1, 0.36, 1] }}
-                className="flex shrink-0 items-center px-2 pb-1.5"
+                className="flex shrink-0 items-center gap-1 px-2 pb-1.5"
               >
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <button
+                      type="button"
+                      className={cn(
+                        "flex h-8 w-8 items-center justify-center rounded-xl transition-all duration-200",
+                        factCheckEnabled
+                          ? "bg-blue-500/15 text-blue-400 hover:bg-blue-500/20"
+                          : "text-muted-foreground hover:bg-muted"
+                      )}
+                      aria-label="More options"
+                    >
+                      <MoreHorizontalIcon className="size-4" />
+                    </button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent side="top" align="end" className="min-w-[11rem]">
+                    <DropdownMenuLabel>Options</DropdownMenuLabel>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuCheckboxItem
+                      checked={factCheckEnabled}
+                      onCheckedChange={(checked) => onFactCheckChange?.(checked)}
+                    >
+                      Fact check
+                    </DropdownMenuCheckboxItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
                 {isStreaming ? (
                   <button type="button" onClick={onStop} className="flex h-8 w-8 items-center justify-center rounded-xl bg-foreground text-background transition-all duration-200 hover:opacity-85 active:scale-95" aria-label="Stop">
                     <SquareIcon className="size-3.5" />
@@ -121,15 +157,43 @@ export function InputBar({ onSend, onStop, disabled, isStreaming, compact = fals
                 <p className="hidden text-[11px] text-muted-foreground/50 select-none sm:block">
                   Enter to send · Shift+Enter for newline
                 </p>
-                {isStreaming ? (
-                  <button type="button" onClick={onStop} className="flex h-9 w-9 items-center justify-center rounded-xl bg-foreground text-background transition-all duration-200 hover:opacity-85 active:scale-95 sm:h-7 sm:w-7" aria-label="Stop">
-                    <SquareIcon className="size-3.5" />
-                  </button>
-                ) : (
-                  <button type="button" onClick={handleSend} disabled={!canSend} className={cn("flex h-9 w-9 items-center justify-center rounded-xl transition-all duration-200 sm:h-7 sm:w-7", canSend ? "bg-foreground text-background hover:opacity-85 active:scale-95" : "cursor-not-allowed bg-muted text-muted-foreground/25")} aria-label="Send">
-                    <ArrowUpIcon className="size-4" />
-                  </button>
-                )}
+                <div className="flex items-center gap-1.5">
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <button
+                        type="button"
+                        className={cn(
+                          "flex h-9 w-9 items-center justify-center rounded-xl transition-all duration-200 sm:h-7 sm:w-7",
+                          factCheckEnabled
+                            ? "bg-blue-500/15 text-blue-400 hover:bg-blue-500/20"
+                            : "text-muted-foreground/50 hover:bg-muted hover:text-muted-foreground"
+                        )}
+                        aria-label="More options"
+                      >
+                        <MoreHorizontalIcon className="size-4" />
+                      </button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent side="top" align="end" className="min-w-[11rem]">
+                      <DropdownMenuLabel>Options</DropdownMenuLabel>
+                      <DropdownMenuSeparator />
+                      <DropdownMenuCheckboxItem
+                        checked={factCheckEnabled}
+                        onCheckedChange={(checked) => onFactCheckChange?.(checked)}
+                      >
+                        Fact check
+                      </DropdownMenuCheckboxItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                  {isStreaming ? (
+                    <button type="button" onClick={onStop} className="flex h-9 w-9 items-center justify-center rounded-xl bg-foreground text-background transition-all duration-200 hover:opacity-85 active:scale-95 sm:h-7 sm:w-7" aria-label="Stop">
+                      <SquareIcon className="size-3.5" />
+                    </button>
+                  ) : (
+                    <button type="button" onClick={handleSend} disabled={!canSend} className={cn("flex h-9 w-9 items-center justify-center rounded-xl transition-all duration-200 sm:h-7 sm:w-7", canSend ? "bg-foreground text-background hover:opacity-85 active:scale-95" : "cursor-not-allowed bg-muted text-muted-foreground/25")} aria-label="Send">
+                      <ArrowUpIcon className="size-4" />
+                    </button>
+                  )}
+                </div>
               </div>
             </motion.div>
           )}

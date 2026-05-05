@@ -1,9 +1,10 @@
 "use client";
 
-import { CopyIcon } from "lucide-react";
+import { CopyIcon, ShieldAlertIcon, ShieldCheckIcon } from "lucide-react";
 import { AssistantMarkdown } from "@/components/chat/AssistantMarkdown";
 import { CitationBadge } from "@/components/ui/CitationBadge";
 import { ReportButton } from "@/components/chat/ReportButton";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { cn, normalizeAssistantMarkdown } from "@/lib/utils";
 import type { Message } from "@/lib/store";
 import type { Citation } from "@/lib/db/schema";
@@ -98,6 +99,28 @@ export function MessageBubble({ message, isStreaming, onOpenCitation }: Props) {
                   <CopyIcon className="size-4 sm:size-3" />
                 </button>
                 <ReportButton messageId={message.id} className={actionButtonClass} />
+                {message.factCheck && (
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger
+                        className={cn(
+                          actionButtonClass,
+                          message.factCheck.accurate
+                            ? "text-emerald-500/70 hover:text-emerald-500 opacity-100 md:opacity-100"
+                            : "text-amber-500/70 hover:text-amber-500 opacity-100 md:opacity-100"
+                        )}
+                        aria-label={message.factCheck.accurate ? "Fact check passed" : "Fact check flagged"}
+                      >
+                        {message.factCheck.accurate
+                          ? <ShieldCheckIcon className="size-4 sm:size-3" />
+                          : <ShieldAlertIcon className="size-4 sm:size-3" />}
+                      </TooltipTrigger>
+                      <TooltipContent side="top" align="start">
+                        {message.factCheck.note || (message.factCheck.accurate ? "Consistent with game documents" : "May conflict with game documents")}
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
+                )}
               </div>
             )}
           </div>

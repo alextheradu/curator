@@ -2,7 +2,7 @@ import { auth } from "@/auth";
 import { readUserAccountSettings } from "@/lib/account-settings";
 import { withSessionDbAccess } from "@/lib/db/access";
 import { buildSystemPrompt } from "@/lib/frc-system-prompt";
-import { buildRagContext } from "@/lib/rag";
+import { buildRagContext, RAG_SEARCH_TOOL } from "@/lib/rag";
 import { webSearch } from "@/lib/langsearch";
 import { DEFAULT_SEASON_YEAR } from "@/lib/seasons";
 import { isTbaMcpEnabled } from "@/lib/tba";
@@ -148,6 +148,54 @@ function getTbaUserFacingUrl(toolName: string, args: Record<string, unknown>): s
   return base;
 }
 
+async function runFactCheck({
+  apiKey,
+  assistantText,
+  ragContext,
+  signal,
+}: {
+  apiKey: string;
+  assistantText: string;
+  ragContext: string;
+  signal?: AbortSignal;
+}): Promise<{ accurate: boolean; note: string }> {
+  const timeoutSignal = AbortSignal.timeout(15_000);
+  const combinedSignal = signal ? AbortSignal.any([signal, timeoutSignal]) : timeoutSignal;
+
+  const resp = await fetch(OR_URL, {
+    method: "POST",
+    headers: orHeaders(apiKey),
+    body: JSON.stringify({
+      model: CHAT_MODELS[0],
+      temperature: 0,
+      max_tokens: 120,
+      messages: [
+        {
+          role: "system",
+          content: 'You are a fact-checker for FRC robotics rule questions. Given game document excerpts and an answer, determine if the answer is accurate according to those documents. Reply ONLY with valid JSON: {"accurate": true, "note": "brief reason under 80 chars"}',
+        },
+        {
+          role: "user",
+          content: `GAME DOCUMENT EXCERPTS:\n${ragContext.slice(0, 4000)}\n\nANSWER TO VERIFY:\n${assistantText.slice(0, 1500)}`,
+        },
+      ],
+    }),
+    signal: combinedSignal,
+  });
+
+  if (!resp.ok) throw new Error(`Fact check HTTP ${resp.status}`);
+
+  const data = await resp.json() as { choices?: Array<{ message?: { content?: string } }> };
+  const content = data.choices?.[0]?.message?.content?.trim() ?? "";
+  const jsonMatch = content.match(/\{[\s\S]*\}/);
+  if (!jsonMatch) throw new Error("No JSON in fact-check response");
+  const parsed = JSON.parse(jsonMatch[0]) as { accurate?: boolean; note?: string };
+  return {
+    accurate: Boolean(parsed.accurate),
+    note: String(parsed.note ?? "").slice(0, 100),
+  };
+}
+
 async function runToolLoop({
   apiKey,
   messages,
@@ -162,9 +210,11 @@ async function runToolLoop({
   seasonYear: number;
   sendEvent: (payload: unknown) => void;
   signal?: AbortSignal;
-}): Promise<{ messages: ChatMessage[]; tbaCitations: Citation[]; webCitations: Citation[] }> {
+}): Promise<{ messages: ChatMessage[]; tbaCitations: Citation[]; webCitations: Citation[]; ragCitations: Citation[]; ragContextBlocks: string[] }> {
   const tbaCitations: Citation[] = [];
   const webCitations: Citation[] = [];
+  const ragCitations: Citation[] = [];
+  const ragContextBlocks: string[] = [];
   let current: ChatMessage[] = [...messages];
   const MAX_ITERATIONS = 4;
 
@@ -227,7 +277,24 @@ async function runToolLoop({
       try {
         const args = JSON.parse(argsStr) as Record<string, unknown>;
 
-        if (name === "web_search") {
+        if (name === "search_documents") {
+          const query = typeof args.query === "string" ? args.query : String(args.query ?? "");
+          const limit = typeof args.limit === "number" ? Math.min(Math.max(args.limit, 1), 20) : 6;
+          const toolSeasonYear = typeof args.season_year === "number" ? args.season_year : seasonYear;
+          sendEvent({ type: "status", message: "Searching indexed FRC documents..." });
+
+          const ragResult = await buildRagContext(query, toolSeasonYear, {
+            limit,
+            sourceOffset: ragCitations.length,
+            onStatus: (msg) => sendEvent({ type: "status", message: msg }),
+          });
+
+          ragCitations.push(...ragResult.citations);
+          if (ragResult.hitCount > 0) ragContextBlocks.push(ragResult.contextBlock);
+          resultContent = ragResult.hitCount > 0
+            ? ragResult.contextBlock
+            : "No matching document chunks found for this query.";
+        } else if (name === "web_search") {
           const query = typeof args.query === "string" ? args.query : String(args.query ?? "");
           sendEvent({ type: "status", message: "Running a live web search..." });
           const results = await webSearch(query, 5, seasonYear);
@@ -260,7 +327,7 @@ async function runToolLoop({
     }
   }
 
-  return { messages: current, tbaCitations, webCitations };
+  return { messages: current, tbaCitations, webCitations, ragCitations, ragContextBlocks };
 }
 
 async function streamChatCompletion({
@@ -584,6 +651,7 @@ export async function POST(request: NextRequest) {
   } = body;
   const conversationId = typeof body.conversationId === "string" ? body.conversationId : null;
   const projectId = typeof body.projectId === "string" ? body.projectId : null;
+  const factCheck = typeof body.factCheck === "boolean" ? body.factCheck : false;
   const apiKey = process.env.OPENROUTER_API_KEY!;
 
   let projectMemorySummary = "";
@@ -698,42 +766,14 @@ export async function POST(request: NextRequest) {
           throwIfStreamAborted();
           const lastUser = [...messages].reverse().find((m: { role: string }) => m.role === "user");
 
-          let contextBlock = "";
-          let effectiveSeasonYear = seasonYear;
-          let ragHitCount = 0;
-          let ragBestScore = 0;
           let ragCitations: Citation[] = [];
           let tbaCitations: Citation[] = [];
           let webCitations: Citation[] = [];
-
-          if (lastUser) {
-            throwIfStreamAborted();
-            sendEvent({ type: "status", message: "Reading your question..." });
-            sendEvent({ type: "status", message: "Checking uploaded documents and indexed manuals..." });
-
-            try {
-              const ragContext = await buildRagContext(lastUser.content, seasonYear, {
-                onStatus: (message) => sendEvent({ type: "status", message }),
-              });
-              contextBlock += ragContext.contextBlock;
-              ragCitations = ragContext.citations;
-              ragHitCount = ragContext.hitCount;
-              ragBestScore = ragContext.bestScore;
-              effectiveSeasonYear = ragContext.selectedSeasonYear ?? seasonYear;
-              sendEvent({
-                type: "status",
-                message: ragHitCount > 0
-                  ? `Found ${ragHitCount} relevant document ${pluralize(ragHitCount, "page")} in the indexed files.`
-                  : "No strong document match yet, continuing to live sources...",
-              });
-            } catch {
-              sendEvent({ type: "status", message: "Document search is unavailable, continuing without it..." });
-            }
-          }
+          let ragContextBlocks: string[] = [];
 
           throwIfStreamAborted();
           const projectMemoryContext = buildProjectMemoryContext(projectMemorySummary);
-          const systemPrompt = buildSystemPrompt(effectiveSeasonYear, contextBlock + projectMemoryContext, chatMode, {
+          const systemPrompt = buildSystemPrompt(seasonYear, projectMemoryContext, chatMode, {
             preferredName: userAccountSettings?.preferredName ?? null,
             teamNumber: userAccountSettings?.teamNumber ?? null,
           });
@@ -745,32 +785,36 @@ export async function POST(request: NextRequest) {
 
           if (lastUser) {
             throwIfStreamAborted();
+            sendEvent({ type: "status", message: "Reading your question..." });
             const tools = isTbaMcpEnabled()
-              ? [...TBA_TOOLS, WEB_SEARCH_TOOL]
-              : [WEB_SEARCH_TOOL];
+              ? [...TBA_TOOLS, WEB_SEARCH_TOOL, RAG_SEARCH_TOOL]
+              : [WEB_SEARCH_TOOL, RAG_SEARCH_TOOL];
 
             try {
               const toolResult = await runToolLoop({
                 apiKey,
                 messages: fullMessages,
                 tools,
-                seasonYear: effectiveSeasonYear,
+                seasonYear,
                 sendEvent,
                 signal: request.signal,
               });
               fullMessages = toolResult.messages;
+              ragCitations = toolResult.ragCitations;
               tbaCitations = toolResult.tbaCitations;
               webCitations = toolResult.webCitations;
+              ragContextBlocks = toolResult.ragContextBlocks;
               const found = [
+                toolResult.ragCitations.length > 0 ? `${toolResult.ragCitations.length} document ${pluralize(toolResult.ragCitations.length, "page")}` : null,
                 toolResult.tbaCitations.length > 0 ? `${toolResult.tbaCitations.length} TBA ${pluralize(toolResult.tbaCitations.length, "result")}` : null,
                 toolResult.webCitations.length > 0 ? `${toolResult.webCitations.length} web ${pluralize(toolResult.webCitations.length, "result")}` : null,
-              ].filter(Boolean).join(" and ");
+              ].filter(Boolean).join(", ");
               if (found) {
                 sendEvent({ type: "status", message: `Found ${found}.` });
               }
             } catch (error) {
               if (isAbortError(error)) throw error;
-              sendEvent({ type: "status", message: "Live data lookup is unavailable, continuing without it..." });
+              sendEvent({ type: "status", message: "Tool lookup is unavailable, continuing without it..." });
             }
           }
 
@@ -806,6 +850,21 @@ export async function POST(request: NextRequest) {
             type: "citations",
             citations: filterUsedCitations(assistantText, ragCitations, tbaCitations, webCitations),
           });
+          if (factCheck && ragContextBlocks.length > 0 && assistantText) {
+            try {
+              throwIfStreamAborted();
+              sendEvent({ type: "status", message: "Fact-checking against game documents..." });
+              const factCheckResult = await runFactCheck({
+                apiKey,
+                assistantText,
+                ragContext: ragContextBlocks.join("\n\n"),
+                signal: request.signal,
+              });
+              sendEvent({ type: "fact_check", ...factCheckResult });
+            } catch (error) {
+              if (isAbortError(error)) throw error;
+            }
+          }
           sendDone();
         } catch (error) {
           if (isAbortError(error) || request.signal.aborted || streamAborted) {
