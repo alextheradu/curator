@@ -87,6 +87,13 @@ export function InputBar({ onSend, onStop, disabled, isStreaming, compact = fals
             placeholder="Ask anything..."
             disabled={disabled}
             rows={1}
+            data-gramm="false"
+            data-gramm_editor="false"
+            data-enable-grammarly="false"
+            spellCheck={false}
+            autoComplete="off"
+            autoCorrect="off"
+            autoCapitalize="off"
             className="min-h-[40px] w-full flex-1 resize-none bg-transparent px-4 py-2.5 text-base leading-relaxed placeholder:text-muted-foreground/35 focus:outline-none sm:min-h-12 sm:pb-1 sm:pt-3 sm:text-[13px]"
             style={{ maxHeight: "200px" }}
           />
