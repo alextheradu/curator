@@ -5,7 +5,7 @@
   "scripts": {
     "dev": "next dev",
     "dev:local": "next dev -p 3001",
-    "build": "rm -rf .next && node scripts/run-with-env.mjs .env next build",
+    "build": "rm -rf .next && node scripts/run-with-env.mjs .env next build && pm2 restart curator --update-env",
     "start": "node scripts/run-with-env.mjs .env node scripts/start-next.js",
     "site:check-assets": "node scripts/check-site-assets.mjs",
     "indexnow:submit": "node scripts/indexnow-submit.mjs",
