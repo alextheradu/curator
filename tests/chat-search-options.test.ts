@@ -10,18 +10,26 @@ import {
 describe("chat search options", () => {
   it("defaults to fast chat without deep search", () => {
     expect(parseChatSearchOptions({})).toEqual({
-      deepSearch: false,
+      searchMode: "fast",
       factCheck: false,
     });
   });
 
-  it("only enables deep search from an explicit boolean request", () => {
+  it("supports explicit search modes and the previous deep search boolean", () => {
+    expect(parseChatSearchOptions({ searchMode: "balanced" })).toEqual({
+      searchMode: "balanced",
+      factCheck: false,
+    });
+    expect(parseChatSearchOptions({ searchMode: "deep", factCheck: true })).toEqual({
+      searchMode: "deep",
+      factCheck: true,
+    });
     expect(parseChatSearchOptions({ deepSearch: true, factCheck: true })).toEqual({
-      deepSearch: true,
+      searchMode: "deep",
       factCheck: true,
     });
     expect(parseChatSearchOptions({ deepSearch: "true", factCheck: "true" })).toEqual({
-      deepSearch: false,
+      searchMode: "fast",
       factCheck: false,
     });
   });
@@ -29,6 +37,8 @@ describe("chat search options", () => {
   it("allows broader document search in deep mode while clamping extremes", () => {
     expect(clampDocumentSearchLimit(undefined, false)).toBe(6);
     expect(clampDocumentSearchLimit(100, false)).toBe(20);
+    expect(clampDocumentSearchLimit(undefined, "balanced")).toBe(8);
+    expect(clampDocumentSearchLimit(100, "balanced")).toBe(20);
     expect(clampDocumentSearchLimit(undefined, true)).toBe(12);
     expect(clampDocumentSearchLimit(100, true)).toBe(50);
     expect(clampDocumentSearchLimit(0, true)).toBe(1);
@@ -39,11 +49,15 @@ describe("chat search options", () => {
       maxIterations: 0,
       maxToolDurationMs: 0,
       documentLimit: 6,
+      webResultsPerCall: 0,
     });
 
+    expect(buildDeepSearchConfig("balanced").maxIterations).toBe(4);
+    expect(buildDeepSearchConfig("balanced").webResultsPerCall).toBe(4);
     expect(buildDeepSearchConfig(true).maxIterations).toBeGreaterThan(4);
     expect(buildDeepSearchConfig(true).maxToolDurationMs).toBeGreaterThan(30_000);
     expect(buildDeepSearchConfig(true).documentLimit).toBe(12);
+    expect(buildDeepSearchConfig(true).webResultsPerCall).toBe(8);
   });
 
   it("detects web search rate-limit failures", () => {

@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useSession } from "next-auth/react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
@@ -25,6 +25,7 @@ type ViewMode = "loading" | "guest" | "owner" | "public" | "not-found";
 
 interface ChatAppProps {
   requestedConversationId?: string;
+  initialPrompt?: string;
 }
 
 function LoadingState() {
@@ -54,8 +55,9 @@ function UnavailableState() {
   );
 }
 
-export function ChatApp({ requestedConversationId }: ChatAppProps) {
+export function ChatApp({ requestedConversationId, initialPrompt }: ChatAppProps) {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { data: session, status } = useSession();
   const isAuthenticated = !!session?.user?.id;
 
@@ -75,6 +77,7 @@ export function ChatApp({ requestedConversationId }: ChatAppProps) {
   const [isShareUpdating, setIsShareUpdating] = useState(false);
   const [dismissedOnboardingUserId, setDismissedOnboardingUserId] = useState<string | null>(null);
   const [forceOnboardingOpen, setForceOnboardingOpen] = useState(false);
+  const effectiveInitialPrompt = initialPrompt ?? searchParams.get("prompt") ?? undefined;
   const previousAuthRef = useRef(false);
   const hasResolvedAuthRef = useRef(false);
 
@@ -389,6 +392,7 @@ export function ChatApp({ requestedConversationId }: ChatAppProps) {
         isShareUpdating={isShareUpdating}
         shareDialogConversationId={shareDialogConversationId}
         onShareDialogHandled={() => setShareDialogConversationId(null)}
+        initialPrompt={effectiveInitialPrompt}
       />
     </>
   );

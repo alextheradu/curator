@@ -39,6 +39,7 @@ import {
 } from "@/lib/conversation-api";
 import { normalizeConversation } from "@/lib/conversations";
 import type { Citation } from "@/lib/db/schema";
+import type { SearchMode } from "@/lib/search-activity";
 import type { Conversation } from "@/lib/store";
 import { useChatStore } from "@/lib/store";
 import { streamOpenRouterChat } from "@/lib/openrouter";
@@ -54,6 +55,7 @@ interface ChatWindowProps {
   isShareUpdating?: boolean;
   shareDialogConversationId?: string | null;
   onShareDialogHandled?: () => void;
+  initialPrompt?: string;
 }
 
 export function ChatWindow({
@@ -64,6 +66,7 @@ export function ChatWindow({
   isShareUpdating = false,
   shareDialogConversationId = null,
   onShareDialogHandled,
+  initialPrompt,
 }: ChatWindowProps) {
   const { data: session, update } = useSession();
   const isAuthenticated = !!session?.user?.id;
@@ -101,11 +104,17 @@ export function ChatWindow({
   const { setOpenMobile: setSidebarOpenMobile } = useSidebar();
 
   const [factCheckEnabled, setFactCheckEnabled] = useState(false);
-  const [deepSearchEnabled, setDeepSearchEnabled] = useState(false);
+  const [searchMode, setSearchMode] = useState<SearchMode>("fast");
 
   useEffect(() => {
     setFactCheckEnabled(localStorage.getItem("curator:factCheck") === "true");
-    setDeepSearchEnabled(localStorage.getItem("curator:deepSearch") === "true");
+    const storedSearchMode = localStorage.getItem("curator:searchMode");
+    if (storedSearchMode === "fast" || storedSearchMode === "balanced" || storedSearchMode === "deep") {
+      setSearchMode(storedSearchMode);
+      return;
+    }
+
+    setSearchMode(localStorage.getItem("curator:deepSearch") === "true" ? "deep" : "fast");
   }, []);
 
   const handleFactCheckChange = useCallback((enabled: boolean) => {
@@ -113,9 +122,10 @@ export function ChatWindow({
     localStorage.setItem("curator:factCheck", String(enabled));
   }, []);
 
-  const handleDeepSearchChange = useCallback((enabled: boolean) => {
-    setDeepSearchEnabled(enabled);
-    localStorage.setItem("curator:deepSearch", String(enabled));
+  const handleSearchModeChange = useCallback((mode: SearchMode) => {
+    setSearchMode(mode);
+    localStorage.setItem("curator:searchMode", mode);
+    localStorage.setItem("curator:deepSearch", String(mode === "deep"));
   }, []);
 
   const abortRef = useRef<AbortController | null>(null);
@@ -333,7 +343,7 @@ export function ChatWindow({
       conversationId,
       projectId,
       factCheck: factCheckEnabled,
-      deepSearch: deepSearchEnabled,
+      searchMode,
       signal: controller.signal,
       onToken: (token) => {
         accumulated += token;
@@ -342,10 +352,10 @@ export function ChatWindow({
       onStatus: (status) => {
         setStreamStatus(status);
       },
-      onDone: async (citations: Citation[], factCheck?: { accurate: boolean; note: string }) => {
+      onDone: async (citations: Citation[], factCheck, searchActivity) => {
         abortRef.current = null;
         setStreamStatus("");
-        finalizeStreamingMessage(conversationId, citations, factCheck);
+        finalizeStreamingMessage(conversationId, citations, factCheck, searchActivity);
         await persistLatestAssistantMessage(conversationId, citations);
         scrollToBottom();
       },
@@ -380,7 +390,7 @@ export function ChatWindow({
     setTypingTitle,
     startStreaming,
     defaultChatMode,
-    deepSearchEnabled,
+    searchMode,
     temperature,
     upsertConversation,
     updateConversation,
@@ -487,6 +497,7 @@ export function ChatWindow({
   }, [conversation, onShareChange]);
 
   const messages = conversation?.messages ?? [];
+  const firstUserPrompt = messages.find((message) => message.role === "user")?.content;
   const isEmpty = messages.length === 0 && !isStreaming;
   const shareUrl = conversation ? `${origin}/c/${conversation.id}` : "";
   const showConversationChrome = readOnly || !isEmpty;
@@ -601,6 +612,7 @@ export function ChatWindow({
                     width={32}
                     height={32}
                     priority
+                    sizes="32px"
                     className="h-7 w-7 object-contain sm:h-8 sm:w-8"
                     style={{ filter: "drop-shadow(0 0 7px rgba(120,40,40,0.22))" }}
                   />
@@ -774,8 +786,19 @@ export function ChatWindow({
       <div className="sticky inset-x-0 bottom-0 z-20 mt-auto shrink-0 bg-gradient-to-t from-background via-background/96 to-transparent px-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))] pt-4 sm:px-4 sm:pb-[calc(1rem+env(safe-area-inset-bottom))] sm:pt-6 md:px-6">
         <div className="mx-auto w-full max-w-3xl">
           {readOnly ? (
-            <div className="rounded-2xl border border-border/40 bg-card/70 px-4 py-3 text-sm text-muted-foreground shadow-[var(--shadow-composer)]">
-              This shared chat is read-only. <Link href="/" className="font-medium text-foreground underline-offset-4 hover:underline">Open Curator</Link> to start your own conversation.
+            <div className="flex flex-wrap items-center justify-between gap-2 rounded-2xl border border-border/40 bg-card/70 px-4 py-3 text-sm text-muted-foreground shadow-[var(--shadow-composer)]">
+              <span>This shared chat is read-only.</span>
+              <div className="flex items-center gap-2">
+                {firstUserPrompt ? (
+                  <Link
+                    href={`/?prompt=${encodeURIComponent(firstUserPrompt)}`}
+                    className="font-medium text-foreground underline-offset-4 hover:underline"
+                  >
+                    Ask this
+                  </Link>
+                ) : null}
+                <Link href="/" className="font-medium text-foreground underline-offset-4 hover:underline">Open Curator</Link>
+              </div>
             </div>
           ) : (
             <InputBar
@@ -786,8 +809,9 @@ export function ChatWindow({
               compact={isEmpty}
               factCheckEnabled={factCheckEnabled}
               onFactCheckChange={handleFactCheckChange}
-              deepSearchEnabled={deepSearchEnabled}
-              onDeepSearchChange={handleDeepSearchChange}
+              searchMode={searchMode}
+              onSearchModeChange={handleSearchModeChange}
+              initialValue={initialPrompt}
             />
           )}
         </div>

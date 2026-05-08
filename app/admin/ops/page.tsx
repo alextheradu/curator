@@ -1,9 +1,10 @@
 import { desc } from "drizzle-orm";
-import { Bug, Inbox, ShieldAlert } from "lucide-react";
+import { Bug, Database, FileText, Inbox, ShieldAlert } from "lucide-react";
 import { auth } from "@/auth";
 import { redirect } from "next/navigation";
 import { withDbAccessContext } from "@/lib/db/access";
 import { appLogs, supportRequests } from "@/lib/db/schema";
+import { getAdminStats } from "@/lib/admin-stats";
 
 function formatTime(value: Date | null) {
   if (!value) return "—";
@@ -17,13 +18,17 @@ export default async function AdminOpsPage() {
   const session = await auth();
   if (!session?.user?.isAdmin) redirect("/");
 
-  const [recentSupport, recentLogs] = await withDbAccessContext(
+  const [stats, [recentSupport, recentLogs]] = await Promise.all([
+    getAdminStats(),
+    withDbAccessContext(
     { userId: session.user.id, isAdmin: true },
     async (tx) => Promise.all([
       tx.select().from(supportRequests).orderBy(desc(supportRequests.createdAt)).limit(25),
       tx.select().from(appLogs).orderBy(desc(appLogs.createdAt)).limit(50),
     ]),
-  );
+    ),
+  ]);
+  const qdrantDelta = stats.qdrantCount - stats.totalChunks.count;
 
   return (
     <div className="mx-auto max-w-[1400px] space-y-8 px-4 py-6 sm:px-6 sm:py-8">
@@ -34,6 +39,35 @@ export default async function AdminOpsPage() {
           Recent support requests and captured runtime errors live here so the operator can triage real problems without digging through process output.
         </p>
       </div>
+
+      <section className="rounded-[1.75rem] border border-border/60 bg-card/72 p-5 shadow-[var(--shadow-card)]">
+        <div className="flex flex-wrap items-center gap-3">
+          <div className="flex size-10 items-center justify-center rounded-2xl border border-white/6 bg-white/[0.04] text-[#8cc6f3]">
+            <Database className="size-5" />
+          </div>
+          <div>
+            <h2 className="text-lg font-semibold text-foreground">Retrieval health</h2>
+            <p className="text-sm text-muted-foreground">Indexed PDFs, chunks, and vector-store alignment</p>
+          </div>
+        </div>
+        <div className="mt-5 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+          {[
+            { label: "Documents", value: stats.totalDocs.count.toLocaleString(), detail: `${stats.totalDocPages.toLocaleString()} pages` },
+            { label: "Descriptions", value: stats.docsWithDescriptions.count.toLocaleString(), detail: `${Math.max(stats.totalDocs.count - stats.docsWithDescriptions.count, 0).toLocaleString()} missing` },
+            { label: "Chunks", value: stats.totalChunks.count.toLocaleString(), detail: "Postgres source rows" },
+            { label: "Qdrant delta", value: qdrantDelta.toLocaleString(), detail: `${stats.qdrantCount.toLocaleString()} vectors` },
+          ].map((item) => (
+            <div key={item.label} className="rounded-2xl border border-border/60 bg-background/60 p-4">
+              <div className="flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
+                <FileText className="size-3.5" />
+                {item.label}
+              </div>
+              <p className="mt-3 text-2xl font-semibold tracking-tight text-foreground">{item.value}</p>
+              <p className="mt-1 text-xs text-muted-foreground">{item.detail}</p>
+            </div>
+          ))}
+        </div>
+      </section>
 
       <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_minmax(0,1.2fr)]">
         <section className="rounded-[1.75rem] border border-border/60 bg-card/72 p-5 shadow-[var(--shadow-card)]">

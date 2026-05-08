@@ -2,6 +2,7 @@ import { create } from "zustand";
 import { persist } from "zustand/middleware";
 import { generateChatTitle } from "./utils";
 import type { Citation } from "./db/schema";
+import type { SearchActivity } from "./search-activity";
 import type { Project } from "./projects";
 import { DEFAULT_SEASON_YEAR } from "./seasons";
 import { randomUuid } from "./uuid";
@@ -15,6 +16,7 @@ export interface Message {
   timestamp: Date;
   citations?: Citation[];
   factCheck?: { accurate: boolean; note: string };
+  searchActivity?: SearchActivity;
 }
 
 export type ChatMode = "rookie" | "veteran";
@@ -50,7 +52,7 @@ interface ChatStore {
   addMessage: (conversationId: string, message: Omit<Message, "id" | "timestamp">) => string;
   startStreaming: () => void;
   updateStreamingContent: (content: string) => void;
-  finalizeStreamingMessage: (conversationId: string, citations?: Citation[], factCheck?: { accurate: boolean; note: string }) => void;
+  finalizeStreamingMessage: (conversationId: string, citations?: Citation[], factCheck?: { accurate: boolean; note: string }, searchActivity?: SearchActivity) => void;
   resetStreamingState: () => void;
   setTypingTitle: (conversationId: string, title: string) => void;
   clearTypingTitle: () => void;
@@ -146,7 +148,7 @@ export const useChatStore = create<ChatStore>()(
 
       updateStreamingContent: (content) => set({ streamingContent: content, isStreaming: true }),
 
-      finalizeStreamingMessage: (conversationId, citations, factCheck) => {
+      finalizeStreamingMessage: (conversationId, citations, factCheck, searchActivity) => {
         const { streamingContent } = get();
         if (!streamingContent) { set({ streamingContent: "", isStreaming: false }); return; }
         const msg: Message = {
@@ -154,6 +156,7 @@ export const useChatStore = create<ChatStore>()(
           content: streamingContent, timestamp: new Date(),
           ...(citations?.length && { citations }),
           ...(factCheck && { factCheck }),
+          ...(searchActivity && { searchActivity }),
         };
         set((s) => ({
           streamingContent: "", isStreaming: false,

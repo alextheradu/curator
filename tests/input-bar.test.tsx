@@ -21,13 +21,12 @@ describe("InputBar", () => {
       <InputBar
         onSend={() => undefined}
         factCheckEnabled
-        deepSearchEnabled
+        searchMode="deep"
         onFactCheckChange={() => undefined}
-        onDeepSearchChange={() => undefined}
+        onSearchModeChange={() => undefined}
       />
     );
 
-    expect(markup).toContain("Fact check");
-    expect(markup).toContain("Deep search");
+    expect(markup).toContain("More options: Fact check on, Search mode deep");
   });
 });

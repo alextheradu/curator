@@ -69,6 +69,7 @@ export function AdminSidebar({ pendingReports }: { pendingReports?: number }) {
             alt="Curator"
             width={26}
             height={26}
+            sizes="26px"
             className="h-6 w-6 rounded-lg object-contain"
           />
           <span className="hidden text-[13px] font-semibold sm:inline">Admin</span>

@@ -33,6 +33,7 @@ This Privacy Policy explains how Curator ("the Service", "we", "us") collects, u
 - **Team context lookups:** if your saved team number is available and a chat needs live event context, relevant query data is sent to The Blue Alliance through our server-side integration.
 - **Public shared chats:** if an authenticated user chooses to make a chat public, that conversation becomes accessible to anyone with the chat URL until the owner turns sharing off or deletes the chat.
 - **Search queries:** if web search is triggered, including when you enable Deep search, your query is sent to LangSearch. Deep search may run multiple web searches until enough context is gathered or the search provider rate-limits the request. See LangSearch's privacy policy for details.
+- **Response feedback:** if you use response feedback controls, we store the feedback type, message ID, account ID if signed in, IP address, and timestamp in operational logs so admins can improve retrieval and answer quality.
 - **Support requests:** if you use the support form, we collect the details you submit, which may include your name, email address, subject, message, current page path, browser user agent, IP address, and your account ID if signed in.
 - **Moderation flags:** authenticated user messages may be automatically scanned for profanity, harassment, threats, sexual content, or similar inappropriate language. Matching messages can create an internal moderation report containing the message ID, conversation ID, account ID, matched terms, and flag reason for admin review.
 - **Error and performance telemetry:** we use Sentry to capture application errors, request context, performance traces, diagnostic metadata such as URLs, browser/device information, and account identifiers when available, and browser Session Replay data for debugging. Replay traffic is tunneled through our own app domain to reduce losses caused by browser blocking of direct Sentry ingestion requests.
@@ -55,6 +56,7 @@ This Privacy Policy explains how Curator ("the Service", "we", "us") collects, u
 - To enforce the guest message limit and Terms of Service acceptance
 - To record, honor, and later update your cookie-consent preference
 - To generate AI responses grounded in FRC documentation
+- To collect optional response feedback and identify retrieval or citation quality issues
 - To enrich applicable answers with live event context from The Blue Alliance when your saved team number is available
 - To respond to support requests and account/privacy questions
 - To generate on-demand account data exports when you request them from Settings
@@ -87,6 +89,7 @@ We do **not** sell your data, use it for advertising, or share it with third par
 - Admin-authored blog posts, publication timestamps, and the associated author account reference are stored in PostgreSQL.
 - Moderation reports, matched-term metadata, and banned-email records are stored in PostgreSQL.
 - Support requests, application logs, and rate-limit counters are stored in PostgreSQL.
+- Response feedback is stored in PostgreSQL as an operational log entry.
 - The installable web app stores a browser-managed offline cache of selected app shell files, icons, and a small set of public pages on your device.
 - PDF documents, including season-specific references and general team reference files, are stored in a self-hosted MinIO instance.
 - Vector embeddings are stored in a self-hosted Qdrant instance.
@@ -105,6 +108,7 @@ We do **not** sell your data, use it for advertising, or share it with third par
 - **Public shared chats:** remain publicly accessible until you make the chat private again or delete it.
 - **Admin-authored blog posts:** retained until they are deleted or unpublished by an admin; published posts remain publicly accessible until removed or replaced.
 - **Support requests and application logs:** retained until they are manually deleted or no longer needed for support, security, or operational debugging.
+- **Response feedback:** retained until it is manually deleted or no longer needed for product quality review.
 - **Rate-limit counters:** retained for up to 7 days before cleanup.
 - **Server logs:** retained for 30 days, then deleted.
 - **Analytics data:** retained according to Google Analytics property retention settings configured by the operator.
@@ -124,7 +128,7 @@ We use the following cookies:
 
 We do not use advertising cookies.
 
-Curator also stores local browser values for cookie-banner state and chat options, including `curator:cookie-consent`, `curator:factCheck`, and `curator:deepSearch`.
+Curator also stores local browser values for cookie-banner state and chat options, including `curator:cookie-consent`, `curator:factCheck`, `curator:searchMode`, and the legacy `curator:deepSearch` value.
 
 You can change your analytics choice later from the in-app cookie preferences control.
 
