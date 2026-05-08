@@ -605,6 +605,7 @@ export function AppSidebar({ latestNewsPublishedAt }: AppSidebarProps) {
                         className="size-5 shrink-0 rounded-full object-cover ring-1 ring-sidebar-border/50"
                         width={20}
                         height={20}
+                        sizes="20px"
                         unoptimized
                         onError={() => setAvatarLoadFailed(true)}
                       />

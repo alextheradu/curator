@@ -13,6 +13,8 @@ Curator is an AI-powered assistant designed to help FRC teams find information f
 
 The Service also includes a support channel for bug reports, account/privacy questions, and feature requests, and uses operational monitoring tools, including browser session replay and cookie-free performance analytics, to detect errors, measure performance, and diagnose failures.
 
+The Service also includes optional response feedback controls that let users flag helpful answers, unhelpful answers, bad citations, or missed sources for quality review.
+
 The Service also includes a public blog where Curator admins may publish product updates, release notes, and operator announcements. Published blog posts may show the author using that admin's preferred name when available.
 
 The Service may also be installed to your device home screen as a web app. Installed/offline behavior is still subject to browser support and the limits described in the Privacy Policy.

@@ -5,20 +5,33 @@ import { useState } from "react";
 import { motion } from "framer-motion";
 import { useSession } from "next-auth/react";
 
-const SUGGESTION_POOL = [
-  "Explain the 2026 scoring flow in plain English.",
-  "Summarize the key 2026 robot inspection checks to verify.",
-  "Explain how swerve and tank drives are mechanically different.",
-  "Break down how ranking points are earned at 2026 events.",
-  "Explain playoff alliance selection step by step.",
-  "Summarize the 2026 bumper rules teams miss most often.",
-  "Explain which pre-match checks drivers usually confirm and why.",
-  "Explain what pit scouting is and how teams typically run it.",
-  "Compare two teams fairly from their event results.",
-  "Summarize common wiring mistakes on FRC robots.",
-  "Explain backup robot rules and how they're picked.",
-  "Explain what a drive coach is responsible for during a match.",
-]; 
+const SUGGESTION_GROUPS = {
+  Rules: [
+    "Summarize the 2026 bumper rules teams miss most often.",
+    "Break down how ranking points are earned at 2026 events.",
+    "Explain backup robot rules and how they're picked.",
+    "Summarize the key 2026 robot inspection checks to verify.",
+  ],
+  Strategy: [
+    "Explain the 2026 scoring flow in plain English.",
+    "Explain which pre-match checks drivers usually confirm and why.",
+    "Explain playoff alliance selection step by step.",
+    "Compare two teams fairly from their event results.",
+  ],
+  Build: [
+    "Explain how swerve and tank drives are mechanically different.",
+    "Summarize common wiring mistakes on FRC robots.",
+    "Explain what a drive coach is responsible for during a match.",
+    "Explain what pit scouting is and how teams typically run it.",
+  ],
+  Awards: [
+    "Explain how Impact Award judging works without writing an essay.",
+    "Give feedback criteria for an outreach summary.",
+    "List evidence a team should gather for awards season.",
+    "Explain what judges usually look for in pit interviews.",
+  ],
+} as const;
+const SUGGESTION_GROUP_NAMES = Object.keys(SUGGESTION_GROUPS) as Array<keyof typeof SUGGESTION_GROUPS>;
 const VISIBLE_SUGGESTION_COUNT = 4;
 const GREETING_PREFIXES = [
   "Howdy",
@@ -48,7 +61,7 @@ const GREETING_PREFIXES = [
 ];
 
 function selectRandomSuggestions(count: number) {
-  const pool = [...SUGGESTION_POOL];
+  const pool = [...Object.values(SUGGESTION_GROUPS).flat()];
 
   for (let i = pool.length - 1; i > 0; i -= 1) {
     const randomIndex = Math.floor(Math.random() * (i + 1));
@@ -77,6 +90,7 @@ function getGreetingName(preferredName?: string | null, fullName?: string | null
 export function EmptyState({ onPromptSelect }: Props) {
   const { data: session } = useSession();
   const [suggestions] = useState(() => selectRandomSuggestions(VISIBLE_SUGGESTION_COUNT));
+  const [activeGroup, setActiveGroup] = useState<keyof typeof SUGGESTION_GROUPS>("Rules");
   const [greetingPrefix] = useState(
     () => GREETING_PREFIXES[Math.floor(Math.random() * GREETING_PREFIXES.length)] ?? "Howdy"
   );
@@ -99,6 +113,7 @@ export function EmptyState({ onPromptSelect }: Props) {
             width={56}
             height={56}
             priority
+            sizes="56px"
             className="relative h-10 w-10 object-contain sm:h-14 sm:w-14"
           />
         </motion.div>
@@ -125,9 +140,25 @@ export function EmptyState({ onPromptSelect }: Props) {
           <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
             Quick starts
           </p>
+          <div className="flex items-center gap-1 overflow-x-auto">
+            {SUGGESTION_GROUP_NAMES.map((group) => (
+              <button
+                key={group}
+                type="button"
+                onClick={() => setActiveGroup(group)}
+                className={`shrink-0 rounded-full border px-2 py-1 text-[10px] font-medium transition-colors ${
+                  activeGroup === group
+                    ? "border-[#0066B3]/30 bg-[#0066B3]/10 text-[#8cc6f3]"
+                    : "border-border/50 bg-card/30 text-muted-foreground hover:bg-card/60"
+                }`}
+              >
+                {group}
+              </button>
+            ))}
+          </div>
         </div>
         <div className="grid w-full grid-cols-2 gap-1 sm:gap-2.5">
-          {suggestions.map((suggestion, index) => (
+          {(SUGGESTION_GROUPS[activeGroup] ?? suggestions).map((suggestion, index) => (
             <motion.div
               key={suggestion}
               initial={{ opacity: 0, y: 16 }}

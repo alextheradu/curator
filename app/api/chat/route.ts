@@ -11,6 +11,7 @@ import {
   parseChatSearchOptions,
   type DeepSearchConfig,
 } from "@/lib/chat-search-options";
+import type { SearchActivity, SearchActivityStep, SearchMode } from "@/lib/search-activity";
 import { DEFAULT_SEASON_YEAR } from "@/lib/seasons";
 import { isTbaMcpEnabled } from "@/lib/tba";
 import { callTbaTool, TBA_TOOLS, type TbaToolName, type OpenAiTool } from "@/lib/tba-mcp-client";
@@ -48,8 +49,6 @@ function encodeSse(data: unknown) {
 }
 
 const OPENROUTER_TIMEOUT_MS = 60_000;
-const DEEP_WEB_RESULTS_PER_CALL = 8;
-
 function createAbortError(message = "The request was aborted.") {
   const error = new Error(message);
   error.name = "AbortError";
@@ -209,6 +208,7 @@ async function runToolLoop({
   messages,
   tools,
   seasonYear,
+  searchMode,
   config,
   sendEvent,
   signal,
@@ -217,14 +217,16 @@ async function runToolLoop({
   messages: ChatMessage[];
   tools: OpenAiTool[];
   seasonYear: number;
+  searchMode: Exclude<SearchMode, "fast">;
   config: DeepSearchConfig;
   sendEvent: (payload: unknown) => void;
   signal?: AbortSignal;
-}): Promise<{ messages: ChatMessage[]; tbaCitations: Citation[]; webCitations: Citation[]; ragCitations: Citation[]; ragContextBlocks: string[] }> {
+}): Promise<{ messages: ChatMessage[]; tbaCitations: Citation[]; webCitations: Citation[]; ragCitations: Citation[]; ragContextBlocks: string[]; searchActivity: SearchActivity }> {
   const tbaCitations: Citation[] = [];
   const webCitations: Citation[] = [];
   const ragCitations: Citation[] = [];
   const ragContextBlocks: string[] = [];
+  const searchActivitySteps: SearchActivityStep[] = [];
   const current: ChatMessage[] = [...messages];
   let webSearchRateLimited = false;
   const startedAt = Date.now();
@@ -251,7 +253,7 @@ async function runToolLoop({
 
       if (name === "search_documents") {
         const query = typeof args.query === "string" ? args.query : String(args.query ?? "");
-        const limit = clampDocumentSearchLimit(args.limit, true);
+        const limit = clampDocumentSearchLimit(args.limit, searchMode);
         const toolSeasonYear = typeof args.season_year === "number" ? args.season_year : seasonYear;
         sendEvent({ type: "status", message: `Searching up to ${limit} indexed FRC document pages...` });
 
@@ -263,6 +265,13 @@ async function runToolLoop({
 
         localRagCitations.push(...ragResult.citations);
         if (ragResult.hitCount > 0) localRagContextBlocks.push(ragResult.contextBlock);
+        searchActivitySteps.push({
+          type: "documents",
+          label: `PDF search (${toolSeasonYear})`,
+          query,
+          count: ragResult.hitCount,
+          status: ragResult.hitCount > 0 ? "ok" : "empty",
+        });
         resultContent = ragResult.hitCount > 0
           ? ragResult.contextBlock
           : "No matching document chunks found for this query.";
@@ -273,7 +282,7 @@ async function runToolLoop({
         } else {
           const query = typeof args.query === "string" ? args.query : String(args.query ?? "");
           sendEvent({ type: "status", message: "Running a live web search..." });
-          const results = await webSearch(query, DEEP_WEB_RESULTS_PER_CALL, seasonYear);
+          const results = await webSearch(query, config.webResultsPerCall, seasonYear);
 
           for (const result of results) {
             try {
@@ -284,6 +293,13 @@ async function runToolLoop({
             }
           }
 
+          searchActivitySteps.push({
+            type: "web",
+            label: "Web search",
+            query,
+            count: results.length,
+            status: results.length > 0 ? "ok" : "empty",
+          });
           resultContent = results.length === 0
             ? "No web results found."
             : results.map((r, i) => `[WEB ${i + 1}] ${r.title}\n${r.snippet}\nURL: ${r.url}`).join("\n\n");
@@ -294,13 +310,29 @@ async function runToolLoop({
         const result = await callTbaTool(name as TbaToolName, args);
         const citationUrl = getTbaUserFacingUrl(name, args);
         localTbaCitations.push({ type: "web", label: "thebluealliance.com", url: citationUrl });
+        searchActivitySteps.push({
+          type: "tba",
+          label: name.replace(/_/g, " "),
+          count: 1,
+          status: "ok",
+        });
         resultContent = JSON.stringify(result.data);
       }
     } catch (err) {
       if (name === "web_search" && isWebSearchRateLimitError(err)) {
         localWebRateLimited = true;
+        searchActivitySteps.push({
+          type: "rate_limit",
+          label: "Web search rate limit",
+          status: "limited",
+        });
         resultContent = "Web search is rate limited for this chat request. Stop calling web_search and answer from the sources already gathered.";
       } else {
+        searchActivitySteps.push({
+          type: name === "search_documents" ? "documents" : name === "web_search" ? "web" : "tba",
+          label: name.replace(/_/g, " "),
+          status: "error",
+        });
         resultContent = err instanceof Error ? err.message : "Tool call failed.";
       }
     }
@@ -319,6 +351,11 @@ async function runToolLoop({
   for (let iteration = 0; iteration < config.maxIterations; iteration++) {
     if (signal?.aborted) throw createAbortError();
     if (Date.now() - startedAt > config.maxToolDurationMs) {
+      searchActivitySteps.push({
+        type: "budget",
+        label: "Search time budget reached",
+        status: "limited",
+      });
       sendEvent({ type: "status", message: "Deep search reached its time budget, answering from gathered sources..." });
       break;
     }
@@ -408,7 +445,18 @@ async function runToolLoop({
     }
   }
 
-  return { messages: current, tbaCitations, webCitations, ragCitations, ragContextBlocks };
+  return {
+    messages: current,
+    tbaCitations,
+    webCitations,
+    ragCitations,
+    ragContextBlocks,
+    searchActivity: {
+      mode: searchMode,
+      steps: searchActivitySteps,
+      durationMs: Date.now() - startedAt,
+    },
+  };
 }
 
 async function streamChatCompletion({
@@ -733,8 +781,8 @@ export async function POST(request: NextRequest) {
   const projectId = typeof body.projectId === "string" ? body.projectId : null;
   const searchOptions = parseChatSearchOptions(body);
   const factCheck = searchOptions.factCheck;
-  const deepSearch = searchOptions.deepSearch;
-  const deepSearchConfig = buildDeepSearchConfig(deepSearch);
+  const searchMode = searchOptions.searchMode;
+  const searchConfig = buildDeepSearchConfig(searchMode);
   const apiKey = process.env.OPENROUTER_API_KEY!;
 
   let projectMemorySummary = "";
@@ -866,9 +914,9 @@ export async function POST(request: NextRequest) {
             ...(messages as ChatMessage[]),
           ];
 
-          if (lastUser && deepSearch) {
+          if (lastUser && searchMode !== "fast") {
             throwIfStreamAborted();
-            sendEvent({ type: "status", message: "Deep search is reading your question..." });
+            sendEvent({ type: "status", message: `${searchMode === "deep" ? "Deep search" : "Balanced search"} is reading your question...` });
             const tools = isTbaMcpEnabled()
               ? [...TBA_TOOLS, WEB_SEARCH_TOOL, RAG_SEARCH_TOOL]
               : [WEB_SEARCH_TOOL, RAG_SEARCH_TOOL];
@@ -879,7 +927,8 @@ export async function POST(request: NextRequest) {
                 messages: fullMessages,
                 tools,
                 seasonYear,
-                config: deepSearchConfig,
+                searchMode,
+                config: searchConfig,
                 sendEvent,
                 signal: request.signal,
               });
@@ -888,6 +937,7 @@ export async function POST(request: NextRequest) {
               tbaCitations = toolResult.tbaCitations;
               webCitations = toolResult.webCitations;
               ragContextBlocks = toolResult.ragContextBlocks;
+              sendEvent({ type: "search_activity", activity: toolResult.searchActivity });
               const found = [
                 toolResult.ragCitations.length > 0 ? `${toolResult.ragCitations.length} document ${pluralize(toolResult.ragCitations.length, "page")}` : null,
                 toolResult.tbaCitations.length > 0 ? `${toolResult.tbaCitations.length} TBA ${pluralize(toolResult.tbaCitations.length, "result")}` : null,

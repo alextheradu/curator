@@ -9,9 +9,12 @@ import {
   DropdownMenuCheckboxItem,
   DropdownMenuContent,
   DropdownMenuLabel,
+  DropdownMenuRadioGroup,
+  DropdownMenuRadioItem,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import type { SearchMode } from "@/lib/search-activity";
 
 interface Props {
   onSend: (message: string) => void;
@@ -23,6 +26,9 @@ interface Props {
   onFactCheckChange?: (enabled: boolean) => void;
   deepSearchEnabled?: boolean;
   onDeepSearchChange?: (enabled: boolean) => void;
+  searchMode?: SearchMode;
+  onSearchModeChange?: (mode: SearchMode) => void;
+  initialValue?: string;
 }
 
 export function InputBar({
@@ -35,8 +41,11 @@ export function InputBar({
   onFactCheckChange,
   deepSearchEnabled = false,
   onDeepSearchChange,
+  searchMode: searchModeProp,
+  onSearchModeChange,
+  initialValue,
 }: Props) {
-  const [value, setValue] = useState("");
+  const [value, setValue] = useState(() => initialValue ?? "");
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const [focused, setFocused] = useState(false);
 
@@ -78,20 +87,35 @@ export function InputBar({
   };
 
   const canSend = value.trim().length > 0 && !disabled && !isStreaming;
-  const optionsActive = factCheckEnabled || deepSearchEnabled;
-  const optionsLabel = `More options: Fact check ${factCheckEnabled ? "on" : "off"}, Deep search ${deepSearchEnabled ? "on" : "off"}`;
+  const searchMode = searchModeProp ?? (deepSearchEnabled ? "deep" : "fast");
+  const optionsActive = factCheckEnabled || searchMode !== "fast";
+  const optionsLabel = `More options: Fact check ${factCheckEnabled ? "on" : "off"}, Search mode ${searchMode}`;
   const keepMenuOpen = (event: Event) => event.preventDefault();
+  const handleSearchModeValueChange = (mode: string) => {
+    if (mode !== "fast" && mode !== "balanced" && mode !== "deep") {
+      return;
+    }
+
+    onSearchModeChange?.(mode);
+    onDeepSearchChange?.(mode === "deep");
+  };
   const renderOptionsMenu = () => (
     <DropdownMenuContent side="top" align="end" className="min-w-[13rem]">
       <DropdownMenuLabel>Options</DropdownMenuLabel>
       <DropdownMenuSeparator />
-      <DropdownMenuCheckboxItem
-        checked={deepSearchEnabled}
-        onSelect={keepMenuOpen}
-        onCheckedChange={(checked) => onDeepSearchChange?.(checked)}
-      >
-        Deep search
-      </DropdownMenuCheckboxItem>
+      <DropdownMenuLabel>Search mode</DropdownMenuLabel>
+      <DropdownMenuRadioGroup value={searchMode} onValueChange={handleSearchModeValueChange}>
+        <DropdownMenuRadioItem value="fast" onSelect={keepMenuOpen}>
+          Fast
+        </DropdownMenuRadioItem>
+        <DropdownMenuRadioItem value="balanced" onSelect={keepMenuOpen}>
+          Balanced
+        </DropdownMenuRadioItem>
+        <DropdownMenuRadioItem value="deep" onSelect={keepMenuOpen}>
+          Deep search
+        </DropdownMenuRadioItem>
+      </DropdownMenuRadioGroup>
+      <DropdownMenuSeparator />
       <DropdownMenuCheckboxItem
         checked={factCheckEnabled}
         onSelect={keepMenuOpen}

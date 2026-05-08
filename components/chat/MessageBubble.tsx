@@ -1,7 +1,8 @@
 "use client";
 
-import { CopyIcon, ShieldAlertIcon, ShieldCheckIcon } from "lucide-react";
+import { CopyIcon, FileWarningIcon, SearchXIcon, ShieldAlertIcon, ShieldCheckIcon, ThumbsDownIcon, ThumbsUpIcon } from "lucide-react";
 import { AssistantMarkdown } from "@/components/chat/AssistantMarkdown";
+import { SearchActivityPanel } from "@/components/chat/SearchActivityPanel";
 import { CitationBadge } from "@/components/ui/CitationBadge";
 import { ReportButton } from "@/components/chat/ReportButton";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
@@ -48,6 +49,27 @@ export function MessageBubble({ message, isStreaming, onOpenCitation }: Props) {
     }
   };
 
+  const handleFeedback = async (kind: "helpful" | "not_helpful" | "bad_citation" | "missed_source") => {
+    try {
+      const response = await fetch("/api/feedback", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          messageId: message.id,
+          kind,
+        }),
+      });
+      const payload = await response.json().catch(() => ({}));
+      if (!response.ok) {
+        throw new Error(payload.error ?? "Unable to save feedback.");
+      }
+
+      toast.success("Feedback saved.");
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Unable to save feedback.");
+    }
+  };
+
   return (
     <div
       className={cn(
@@ -72,10 +94,9 @@ export function MessageBubble({ message, isStreaming, onOpenCitation }: Props) {
         {/* Content */}
         {isAssistant ? (
           <div className="flex min-w-0 flex-1 flex-col gap-2">
-            <AssistantMarkdown content={normalizedContent} isStreaming={isStreaming} />
-
             {message.citations && message.citations.length > 0 && (
-              <div className="flex flex-wrap content-start items-center gap-1 pt-1">
+              <div className="flex flex-wrap content-start items-center gap-1">
+                <span className="mr-1 text-[11px] font-medium text-muted-foreground">Sources used</span>
                 {message.citations.map((citation, index) => (
                   <CitationBadge
                     key={index}
@@ -86,6 +107,8 @@ export function MessageBubble({ message, isStreaming, onOpenCitation }: Props) {
                 ))}
               </div>
             )}
+            <SearchActivityPanel activity={message.searchActivity} />
+            <AssistantMarkdown content={normalizedContent} isStreaming={isStreaming} />
 
             {!isStreaming && message.id && (
               <div className="flex items-center gap-1 pt-1">
@@ -97,6 +120,42 @@ export function MessageBubble({ message, isStreaming, onOpenCitation }: Props) {
                   aria-label="Copy response"
                 >
                   <CopyIcon className="size-4 sm:size-3" />
+                </button>
+                <button
+                  type="button"
+                  onClick={() => void handleFeedback("helpful")}
+                  className={actionButtonClass}
+                  title="Helpful"
+                  aria-label="Mark response helpful"
+                >
+                  <ThumbsUpIcon className="size-4 sm:size-3" />
+                </button>
+                <button
+                  type="button"
+                  onClick={() => void handleFeedback("not_helpful")}
+                  className={actionButtonClass}
+                  title="Not helpful"
+                  aria-label="Mark response not helpful"
+                >
+                  <ThumbsDownIcon className="size-4 sm:size-3" />
+                </button>
+                <button
+                  type="button"
+                  onClick={() => void handleFeedback("bad_citation")}
+                  className={actionButtonClass}
+                  title="Bad citation"
+                  aria-label="Report a bad citation"
+                >
+                  <FileWarningIcon className="size-4 sm:size-3" />
+                </button>
+                <button
+                  type="button"
+                  onClick={() => void handleFeedback("missed_source")}
+                  className={actionButtonClass}
+                  title="Missed source"
+                  aria-label="Report a missed source"
+                >
+                  <SearchXIcon className="size-4 sm:size-3" />
                 </button>
                 <ReportButton messageId={message.id} className={actionButtonClass} />
                 {message.factCheck && (
