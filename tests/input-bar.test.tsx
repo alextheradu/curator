@@ -15,4 +15,19 @@ describe("InputBar", () => {
     expect(markup).toContain('autoCorrect="off"');
     expect(markup).toContain('autoCapitalize="off"');
   });
+
+  it("renders fact check and deep search as persistent menu options", () => {
+    const markup = renderToStaticMarkup(
+      <InputBar
+        onSend={() => undefined}
+        factCheckEnabled
+        deepSearchEnabled
+        onFactCheckChange={() => undefined}
+        onDeepSearchChange={() => undefined}
+      />
+    );
+
+    expect(markup).toContain("Fact check");
+    expect(markup).toContain("Deep search");
+  });
 });

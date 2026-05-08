@@ -4,7 +4,7 @@ services:
     restart: unless-stopped
     ports:
       - "5437:5432"
-    environment:
+    environment:d
       POSTGRES_DB: curator
       POSTGRES_USER: curator
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
