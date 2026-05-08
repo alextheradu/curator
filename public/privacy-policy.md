@@ -1,7 +1,7 @@
 # Privacy Policy
 
 **Curator — FRC AI Assistant**
-**Last updated: April 25, 2026**
+**Last updated: May 8, 2026**
 
 ## 1. Overview
 
@@ -32,7 +32,7 @@ This Privacy Policy explains how Curator ("the Service", "we", "us") collects, u
 - **Chat messages and AI processing:** message content is sent to OpenRouter (our LLM provider) for processing. Depending on the model/provider OpenRouter routes your request to (especially some free models), prompt and response data may be logged, retained, or used by that provider for abuse monitoring, service improvement, or model training under their terms. Do not submit secrets or highly sensitive information in chats. See OpenRouter's privacy policy at openrouter.ai/privacy.
 - **Team context lookups:** if your saved team number is available and a chat needs live event context, relevant query data is sent to The Blue Alliance through our server-side integration.
 - **Public shared chats:** if an authenticated user chooses to make a chat public, that conversation becomes accessible to anyone with the chat URL until the owner turns sharing off or deletes the chat.
-- **Search queries:** if web search is triggered, your query is sent to LangSearch. See LangSearch's privacy policy for details.
+- **Search queries:** if web search is triggered, including when you enable Deep search, your query is sent to LangSearch. Deep search may run multiple web searches until enough context is gathered or the search provider rate-limits the request. See LangSearch's privacy policy for details.
 - **Support requests:** if you use the support form, we collect the details you submit, which may include your name, email address, subject, message, current page path, browser user agent, IP address, and your account ID if signed in.
 - **Moderation flags:** authenticated user messages may be automatically scanned for profanity, harassment, threats, sexual content, or similar inappropriate language. Matching messages can create an internal moderation report containing the message ID, conversation ID, account ID, matched terms, and flag reason for admin review.
 - **Error and performance telemetry:** we use Sentry to capture application errors, request context, performance traces, diagnostic metadata such as URLs, browser/device information, and account identifiers when available, and browser Session Replay data for debugging. Replay traffic is tunneled through our own app domain to reduce losses caused by browser blocking of direct Sentry ingestion requests.
@@ -124,7 +124,7 @@ We use the following cookies:
 
 We do not use advertising cookies.
 
-Curator also stores a local browser value (`curator:cookie-consent`) to keep the cookie banner state in sync with your preference.
+Curator also stores local browser values for cookie-banner state and chat options, including `curator:cookie-consent`, `curator:factCheck`, and `curator:deepSearch`.
 
 You can change your analytics choice later from the in-app cookie preferences control.
 

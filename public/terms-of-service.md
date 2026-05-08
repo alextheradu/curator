@@ -1,7 +1,7 @@
 # Terms of Service
 
 **Curator — FRC AI Assistant**
-**Last updated: April 25, 2026**
+**Last updated: May 8, 2026**
 
 ## 1. Acceptance of Terms
 
@@ -9,7 +9,7 @@ By accessing or using Curator ("the Service"), you agree to be bound by these Te
 
 ## 2. Description of Service
 
-Curator is an AI-powered assistant designed to help FRC teams find information from official game manuals, team updates, team reference material, awards documentation, and related FIRST Robotics Competition resources. The Service uses large language models, retrieval-augmented generation (RAG), live web search when needed, and The Blue Alliance for certain live team/event context to provide answers grounded in uploaded documents and current competition data.
+Curator is an AI-powered assistant designed to help FRC teams find information from official game manuals, team updates, team reference material, awards documentation, and related FIRST Robotics Competition resources. The Service uses large language models, retrieval-augmented generation (RAG), live web search when needed or when you enable Deep search, and The Blue Alliance for certain live team/event context to provide answers grounded in uploaded documents and current competition data.
 
 The Service also includes a support channel for bug reports, account/privacy questions, and feature requests, and uses operational monitoring tools, including browser session replay and cookie-free performance analytics, to detect errors, measure performance, and diagnose failures.
 

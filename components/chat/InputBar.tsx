@@ -21,9 +21,21 @@ interface Props {
   compact?: boolean;
   factCheckEnabled?: boolean;
   onFactCheckChange?: (enabled: boolean) => void;
+  deepSearchEnabled?: boolean;
+  onDeepSearchChange?: (enabled: boolean) => void;
 }
 
-export function InputBar({ onSend, onStop, disabled, isStreaming, compact = false, factCheckEnabled = false, onFactCheckChange }: Props) {
+export function InputBar({
+  onSend,
+  onStop,
+  disabled,
+  isStreaming,
+  compact = false,
+  factCheckEnabled = false,
+  onFactCheckChange,
+  deepSearchEnabled = false,
+  onDeepSearchChange,
+}: Props) {
   const [value, setValue] = useState("");
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const [focused, setFocused] = useState(false);
@@ -66,6 +78,29 @@ export function InputBar({ onSend, onStop, disabled, isStreaming, compact = fals
   };
 
   const canSend = value.trim().length > 0 && !disabled && !isStreaming;
+  const optionsActive = factCheckEnabled || deepSearchEnabled;
+  const optionsLabel = `More options: Fact check ${factCheckEnabled ? "on" : "off"}, Deep search ${deepSearchEnabled ? "on" : "off"}`;
+  const keepMenuOpen = (event: Event) => event.preventDefault();
+  const renderOptionsMenu = () => (
+    <DropdownMenuContent side="top" align="end" className="min-w-[13rem]">
+      <DropdownMenuLabel>Options</DropdownMenuLabel>
+      <DropdownMenuSeparator />
+      <DropdownMenuCheckboxItem
+        checked={deepSearchEnabled}
+        onSelect={keepMenuOpen}
+        onCheckedChange={(checked) => onDeepSearchChange?.(checked)}
+      >
+        Deep search
+      </DropdownMenuCheckboxItem>
+      <DropdownMenuCheckboxItem
+        checked={factCheckEnabled}
+        onSelect={keepMenuOpen}
+        onCheckedChange={(checked) => onFactCheckChange?.(checked)}
+      >
+        Fact check
+      </DropdownMenuCheckboxItem>
+    </DropdownMenuContent>
+  );
 
   return (
     <div className="flex flex-col gap-2">
@@ -115,25 +150,16 @@ export function InputBar({ onSend, onStop, disabled, isStreaming, compact = fals
                       type="button"
                       className={cn(
                         "flex h-8 w-8 items-center justify-center rounded-xl transition-all duration-200",
-                        factCheckEnabled
+                        optionsActive
                           ? "bg-blue-500/15 text-blue-400 hover:bg-blue-500/20"
                           : "text-muted-foreground hover:bg-muted"
                       )}
-                      aria-label="More options"
+                      aria-label={optionsLabel}
                     >
                       <MoreHorizontalIcon className="size-4" />
                     </button>
                   </DropdownMenuTrigger>
-                  <DropdownMenuContent side="top" align="end" className="min-w-[11rem]">
-                    <DropdownMenuLabel>Options</DropdownMenuLabel>
-                    <DropdownMenuSeparator />
-                    <DropdownMenuCheckboxItem
-                      checked={factCheckEnabled}
-                      onCheckedChange={(checked) => onFactCheckChange?.(checked)}
-                    >
-                      Fact check
-                    </DropdownMenuCheckboxItem>
-                  </DropdownMenuContent>
+                  {renderOptionsMenu()}
                 </DropdownMenu>
                 {isStreaming ? (
                   <button type="button" onClick={onStop} className="flex h-8 w-8 items-center justify-center rounded-xl bg-foreground text-background transition-all duration-200 hover:opacity-85 active:scale-95" aria-label="Stop">
@@ -171,25 +197,16 @@ export function InputBar({ onSend, onStop, disabled, isStreaming, compact = fals
                         type="button"
                         className={cn(
                           "flex h-9 w-9 items-center justify-center rounded-xl transition-all duration-200 sm:h-7 sm:w-7",
-                          factCheckEnabled
+                          optionsActive
                             ? "bg-blue-500/15 text-blue-400 hover:bg-blue-500/20"
                             : "text-muted-foreground/50 hover:bg-muted hover:text-muted-foreground"
                         )}
-                        aria-label="More options"
+                        aria-label={optionsLabel}
                       >
                         <MoreHorizontalIcon className="size-4" />
                       </button>
                     </DropdownMenuTrigger>
-                    <DropdownMenuContent side="top" align="end" className="min-w-[11rem]">
-                      <DropdownMenuLabel>Options</DropdownMenuLabel>
-                      <DropdownMenuSeparator />
-                      <DropdownMenuCheckboxItem
-                        checked={factCheckEnabled}
-                        onCheckedChange={(checked) => onFactCheckChange?.(checked)}
-                      >
-                        Fact check
-                      </DropdownMenuCheckboxItem>
-                    </DropdownMenuContent>
+                    {renderOptionsMenu()}
                   </DropdownMenu>
                   {isStreaming ? (
                     <button type="button" onClick={onStop} className="flex h-9 w-9 items-center justify-center rounded-xl bg-foreground text-background transition-all duration-200 hover:opacity-85 active:scale-95 sm:h-7 sm:w-7" aria-label="Stop">

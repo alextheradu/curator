@@ -4,6 +4,13 @@ import { withSessionDbAccess } from "@/lib/db/access";
 import { buildSystemPrompt } from "@/lib/frc-system-prompt";
 import { buildRagContext, RAG_SEARCH_TOOL } from "@/lib/rag";
 import { webSearch } from "@/lib/langsearch";
+import {
+  buildDeepSearchConfig,
+  clampDocumentSearchLimit,
+  isWebSearchRateLimitError,
+  parseChatSearchOptions,
+  type DeepSearchConfig,
+} from "@/lib/chat-search-options";
 import { DEFAULT_SEASON_YEAR } from "@/lib/seasons";
 import { isTbaMcpEnabled } from "@/lib/tba";
 import { callTbaTool, TBA_TOOLS, type TbaToolName, type OpenAiTool } from "@/lib/tba-mcp-client";
@@ -41,6 +48,7 @@ function encodeSse(data: unknown) {
 }
 
 const OPENROUTER_TIMEOUT_MS = 60_000;
+const DEEP_WEB_RESULTS_PER_CALL = 8;
 
 function createAbortError(message = "The request was aborted.") {
   const error = new Error(message);
@@ -201,6 +209,7 @@ async function runToolLoop({
   messages,
   tools,
   seasonYear,
+  config,
   sendEvent,
   signal,
 }: {
@@ -208,6 +217,7 @@ async function runToolLoop({
   messages: ChatMessage[];
   tools: OpenAiTool[];
   seasonYear: number;
+  config: DeepSearchConfig;
   sendEvent: (payload: unknown) => void;
   signal?: AbortSignal;
 }): Promise<{ messages: ChatMessage[]; tbaCitations: Citation[]; webCitations: Citation[]; ragCitations: Citation[]; ragContextBlocks: string[] }> {
@@ -215,14 +225,113 @@ async function runToolLoop({
   const webCitations: Citation[] = [];
   const ragCitations: Citation[] = [];
   const ragContextBlocks: string[] = [];
-  let current: ChatMessage[] = [...messages];
-  const MAX_ITERATIONS = 4;
+  const current: ChatMessage[] = [...messages];
+  let webSearchRateLimited = false;
+  const startedAt = Date.now();
 
-  for (let iteration = 0; iteration < MAX_ITERATIONS; iteration++) {
+  const renumberSourceReferences = (content: string, offset: number) => (
+    content.replace(/\[SOURCE\s+(\d+)\]/g, (_match, index) => `[SOURCE ${offset + Number(index)}]`)
+  );
+
+  const renumberWebReferences = (content: string, offset: number) => (
+    content.replace(/\[WEB\s+(\d+)\]/g, (_match, index) => `[WEB ${offset + Number(index)}]`)
+  );
+
+  const executeToolCall = async (toolCall: ToolCall) => {
+    const { name, arguments: argsStr } = toolCall.function;
+    let resultContent: string;
+    const localTbaCitations: Citation[] = [];
+    const localWebCitations: Citation[] = [];
+    const localRagCitations: Citation[] = [];
+    const localRagContextBlocks: string[] = [];
+    let localWebRateLimited = false;
+
+    try {
+      const args = JSON.parse(argsStr) as Record<string, unknown>;
+
+      if (name === "search_documents") {
+        const query = typeof args.query === "string" ? args.query : String(args.query ?? "");
+        const limit = clampDocumentSearchLimit(args.limit, true);
+        const toolSeasonYear = typeof args.season_year === "number" ? args.season_year : seasonYear;
+        sendEvent({ type: "status", message: `Searching up to ${limit} indexed FRC document pages...` });
+
+        const ragResult = await buildRagContext(query, toolSeasonYear, {
+          limit,
+          sourceOffset: 0,
+          onStatus: (msg) => sendEvent({ type: "status", message: msg }),
+        });
+
+        localRagCitations.push(...ragResult.citations);
+        if (ragResult.hitCount > 0) localRagContextBlocks.push(ragResult.contextBlock);
+        resultContent = ragResult.hitCount > 0
+          ? ragResult.contextBlock
+          : "No matching document chunks found for this query.";
+      } else if (name === "web_search") {
+        if (webSearchRateLimited) {
+          localWebRateLimited = true;
+          resultContent = "Web search is already rate limited for this chat request. Stop calling web_search and answer from the sources already gathered.";
+        } else {
+          const query = typeof args.query === "string" ? args.query : String(args.query ?? "");
+          sendEvent({ type: "status", message: "Running a live web search..." });
+          const results = await webSearch(query, DEEP_WEB_RESULTS_PER_CALL, seasonYear);
+
+          for (const result of results) {
+            try {
+              const domain = new URL(result.url).hostname.replace("www.", "");
+              localWebCitations.push({ type: "web", label: domain, url: result.url });
+            } catch {
+              // ignore malformed urls
+            }
+          }
+
+          resultContent = results.length === 0
+            ? "No web results found."
+            : results.map((r, i) => `[WEB ${i + 1}] ${r.title}\n${r.snippet}\nURL: ${r.url}`).join("\n\n");
+        }
+      } else {
+        sendEvent({ type: "status", message: "Fetching live data from The Blue Alliance..." });
+        const args = JSON.parse(argsStr) as Record<string, unknown>;
+        const result = await callTbaTool(name as TbaToolName, args);
+        const citationUrl = getTbaUserFacingUrl(name, args);
+        localTbaCitations.push({ type: "web", label: "thebluealliance.com", url: citationUrl });
+        resultContent = JSON.stringify(result.data);
+      }
+    } catch (err) {
+      if (name === "web_search" && isWebSearchRateLimitError(err)) {
+        localWebRateLimited = true;
+        resultContent = "Web search is rate limited for this chat request. Stop calling web_search and answer from the sources already gathered.";
+      } else {
+        resultContent = err instanceof Error ? err.message : "Tool call failed.";
+      }
+    }
+
+    return {
+      toolCall,
+      resultContent,
+      tbaCitations: localTbaCitations,
+      webCitations: localWebCitations,
+      ragCitations: localRagCitations,
+      ragContextBlocks: localRagContextBlocks,
+      webRateLimited: localWebRateLimited,
+    };
+  };
+
+  for (let iteration = 0; iteration < config.maxIterations; iteration++) {
     if (signal?.aborted) throw createAbortError();
+    if (Date.now() - startedAt > config.maxToolDurationMs) {
+      sendEvent({ type: "status", message: "Deep search reached its time budget, answering from gathered sources..." });
+      break;
+    }
 
     let responseMessage: { content: string | null; tool_calls?: ToolCall[] } | null = null;
     let finishReason: string | null = null;
+    const availableTools = webSearchRateLimited
+      ? tools.filter((tool) => tool.function.name !== "web_search")
+      : tools;
+
+    if (availableTools.length === 0) {
+      break;
+    }
 
     for (const model of CHAT_MODELS) {
       if (signal?.aborted) throw createAbortError();
@@ -236,7 +345,7 @@ async function runToolLoop({
           body: JSON.stringify({
             model,
             messages: current,
-            tools,
+            tools: availableTools,
             tool_choice: "auto",
             temperature: 0,
             max_tokens: 512,
@@ -270,60 +379,32 @@ async function runToolLoop({
 
     current.push({ role: "assistant", content: responseMessage.content ?? null, tool_calls: responseMessage.tool_calls });
 
-    for (const toolCall of responseMessage.tool_calls) {
-      const { name, arguments: argsStr } = toolCall.function;
-      let resultContent: string;
+    const toolResults = await Promise.all(responseMessage.tool_calls.map((toolCall) => executeToolCall(toolCall)));
 
-      try {
-        const args = JSON.parse(argsStr) as Record<string, unknown>;
+    for (const toolResult of toolResults) {
+      let resultContent = toolResult.resultContent;
 
-        if (name === "search_documents") {
-          const query = typeof args.query === "string" ? args.query : String(args.query ?? "");
-          const limit = typeof args.limit === "number" ? Math.min(Math.max(args.limit, 1), 20) : 6;
-          const toolSeasonYear = typeof args.season_year === "number" ? args.season_year : seasonYear;
-          sendEvent({ type: "status", message: "Searching indexed FRC documents..." });
-
-          const ragResult = await buildRagContext(query, toolSeasonYear, {
-            limit,
-            sourceOffset: ragCitations.length,
-            onStatus: (msg) => sendEvent({ type: "status", message: msg }),
-          });
-
-          ragCitations.push(...ragResult.citations);
-          if (ragResult.hitCount > 0) ragContextBlocks.push(ragResult.contextBlock);
-          resultContent = ragResult.hitCount > 0
-            ? ragResult.contextBlock
-            : "No matching document chunks found for this query.";
-        } else if (name === "web_search") {
-          const query = typeof args.query === "string" ? args.query : String(args.query ?? "");
-          sendEvent({ type: "status", message: "Running a live web search..." });
-          const results = await webSearch(query, 5, seasonYear);
-          const offset = webCitations.length;
-
-          for (const result of results) {
-            try {
-              const domain = new URL(result.url).hostname.replace("www.", "");
-              webCitations.push({ type: "web", label: domain, url: result.url });
-            } catch {
-              // ignore malformed urls
-            }
-          }
-
-          resultContent = results.length === 0
-            ? "No web results found."
-            : results.map((r, i) => `[WEB ${offset + i + 1}] ${r.title}\n${r.snippet}\nURL: ${r.url}`).join("\n\n");
-        } else {
-          sendEvent({ type: "status", message: "Fetching live data from The Blue Alliance..." });
-          const result = await callTbaTool(name as TbaToolName, args);
-          const citationUrl = getTbaUserFacingUrl(name, args);
-          tbaCitations.push({ type: "web", label: "thebluealliance.com", url: citationUrl });
-          resultContent = JSON.stringify(result.data);
-        }
-      } catch (err) {
-        resultContent = err instanceof Error ? err.message : "Tool call failed.";
+      if (toolResult.ragCitations.length > 0) {
+        const offset = ragCitations.length;
+        resultContent = renumberSourceReferences(resultContent, offset);
+        ragContextBlocks.push(...toolResult.ragContextBlocks.map((block) => renumberSourceReferences(block, offset)));
+        ragCitations.push(...toolResult.ragCitations);
       }
 
-      current.push({ role: "tool", tool_call_id: toolCall.id, content: resultContent });
+      if (toolResult.webCitations.length > 0) {
+        const offset = webCitations.length;
+        resultContent = renumberWebReferences(resultContent, offset);
+        webCitations.push(...toolResult.webCitations);
+      }
+
+      tbaCitations.push(...toolResult.tbaCitations);
+
+      if (toolResult.webRateLimited && !webSearchRateLimited) {
+        webSearchRateLimited = true;
+        sendEvent({ type: "status", message: "Web search rate limit reached; continuing with gathered sources..." });
+      }
+
+      current.push({ role: "tool", tool_call_id: toolResult.toolCall.id, content: resultContent });
     }
   }
 
@@ -551,7 +632,6 @@ function filterUsedCitations(
   const pattern = /\[(SOURCE|TBA|WEB)\s+(\d+)\]/gi;
   const normalizedAnswer = assistantText.toLowerCase();
   const mentionsDocumentEvidence = /\b(team update|game manual|field manual|inspection checklist|page\s+\d+|q&a)\b/i.test(assistantText);
-  const mentionsTbaEvidence = /\bthe blue alliance|tba\b/i.test(assistantText);
   const mentionsWebEvidence = /\bweb\b/i.test(assistantText);
 
   const addCitation = (citation: Citation | undefined) => {
@@ -651,7 +731,10 @@ export async function POST(request: NextRequest) {
   } = body;
   const conversationId = typeof body.conversationId === "string" ? body.conversationId : null;
   const projectId = typeof body.projectId === "string" ? body.projectId : null;
-  const factCheck = typeof body.factCheck === "boolean" ? body.factCheck : false;
+  const searchOptions = parseChatSearchOptions(body);
+  const factCheck = searchOptions.factCheck;
+  const deepSearch = searchOptions.deepSearch;
+  const deepSearchConfig = buildDeepSearchConfig(deepSearch);
   const apiKey = process.env.OPENROUTER_API_KEY!;
 
   let projectMemorySummary = "";
@@ -783,9 +866,9 @@ export async function POST(request: NextRequest) {
             ...(messages as ChatMessage[]),
           ];
 
-          if (lastUser) {
+          if (lastUser && deepSearch) {
             throwIfStreamAborted();
-            sendEvent({ type: "status", message: "Reading your question..." });
+            sendEvent({ type: "status", message: "Deep search is reading your question..." });
             const tools = isTbaMcpEnabled()
               ? [...TBA_TOOLS, WEB_SEARCH_TOOL, RAG_SEARCH_TOOL]
               : [WEB_SEARCH_TOOL, RAG_SEARCH_TOOL];
@@ -796,6 +879,7 @@ export async function POST(request: NextRequest) {
                 messages: fullMessages,
                 tools,
                 seasonYear,
+                config: deepSearchConfig,
                 sendEvent,
                 signal: request.signal,
               });

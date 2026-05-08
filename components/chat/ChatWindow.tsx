@@ -101,14 +101,21 @@ export function ChatWindow({
   const { setOpenMobile: setSidebarOpenMobile } = useSidebar();
 
   const [factCheckEnabled, setFactCheckEnabled] = useState(false);
+  const [deepSearchEnabled, setDeepSearchEnabled] = useState(false);
 
   useEffect(() => {
     setFactCheckEnabled(localStorage.getItem("curator:factCheck") === "true");
+    setDeepSearchEnabled(localStorage.getItem("curator:deepSearch") === "true");
   }, []);
 
   const handleFactCheckChange = useCallback((enabled: boolean) => {
     setFactCheckEnabled(enabled);
     localStorage.setItem("curator:factCheck", String(enabled));
+  }, []);
+
+  const handleDeepSearchChange = useCallback((enabled: boolean) => {
+    setDeepSearchEnabled(enabled);
+    localStorage.setItem("curator:deepSearch", String(enabled));
   }, []);
 
   const abortRef = useRef<AbortController | null>(null);
@@ -326,6 +333,7 @@ export function ChatWindow({
       conversationId,
       projectId,
       factCheck: factCheckEnabled,
+      deepSearch: deepSearchEnabled,
       signal: controller.signal,
       onToken: (token) => {
         accumulated += token;
@@ -372,6 +380,7 @@ export function ChatWindow({
     setTypingTitle,
     startStreaming,
     defaultChatMode,
+    deepSearchEnabled,
     temperature,
     upsertConversation,
     updateConversation,
@@ -777,6 +786,8 @@ export function ChatWindow({
               compact={isEmpty}
               factCheckEnabled={factCheckEnabled}
               onFactCheckChange={handleFactCheckChange}
+              deepSearchEnabled={deepSearchEnabled}
+              onDeepSearchChange={handleDeepSearchChange}
             />
           )}
         </div>

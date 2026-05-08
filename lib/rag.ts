@@ -13,7 +13,7 @@ export const RAG_SEARCH_TOOL = {
       + "Before calling: think about what exact terminology appears in official FRC documents — section names, rule keywords like 'bumper', 'ranking point', 'inspection criteria', 'gracious professionalism', etc. "
       + "Read the available document descriptions to pick the best query. "
       + "Call this when the user's question involves a rule, a definition, or anything that should be cited from an official source. "
-      + "You may request up to 20 results; use more for broad multi-rule questions, fewer for specific targeted lookups.",
+      + "You may request up to 50 results in deep-search mode; use more for broad multi-rule questions, fewer for specific targeted lookups.",
     parameters: {
       type: "object" as const,
       properties: {
@@ -23,7 +23,7 @@ export const RAG_SEARCH_TOOL = {
         },
         limit: {
           type: "number",
-          description: "Number of document chunks to return (1–20). Default 6. Increase for broad questions covering multiple rules.",
+          description: "Number of document chunks to return (1-50). Increase for broad questions covering multiple rules.",
         },
         season_year: {
           type: "number",
@@ -367,7 +367,7 @@ export async function buildRagContext(
   options?: RagStatusOptions & { limit?: number; sourceOffset?: number },
 ): Promise<RagContext> {
   const onStatus = options?.onStatus;
-  const resultLimit = Math.min(Math.max(options?.limit ?? 6, 1), 20);
+  const resultLimit = Math.min(Math.max(options?.limit ?? 6, 1), 50);
   const sourceOffset = options?.sourceOffset ?? 0;
 
   // Build variants synchronously before any IO so all embeddings batch into one API call.
