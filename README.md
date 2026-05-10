@@ -29,7 +29,6 @@
     <img src="https://img.shields.io/badge/TypeScript-5-3178C6?style=for-the-badge&logo=typescript&logoColor=white" alt="TypeScript 5" />
     <img src="https://img.shields.io/badge/Postgres-16-4169E1?style=for-the-badge&logo=postgresql&logoColor=white" alt="Postgres 16" />
     <img src="https://img.shields.io/badge/Qdrant-vector_search-DC244C?style=for-the-badge" alt="Qdrant vector search" />
-    <img src="https://img.shields.io/badge/Vitest-tested-6E9F18?style=for-the-badge&logo=vitest&logoColor=white" alt="Vitest" />
   </p>
 </div>
 
