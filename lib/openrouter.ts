@@ -14,6 +14,7 @@ interface StreamOptions {
   signal?: AbortSignal;
   onToken: (token: string) => void;
   onStatus?: (status: string) => void;
+  onSearchActivity?: (activity: SearchActivity) => void;
   onDone: (citations: Citation[], factCheck?: { accurate: boolean; note: string }, searchActivity?: SearchActivity) => void;
   onError: (err: Error) => void;
   onAuthRequired?: () => void;
@@ -21,7 +22,7 @@ interface StreamOptions {
 
 export async function streamOpenRouterChat({
   messages, temperature = 0.2, seasonYear, chatMode = "veteran", conversationId, projectId, factCheck, deepSearch, searchMode,
-  signal, onToken, onStatus, onDone, onError, onAuthRequired,
+  signal, onToken, onStatus, onSearchActivity, onDone, onError, onAuthRequired,
 }: StreamOptions) {
   try {
     const response = await fetch("/api/chat", {
@@ -91,6 +92,9 @@ export async function streamOpenRouterChat({
         }
         if (parsed.type === "search_activity") {
           pendingSearchActivity = parsed.activity;
+          if (pendingSearchActivity) {
+            onSearchActivity?.(pendingSearchActivity);
+          }
           continue;
         }
         if (parsed.type === "error") {

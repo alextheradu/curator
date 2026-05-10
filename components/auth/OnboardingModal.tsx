@@ -15,6 +15,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 import { useChatStore, type ChatMode } from "@/lib/store";
+import type { SearchMode } from "@/lib/search-activity";
 
 interface OnboardingModalProps {
   open: boolean;
@@ -22,10 +23,11 @@ interface OnboardingModalProps {
   initialPreferredName?: string | null;
   initialTeamNumber?: number | null;
   initialChatMode?: ChatMode;
+  initialSearchMode?: SearchMode;
   onCompleted?: () => void;
 }
 
-const STEP_COUNT = 3;
+const STEP_COUNT = 4;
 
 const CHAT_MODE_OPTIONS: Array<{
   value: ChatMode;
@@ -41,6 +43,28 @@ const CHAT_MODE_OPTIONS: Array<{
     value: "rookie",
     title: "Rookie",
     description: "Explains jargon in simpler language for newer students, families, and mentors.",
+  },
+];
+
+const SEARCH_MODE_OPTIONS: Array<{
+  value: SearchMode;
+  title: string;
+  description: string;
+}> = [
+  {
+    value: "fast",
+    title: "Fast",
+    description: "Starts answering quickly and uses conversation context only.",
+  },
+  {
+    value: "balanced",
+    title: "Balanced",
+    description: "Does a short PDF, web, and live-data check before tougher answers.",
+  },
+  {
+    value: "deep",
+    title: "Deep search",
+    description: "Spends more time searching PDFs, web, and live tools before answering.",
   },
 ];
 
@@ -61,7 +85,9 @@ function focusOnboardingField(step: number, selectedChatMode: ChatMode) {
     ? "preferred-name"
     : step === 2
       ? "team-number"
-      : `chat-mode-${selectedChatMode}`;
+      : step === 3
+        ? `chat-mode-${selectedChatMode}`
+        : "search-mode-fast";
 
   const target = document.getElementById(targetId) ?? document.getElementById("onboarding-next-step");
 
@@ -76,16 +102,18 @@ export function OnboardingModal({
   initialPreferredName,
   initialTeamNumber,
   initialChatMode = "veteran",
+  initialSearchMode = "fast",
   onCompleted,
 }: OnboardingModalProps) {
   const router = useRouter();
   const { update } = useSession();
-  const { setDefaultChatMode } = useChatStore();
+  const { setDefaultChatMode, setDefaultSearchMode } = useChatStore();
   const [step, setStep] = useState(1);
   const [preferredName, setPreferredName] = useState("");
   const [teamNumberInput, setTeamNumberInput] = useState("");
   const [isNoTeam, setIsNoTeam] = useState(false);
   const [chatMode, setChatMode] = useState<ChatMode>("veteran");
+  const [searchMode, setSearchMode] = useState<SearchMode>("fast");
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isComplete, setIsComplete] = useState(false);
@@ -100,10 +128,11 @@ export function OnboardingModal({
     setTeamNumberInput(initialTeamNumber ? String(initialTeamNumber) : "");
     setIsNoTeam(false);
     setChatMode(initialChatMode);
+    setSearchMode(initialSearchMode);
     setIsSaving(false);
     setError(null);
     setIsComplete(false);
-  }, [initialChatMode, initialName, initialPreferredName, initialTeamNumber, open]);
+  }, [initialChatMode, initialName, initialPreferredName, initialSearchMode, initialTeamNumber, open]);
 
   useEffect(() => {
     if (!open || isComplete) {
@@ -187,6 +216,8 @@ export function OnboardingModal({
       }
 
       setDefaultChatMode(chatMode);
+      setDefaultSearchMode(searchMode);
+      localStorage.setItem("curator:searchMode", searchMode);
       setIsComplete(true);
       onCompleted?.();
 
@@ -224,15 +255,19 @@ export function OnboardingModal({
 
   const stepTitle = step === 1
     ? "What should Curator call you?"
-    : step === 2
-      ? "What team are you on?"
-      : "Choose your default chat mode";
+      : step === 2
+        ? "What team are you on?"
+        : step === 3
+          ? "Choose your default chat mode"
+          : "Choose your default search mode";
 
   const stepDescription = step === 1
     ? "This name appears in your saved account profile and is used in chat context."
-    : step === 2
-      ? "Your saved team number lets Curator pull The Blue Alliance context for your team."
-      : "You can still change this later from Settings.";
+      : step === 2
+        ? "Your saved team number lets Curator pull The Blue Alliance context for your team."
+        : step === 3
+          ? "You can still change this later from Settings."
+          : "Pick how much source gathering Curator should do by default.";
 
   return (
     <Dialog open={open && !isComplete} onOpenChange={() => {}}>
@@ -347,6 +382,47 @@ export function OnboardingModal({
                       id={`chat-mode-${option.value}`}
                       type="button"
                       onClick={() => setChatMode(option.value)}
+                      className={cn(
+                        "rounded-2xl border px-4 py-4 text-left transition-colors",
+                        selected
+                          ? "border-foreground/15 bg-muted text-foreground shadow-[var(--shadow-card)]"
+                          : "border-border/60 bg-background text-foreground hover:bg-muted/40",
+                      )}
+                    >
+                      <div className="flex items-center justify-between gap-3">
+                        <div>
+                          <div className="text-sm font-semibold">{option.title}</div>
+                          <p className="mt-1 text-sm leading-6 text-muted-foreground">
+                            {option.description}
+                          </p>
+                        </div>
+                        <div
+                          className={cn(
+                            "flex h-5 w-5 shrink-0 items-center justify-center rounded-full border text-[11px] font-semibold",
+                            selected
+                              ? "border-foreground bg-foreground text-background"
+                              : "border-border/70 bg-background text-transparent",
+                          )}
+                        >
+                          ✓
+                        </div>
+                      </div>
+                    </button>
+                  );
+                })}
+              </div>
+            ) : null}
+
+            {step === 4 ? (
+              <div className="grid gap-3">
+                {SEARCH_MODE_OPTIONS.map((option) => {
+                  const selected = searchMode === option.value;
+                  return (
+                    <button
+                      key={option.value}
+                      id={`search-mode-${option.value}`}
+                      type="button"
+                      onClick={() => setSearchMode(option.value)}
                       className={cn(
                         "rounded-2xl border px-4 py-4 text-left transition-colors",
                         selected

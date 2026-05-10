@@ -3,7 +3,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { BarChart3, Bug, ChevronLeft, FileText, Flag, MessageSquare, Newspaper, Users } from "lucide-react";
+import { BarChart3, Bug, ChevronLeft, FileText, Flag, MessageSquare, Newspaper, ThumbsUp, Users } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useSession } from "next-auth/react";
 
@@ -14,6 +14,7 @@ const NAV = [
   { href: "/admin/users", label: "Users", icon: Users, exact: false },
   { href: "/admin/chats", label: "Chats", icon: MessageSquare, exact: false },
   { href: "/admin/reports", label: "Reports", icon: Flag, exact: false },
+  { href: "/admin/feedback", label: "Feedback", icon: ThumbsUp, exact: false },
   { href: "/admin/ops", label: "Ops", icon: Bug, exact: false },
 ];
 

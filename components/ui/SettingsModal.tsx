@@ -39,6 +39,7 @@ import { readBrowserCookie } from "@/lib/cookies";
 import { REOPEN_ONBOARDING_EVENT } from "@/lib/onboarding";
 import { cn } from "@/lib/utils";
 import { useChatStore, type ChatMode } from "@/lib/store";
+import type { SearchMode } from "@/lib/search-activity";
 
 type SettingsSection = "general" | "personalization" | "data" | "support" | "about";
 
@@ -67,6 +68,12 @@ const CHAT_MODE_OPTIONS: { value: ChatMode; title: string; description: string }
     title: "Rookie",
     description: "Explains jargon in plain English for newer students, families, and mentors.",
   },
+];
+
+const SEARCH_MODE_OPTIONS: { value: SearchMode; title: string; description: string }[] = [
+  { value: "fast", title: "Fast", description: "Starts answering with the available conversation context." },
+  { value: "balanced", title: "Balanced", description: "Runs a short source search before tougher answers." },
+  { value: "deep", title: "Deep search", description: "Searches more broadly before answering." },
 ];
 
 function readConsent(): CookieConsentValue | null {
@@ -189,6 +196,8 @@ export function SettingsModal() {
     setTemperature,
     defaultChatMode,
     setDefaultChatMode,
+    defaultSearchMode,
+    setDefaultSearchMode,
     resetSettings,
     conversations,
     sidebarOpen,
@@ -251,7 +260,7 @@ export function SettingsModal() {
   const handleExportData = async () => {
     setIsExporting(true);
     try {
-      const browserSettings = { theme, temperature, defaultChatMode, sidebarOpen, cookieConsent: selectedConsent };
+      const browserSettings = { theme, temperature, defaultChatMode, defaultSearchMode, sidebarOpen, cookieConsent: selectedConsent };
 
       if (!session?.user?.id) {
         downloadJsonFile("curator-browser-export.json", {
@@ -282,6 +291,7 @@ export function SettingsModal() {
     const previousConsent = selectedConsent;
     const previousTemperature = temperature;
     const previousChatMode = defaultChatMode;
+    const previousSearchMode = defaultSearchMode;
 
     setIsResetting(true);
     setTheme("system");
@@ -305,6 +315,7 @@ export function SettingsModal() {
       persistCookieConsent(previousConsent);
       setTemperature(previousTemperature);
       setDefaultChatMode(previousChatMode);
+      setDefaultSearchMode(previousSearchMode);
       toast.error(error instanceof Error ? error.message : "Unable to reset settings.");
     } finally {
       setIsResetting(false);
@@ -314,6 +325,13 @@ export function SettingsModal() {
   const handleRedoOnboarding = () => {
     setSettingsOpen(false);
     window.dispatchEvent(new Event(REOPEN_ONBOARDING_EVENT));
+  };
+
+  const saveDefaultSearchMode = (mode: SearchMode) => {
+    setDefaultSearchMode(mode);
+    localStorage.setItem("curator:searchMode", mode);
+    localStorage.setItem("curator:deepSearch", String(mode === "deep"));
+    toast.success(`Default search mode set to ${mode === "deep" ? "deep search" : mode}.`);
   };
 
   return (
@@ -467,6 +485,36 @@ export function SettingsModal() {
                       {session?.user?.id
                         ? "Saved to your account."
                         : "Sign in to sync this preference across devices."}
+                    </p>
+                  </div>
+
+                  <div>
+                    <SectionHeading>Search mode</SectionHeading>
+                    {SEARCH_MODE_OPTIONS.map((option) => (
+                      <SettingRow
+                        key={option.value}
+                        label={option.title}
+                        description={option.description}
+                      >
+                        <button
+                          type="button"
+                          onClick={() => saveDefaultSearchMode(option.value)}
+                          className={cn(
+                            "flex size-5 shrink-0 items-center justify-center rounded-full border-2 transition-colors",
+                            defaultSearchMode === option.value
+                              ? "border-foreground bg-foreground"
+                              : "border-muted-foreground/40 hover:border-foreground/60"
+                          )}
+                          aria-label={`Set default search mode to ${option.title}`}
+                        >
+                          {defaultSearchMode === option.value ? (
+                            <div className="size-2 rounded-full bg-background" />
+                          ) : null}
+                        </button>
+                      </SettingRow>
+                    ))}
+                    <p className="mt-2 text-xs text-muted-foreground">
+                      Stored in this browser.
                     </p>
                   </div>
 

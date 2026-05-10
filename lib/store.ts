@@ -2,7 +2,7 @@ import { create } from "zustand";
 import { persist } from "zustand/middleware";
 import { generateChatTitle } from "./utils";
 import type { Citation } from "./db/schema";
-import type { SearchActivity } from "./search-activity";
+import type { SearchActivity, SearchMode } from "./search-activity";
 import type { Project } from "./projects";
 import { DEFAULT_SEASON_YEAR } from "./seasons";
 import { randomUuid } from "./uuid";
@@ -44,6 +44,7 @@ interface ChatStore {
   settingsOpen: boolean;
   temperature: number;
   defaultChatMode: ChatMode;
+  defaultSearchMode: SearchMode;
   typingTitleConversationId: string | null;
   typingTitle: string;
 
@@ -60,6 +61,7 @@ interface ChatStore {
   deleteConversation: (conversationId: string) => void;
   setSeasonYear: (conversationId: string, year: number) => void;
   setDefaultChatMode: (mode: ChatMode) => void;
+  setDefaultSearchMode: (mode: SearchMode) => void;
   shareDialogConversationId: string | null;
   setShareDialogConversationId: (id: string | null) => void;
   setSidebarOpen: (open: boolean) => void;
@@ -96,6 +98,7 @@ export const useChatStore = create<ChatStore>()(
       settingsOpen: false,
       temperature: 0.2,
       defaultChatMode: "veteran",
+      defaultSearchMode: "fast",
       typingTitleConversationId: null,
       typingTitle: "",
 
@@ -206,6 +209,8 @@ export const useChatStore = create<ChatStore>()(
         })),
       })),
 
+      setDefaultSearchMode: (mode) => set({ defaultSearchMode: mode }),
+
       shareDialogConversationId: null,
       setShareDialogConversationId: (id) => set({ shareDialogConversationId: id }),
       setSidebarOpen: (open) => set({ sidebarOpen: open }),
@@ -214,6 +219,7 @@ export const useChatStore = create<ChatStore>()(
       resetSettings: () => set((s) => ({
         temperature: 0.2,
         defaultChatMode: "veteran",
+        defaultSearchMode: "fast",
         conversations: s.conversations.map((conversation) => ({
           ...conversation,
           chatMode: "veteran",
@@ -320,6 +326,7 @@ export const useChatStore = create<ChatStore>()(
         temperature: s.temperature,
         sidebarOpen: s.sidebarOpen,
         defaultChatMode: s.defaultChatMode,
+        defaultSearchMode: s.defaultSearchMode,
       }),
     }
   )

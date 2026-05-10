@@ -1,7 +1,7 @@
 # Terms of Service
 
 **Curator — FRC AI Assistant**
-**Last updated: May 8, 2026**
+**Last updated: May 9, 2026**
 
 ## 1. Acceptance of Terms
 
@@ -40,6 +40,7 @@ You agree not to:
 - Submit obscene, abusive, harassing, threatening, or otherwise inappropriate content, including repeated profanity intended to target other people or misuse the Service
 - Submit sensitive credentials, secrets, or other highly confidential data through chat messages, shared chats, or support requests unless you are authorized to disclose that information and accept the associated risk
 - Publish or share chat links containing private, confidential, or sensitive information unless you are authorized to disclose that information
+- Use Curator to design, build, prompt, train, fine-tune, deploy, evaluate, or operate an AI assistant or model intended to replicate Curator or provide a similar FRC knowledge/chat service for another team or organization
 
 ## 5. User Accounts
 

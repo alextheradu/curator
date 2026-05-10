@@ -39,7 +39,7 @@ import {
 } from "@/lib/conversation-api";
 import { normalizeConversation } from "@/lib/conversations";
 import type { Citation } from "@/lib/db/schema";
-import type { SearchMode } from "@/lib/search-activity";
+import type { SearchActivity, SearchMode } from "@/lib/search-activity";
 import type { Conversation } from "@/lib/store";
 import { useChatStore } from "@/lib/store";
 import { streamOpenRouterChat } from "@/lib/openrouter";
@@ -81,6 +81,7 @@ export function ChatWindow({
     isStreaming,
     temperature,
     defaultChatMode,
+    defaultSearchMode,
     addMessage,
     startStreaming,
     updateStreamingContent,
@@ -105,6 +106,7 @@ export function ChatWindow({
 
   const [factCheckEnabled, setFactCheckEnabled] = useState(false);
   const [searchMode, setSearchMode] = useState<SearchMode>("fast");
+  const [streamingSearchActivity, setStreamingSearchActivity] = useState<SearchActivity | undefined>();
 
   useEffect(() => {
     setFactCheckEnabled(localStorage.getItem("curator:factCheck") === "true");
@@ -114,8 +116,8 @@ export function ChatWindow({
       return;
     }
 
-    setSearchMode(localStorage.getItem("curator:deepSearch") === "true" ? "deep" : "fast");
-  }, []);
+    setSearchMode(localStorage.getItem("curator:deepSearch") === "true" ? "deep" : defaultSearchMode);
+  }, [defaultSearchMode]);
 
   const handleFactCheckChange = useCallback((enabled: boolean) => {
     setFactCheckEnabled(enabled);
@@ -279,6 +281,7 @@ export function ChatWindow({
     const controller = new AbortController();
     abortRef.current = controller;
     setStreamStatus("");
+    setStreamingSearchActivity(undefined);
 
     const previousConversation = useChatStore.getState().activeConversation();
     const previousTitle = previousConversation?.title ?? "New Chat";
@@ -352,9 +355,13 @@ export function ChatWindow({
       onStatus: (status) => {
         setStreamStatus(status);
       },
+      onSearchActivity: (activity) => {
+        setStreamingSearchActivity(activity);
+      },
       onDone: async (citations: Citation[], factCheck, searchActivity) => {
         abortRef.current = null;
         setStreamStatus("");
+        setStreamingSearchActivity(undefined);
         finalizeStreamingMessage(conversationId, citations, factCheck, searchActivity);
         await persistLatestAssistantMessage(conversationId, citations);
         scrollToBottom();
@@ -362,6 +369,7 @@ export function ChatWindow({
       onError: async (error) => {
         abortRef.current = null;
         setStreamStatus("");
+        setStreamingSearchActivity(undefined);
         finalizeStreamingMessage(conversationId);
         await persistLatestAssistantMessage(conversationId);
         window.dispatchEvent(new CustomEvent("curator:error", {
@@ -772,6 +780,7 @@ export function ChatWindow({
                       role: "assistant",
                       content: streamingContent,
                       timestamp: new Date(),
+                      searchActivity: streamingSearchActivity,
                     }}
                     isStreaming
                     onOpenCitation={setViewerCitation}
