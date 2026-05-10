@@ -19,7 +19,7 @@ import { conversations, projects, type Citation } from "@/lib/db/schema";
 import { buildProjectMemoryContext, compactProjectSummaryInput } from "@/lib/project-memory";
 import { GUEST_MESSAGE_COUNT_COOKIE_NAME, GUEST_MESSAGE_LIMIT } from "@/lib/app-cookies";
 import { serializeCookie } from "@/lib/cookies";
-import { captureException } from "@/lib/logging";
+import { captureException, logAppEvent } from "@/lib/logging";
 import { applyRateLimitHeaders, enforceRateLimit } from "@/lib/rate-limit";
 import { getClientIp } from "@/lib/request-context";
 import { NextRequest, NextResponse } from "next/server";
@@ -230,6 +230,16 @@ async function runToolLoop({
   const current: ChatMessage[] = [...messages];
   let webSearchRateLimited = false;
   const startedAt = Date.now();
+  const emitSearchActivity = () => {
+    sendEvent({
+      type: "search_activity",
+      activity: {
+        mode: searchMode,
+        steps: searchActivitySteps,
+        durationMs: Date.now() - startedAt,
+      },
+    });
+  };
 
   const renumberSourceReferences = (content: string, offset: number) => (
     content.replace(/\[SOURCE\s+(\d+)\]/g, (_match, index) => `[SOURCE ${offset + Number(index)}]`)
@@ -272,6 +282,7 @@ async function runToolLoop({
           count: ragResult.hitCount,
           status: ragResult.hitCount > 0 ? "ok" : "empty",
         });
+        emitSearchActivity();
         resultContent = ragResult.hitCount > 0
           ? ragResult.contextBlock
           : "No matching document chunks found for this query.";
@@ -300,6 +311,7 @@ async function runToolLoop({
             count: results.length,
             status: results.length > 0 ? "ok" : "empty",
           });
+          emitSearchActivity();
           resultContent = results.length === 0
             ? "No web results found."
             : results.map((r, i) => `[WEB ${i + 1}] ${r.title}\n${r.snippet}\nURL: ${r.url}`).join("\n\n");
@@ -316,6 +328,7 @@ async function runToolLoop({
           count: 1,
           status: "ok",
         });
+        emitSearchActivity();
         resultContent = JSON.stringify(result.data);
       }
     } catch (err) {
@@ -326,6 +339,7 @@ async function runToolLoop({
           label: "Web search rate limit",
           status: "limited",
         });
+        emitSearchActivity();
         resultContent = "Web search is rate limited for this chat request. Stop calling web_search and answer from the sources already gathered.";
       } else {
         searchActivitySteps.push({
@@ -333,6 +347,7 @@ async function runToolLoop({
           label: name.replace(/_/g, " "),
           status: "error",
         });
+        emitSearchActivity();
         resultContent = err instanceof Error ? err.message : "Tool call failed.";
       }
     }
@@ -356,6 +371,7 @@ async function runToolLoop({
         label: "Search time budget reached",
         status: "limited",
       });
+      emitSearchActivity();
       sendEvent({ type: "status", message: "Deep search reached its time budget, answering from gathered sources..." });
       break;
     }
@@ -894,6 +910,7 @@ export async function POST(request: NextRequest) {
 
       void (async () => {
         try {
+          const chatStartedAt = Date.now();
           throwIfStreamAborted();
           const lastUser = [...messages].reverse().find((m: { role: string }) => m.role === "user");
 
@@ -967,6 +984,23 @@ export async function POST(request: NextRequest) {
             temperature,
             sendEvent,
             signal: request.signal,
+          });
+          void logAppEvent({
+            level: "info",
+            source: "chat-timing",
+            message: "chat_request_completed",
+            path: request.nextUrl.pathname,
+            userId: session?.user?.id ?? null,
+            ip,
+            details: {
+              searchMode,
+              factCheck,
+              totalMs: Date.now() - chatStartedAt,
+              ragCitations: ragCitations.length,
+              webCitations: webCitations.length,
+              tbaCitations: tbaCitations.length,
+              responseChars: assistantText.length,
+            },
           });
           if (session?.user?.id && projectId && lastUser?.content) {
             void updateProjectSummary({

@@ -64,6 +64,7 @@ export function ChatApp({ requestedConversationId, initialPrompt }: ChatAppProps
   const {
     setActiveConversation,
     setDefaultChatMode,
+    defaultSearchMode,
     replaceProjects,
     replaceConversations,
     upsertConversation,
@@ -377,6 +378,7 @@ export function ChatApp({ requestedConversationId, initialPrompt }: ChatAppProps
         initialPreferredName={session?.user?.preferredName}
         initialTeamNumber={session?.user?.teamNumber}
         initialChatMode={session?.user?.defaultChatMode}
+        initialSearchMode={defaultSearchMode}
         onCompleted={() => {
           setForceOnboardingOpen(false);
           if (session?.user?.id) {

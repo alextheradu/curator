@@ -1,0 +1,29 @@
+[
+  {
+    "id": "rule-bumper-source",
+    "mode": "balanced",
+    "prompt": "Summarize the 2026 bumper rules teams miss most often.",
+    "expect": {
+      "mustMention": ["bumper"],
+      "needsCitation": true
+    }
+  },
+  {
+    "id": "strategy-plain-english",
+    "mode": "fast",
+    "prompt": "Explain playoff alliance selection step by step.",
+    "expect": {
+      "mustMention": ["alliance"],
+      "needsCitation": false
+    }
+  },
+  {
+    "id": "live-team-context",
+    "mode": "deep",
+    "prompt": "Look up current event context for FRC 1676.",
+    "expect": {
+      "mustMention": ["1676"],
+      "needsCitation": true
+    }
+  }
+]
