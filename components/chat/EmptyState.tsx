@@ -129,24 +129,24 @@ export function EmptyState({ onPromptSelect }: Props) {
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.5, duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
-          className="max-w-sm text-center text-sm leading-5 text-muted-foreground"
+          className="max-w-sm text-center text-xs leading-5 text-muted-foreground"
         >
           Ask about FRC rules, strategy, programming, or game documentation.
         </motion.div>
       </div>
 
       <div className="w-full px-1 pb-0">
-        <div className="mb-2 flex items-center justify-between px-1">
-          <p className="text-xs font-semibold uppercase tracking-[0.12em] text-muted-foreground">
+        <div className="mb-1.5 flex items-center justify-between px-1">
+          <p className="text-[10px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
             Quick starts
           </p>
-          <div className="flex items-center gap-1.5 overflow-x-auto">
+          <div className="flex items-center gap-1 overflow-x-auto">
             {SUGGESTION_GROUP_NAMES.map((group) => (
               <button
                 key={group}
                 type="button"
                 onClick={() => setActiveGroup(group)}
-                className={`shrink-0 rounded-full border px-3 py-1.5 text-xs font-medium transition-colors ${
+                className={`shrink-0 rounded-full border px-2.5 py-1 text-[10px] font-medium transition-colors ${
                   activeGroup === group
                     ? "border-[#0066B3]/30 bg-[#0066B3]/10 text-[#8cc6f3]"
                     : "border-border/50 bg-card/30 text-muted-foreground hover:bg-card/60"
@@ -157,7 +157,7 @@ export function EmptyState({ onPromptSelect }: Props) {
             ))}
           </div>
         </div>
-        <div className="grid w-full grid-cols-2 gap-2">
+        <div className="grid w-full grid-cols-2 gap-1.5">
           {(SUGGESTION_GROUPS[activeGroup] ?? suggestions).map((suggestion, index) => (
             <motion.div
               key={suggestion}
@@ -174,7 +174,7 @@ export function EmptyState({ onPromptSelect }: Props) {
               <button
                 type="button"
                 onClick={() => onPromptSelect(suggestion)}
-                className="flex h-full w-full cursor-pointer items-center rounded-xl border border-border/50 bg-card/35 px-3 py-2.5 text-left text-xs leading-snug text-foreground/75 transition-all duration-200 hover:-translate-y-0.5 hover:bg-card/60 hover:text-foreground hover:shadow-[var(--shadow-card)] sm:py-3 sm:text-sm"
+                className="flex h-full w-full cursor-pointer items-center rounded-xl border border-border/50 bg-card/35 px-2.5 py-2 text-left text-[11px] leading-snug text-foreground/75 transition-all duration-200 hover:-translate-y-0.5 hover:bg-card/60 hover:text-foreground hover:shadow-[var(--shadow-card)]"
               >
                 {suggestion}
               </button>

@@ -59,13 +59,15 @@ export function InputBar({
     return () => cancelAnimationFrame(id);
   }, [value]);
 
-  // Auto-focus on mount — desktop only (mobile would pop the keyboard immediately)
+  // Auto-focus on mount — always on Capacitor (opens keyboard like Claude/ChatGPT),
+  // desktop only on web (avoids popping keyboard on mobile browsers).
   useEffect(() => {
+    const isCapacitor = typeof window !== "undefined" && "Capacitor" in window;
     const isTouchDevice = window.matchMedia("(hover: none) and (pointer: coarse)").matches;
-    if (isTouchDevice) return;
+    if (isTouchDevice && !isCapacitor) return;
     const timer = setTimeout(() => {
       textareaRef.current?.focus();
-    }, 100);
+    }, 400);
     return () => clearTimeout(timer);
   }, []);
 
