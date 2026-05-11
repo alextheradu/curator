@@ -1,6 +1,7 @@
 "use client";
 
 import { signIn } from "next-auth/react";
+import { nativeGoogleSignIn } from "@/lib/native-auth";
 import {
   Dialog,
   DialogContent,
@@ -48,7 +49,7 @@ export function AuthModal({ open, onOpenChange }: Props) {
             </button>
           )}
           <Button
-            onClick={() => signIn("google", { callbackUrl: "/" })}
+            onClick={() => void nativeGoogleSignIn()}
             variant="outline"
             className="w-full gap-3 rounded-2xl"
           >
