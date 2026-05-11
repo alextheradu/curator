@@ -131,7 +131,6 @@ export function InputBar({
   return (
     <div className="flex flex-col gap-2">
       <div
-        data-slot="composer"
         className={cn(
           "rounded-2xl border border-border/40 bg-card shadow-[var(--shadow-composer)] transition-shadow duration-300",
           focused && "shadow-[var(--shadow-composer-focus)]"
