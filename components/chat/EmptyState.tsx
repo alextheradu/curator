@@ -106,22 +106,22 @@ export function EmptyState({ onPromptSelect }: Props) {
           transition={{ delay: 0.15, duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
           className="relative flex items-center justify-center"
         >
-          <div className="absolute h-16 w-16 rounded-full bg-red-900/50 blur-xl" />
+          <div className="absolute h-10 w-10 rounded-full bg-red-900/50 blur-xl md:h-14 md:w-14" />
           <Image
             src="/logo.png"
             alt="Curator"
-            width={64}
-            height={64}
+            width={56}
+            height={56}
             priority
-            sizes="64px"
-            className="relative h-16 w-16 object-contain"
+            sizes="56px"
+            className="relative h-10 w-10 object-contain md:h-14 md:w-14"
           />
         </motion.div>
         <motion.h1
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.35, duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
-          className="text-center text-3xl font-semibold tracking-tight text-foreground"
+          className="text-center text-xl font-semibold tracking-tight text-foreground md:text-2xl"
         >
           {greeting}
         </motion.h1>
@@ -129,7 +129,7 @@ export function EmptyState({ onPromptSelect }: Props) {
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.5, duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
-          className="max-w-sm text-center text-base leading-6 text-muted-foreground"
+          className="max-w-sm text-center text-sm leading-5 text-muted-foreground"
         >
           Ask about FRC rules, strategy, programming, or game documentation.
         </motion.div>
@@ -174,7 +174,7 @@ export function EmptyState({ onPromptSelect }: Props) {
               <button
                 type="button"
                 onClick={() => onPromptSelect(suggestion)}
-                className="flex h-full w-full cursor-pointer items-center rounded-xl border border-border/50 bg-card/35 px-3 py-3 text-left text-sm leading-snug text-foreground/75 transition-all duration-200 hover:-translate-y-0.5 hover:bg-card/60 hover:text-foreground hover:shadow-[var(--shadow-card)]"
+                className="flex h-full w-full cursor-pointer items-center rounded-xl border border-border/50 bg-card/35 px-3 py-2.5 text-left text-xs leading-snug text-foreground/75 transition-all duration-200 hover:-translate-y-0.5 hover:bg-card/60 hover:text-foreground hover:shadow-[var(--shadow-card)] sm:py-3 sm:text-sm"
               >
                 {suggestion}
               </button>
