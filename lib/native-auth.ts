@@ -26,13 +26,27 @@ export async function nativeGoogleSignIn(): Promise<void> {
     }
 
     const result = await GoogleSignIn.signIn();
-    const idToken = result.idToken;
-    if (!idToken) throw new Error("No ID token returned");
+    console.log("[native-auth] GoogleSignIn result:", JSON.stringify(result));
 
-    await signIn("google-id-token", { idToken, callbackUrl: "/" });
+    const idToken = result.idToken;
+    if (!idToken) throw new Error("No ID token returned from Google");
+
+    console.log("[native-auth] Calling NextAuth with idToken aud check…");
+    const response = await signIn("google-id-token", {
+      idToken,
+      callbackUrl: "/",
+      redirect: false,
+    });
+    console.log("[native-auth] NextAuth response:", JSON.stringify(response));
+
+    if (response?.error) {
+      throw new Error(`Auth failed: ${response.error} (url: ${response.url ?? ""})`);
+    }
+
+    // Success — navigate to app
+    window.location.href = response?.url ?? "/";
   } catch (err) {
-    // Log but do NOT open Safari — surface the error to the user instead.
-    console.error("Native Google sign-in failed:", err);
+    console.error("[native-auth] sign-in failed:", err);
     throw err;
   }
 }
