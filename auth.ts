@@ -1,5 +1,6 @@
 import NextAuth from "next-auth";
 import Google from "next-auth/providers/google";
+import Apple from "next-auth/providers/apple";
 import { DrizzleAdapter } from "@auth/drizzle-adapter";
 import { eq } from "drizzle-orm";
 import { pgTable, text, timestamp } from "drizzle-orm/pg-core";
@@ -15,6 +16,14 @@ type GoogleProfile = {
   email?: string;
   picture?: string;
   email_verified?: boolean;
+};
+
+type AppleProfile = {
+  sub: string;
+  email?: string;
+  email_verified?: boolean | string;
+  // Apple only sends `name` on the very first sign-in
+  name?: { firstName?: string; lastName?: string };
 };
 
 // Keep Auth.js compatible with live databases that have not applied newer
@@ -49,6 +58,28 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         };
       },
     }),
+    ...(process.env.AUTH_APPLE_ID && process.env.AUTH_APPLE_SECRET
+      ? [
+          Apple({
+            clientId: process.env.AUTH_APPLE_ID,
+            clientSecret: process.env.AUTH_APPLE_SECRET,
+            profile(profile: AppleProfile) {
+              const firstName = profile.name?.firstName ?? "";
+              const lastName = profile.name?.lastName ?? "";
+              const fullName = `${firstName} ${lastName}`.trim() || null;
+              const verified =
+                profile.email_verified === true || profile.email_verified === "true";
+              return {
+                id: profile.sub,
+                name: fullName,
+                email: profile.email?.toLowerCase() ?? null,
+                image: null,
+                emailVerified: verified ? new Date() : null,
+              };
+            },
+          }),
+        ]
+      : []),
   ],
   session: { strategy: "jwt" },
   callbacks: {

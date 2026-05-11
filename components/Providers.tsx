@@ -6,6 +6,8 @@ import { ThemeProvider } from "next-themes";
 import { CookieConsentBanner } from "@/components/analytics/CookieConsentBanner";
 import { GoogleAnalytics } from "@/components/analytics/GoogleAnalytics";
 import { PwaRuntime } from "@/components/pwa/PwaRuntime";
+import { SlowConnectionBanner } from "@/components/pwa/SlowConnectionBanner";
+import { CapacitorOfflineScreen } from "@/components/pwa/CapacitorOfflineScreen";
 import { Toaster } from "@/components/ui/sonner";
 import { ErrorToastListener } from "@/components/ui/ErrorToast";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -148,6 +150,8 @@ export function Providers({ children }: { children: ReactNode }) {
         <TooltipProvider>
           <GoogleAnalytics />
           <PwaRuntime />
+          <SlowConnectionBanner />
+          <CapacitorOfflineScreen />
           <AssetRecovery />
           <ErrorToastListener />
           {children}

@@ -43,3 +43,7 @@ yarn-error.log*
 next-env.d.ts
 
 video/node_modules
+
+# capacitor native projects (generated — run `cap add ios` on a Mac)
+/ios
+/android

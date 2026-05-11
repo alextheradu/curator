@@ -16,7 +16,9 @@
     "test": "vitest run",
     "eval:chat": "node scripts/run-chat-evals.mjs",
     "db:migrate:dev": "node scripts/run-with-env.mjs .env.development.local drizzle-kit migrate",
-    "db:studio:dev": "node scripts/run-with-env.mjs .env.development.local drizzle-kit studio"
+    "db:studio:dev": "node scripts/run-with-env.mjs .env.development.local drizzle-kit studio",
+    "cap:sync": "cap sync",
+    "cap:open:ios": "cap open ios"
   },
   "browserslist": [
     "Chrome >= 109",
@@ -27,6 +29,10 @@
   "dependencies": {
     "@auth/drizzle-adapter": "^1.11.1",
     "@base-ui/react": "^1.4.0",
+    "@capacitor/cli": "^8.3.3",
+    "@capacitor/core": "^8.3.3",
+    "@capacitor/haptics": "^8.0.2",
+    "@capacitor/ios": "^8.3.3",
     "@modelcontextprotocol/sdk": "^1.29.0",
     "@qdrant/js-client-rest": "^1.17.0",
     "@radix-ui/react-alert-dialog": "^1.1.15",

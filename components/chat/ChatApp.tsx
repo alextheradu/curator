@@ -21,7 +21,7 @@ import { normalizeProject } from "@/lib/projects";
 import type { Conversation } from "@/lib/store";
 import { useChatStore } from "@/lib/store";
 
-type ViewMode = "loading" | "guest" | "owner" | "public" | "not-found";
+type ViewMode = "loading" | "guest" | "owner" | "public" | "not-found" | "error";
 
 interface ChatAppProps {
   requestedConversationId?: string;
@@ -32,6 +32,25 @@ function LoadingState() {
   return (
     <div className="flex h-svh w-full items-center justify-center bg-[var(--background)] text-sm text-muted-foreground">
       Loading chat…
+    </div>
+  );
+}
+
+function ErrorState() {
+  return (
+    <div className="flex h-svh w-full items-center justify-center bg-[var(--background)] px-6">
+      <div className="max-w-md rounded-3xl border border-border/60 bg-card/60 p-8 text-center shadow-[var(--shadow-card)]">
+        <h1 className="text-xl font-semibold text-foreground">Couldn't load your chats</h1>
+        <p className="mt-3 text-sm leading-6 text-muted-foreground">
+          The connection timed out. This can happen on slow competition Wi-Fi.
+        </p>
+        <button
+          onClick={() => window.location.reload()}
+          className="mt-6 inline-flex rounded-xl bg-foreground px-4 py-2 text-sm font-medium text-background transition-opacity hover:opacity-90"
+        >
+          Retry
+        </button>
+      </div>
     </div>
   );
 }
@@ -353,8 +372,18 @@ export function ChatApp({ requestedConversationId, initialPrompt }: ChatAppProps
     }
   }, [isAuthenticated, upsertConversation]);
 
+  useEffect(() => {
+    if (viewMode !== "loading") return;
+    const timer = setTimeout(() => setViewMode("error"), 8_000);
+    return () => clearTimeout(timer);
+  }, [viewMode]);
+
   if (viewMode === "loading") {
     return <LoadingState />;
+  }
+
+  if (viewMode === "error") {
+    return <ErrorState />;
   }
 
   if (viewMode === "not-found") {
