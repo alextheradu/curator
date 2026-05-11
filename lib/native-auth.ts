@@ -13,9 +13,18 @@ export async function nativeGoogleSignIn(): Promise<void> {
       return;
     }
 
-    const { GoogleAuth } = await import("@codetrix-studio/capacitor-google-auth");
-    const result = await GoogleAuth.signIn();
-    const idToken = result.authentication.idToken;
+    const { GoogleSignIn } = await import(
+      "@capawesome/capacitor-google-sign-in"
+    );
+
+    // Initialize with the *web* client ID so the idToken audience
+    // matches AUTH_GOOGLE_ID and can be verified server-side.
+    await GoogleSignIn.initialize({
+      clientId: process.env.NEXT_PUBLIC_AUTH_GOOGLE_ID ?? "",
+    });
+
+    const result = await GoogleSignIn.signIn();
+    const idToken = result.idToken;
     if (!idToken) throw new Error("No ID token");
 
     await signIn("google-id-token", { idToken, callbackUrl: "/" });
