@@ -17,6 +17,7 @@
     "eval:chat": "node scripts/run-chat-evals.mjs",
     "db:migrate:dev": "node scripts/run-with-env.mjs .env.development.local drizzle-kit migrate",
     "db:studio:dev": "node scripts/run-with-env.mjs .env.development.local drizzle-kit studio",
+    "cap:assets": "npx --yes @capacitor/assets@3.0.5 generate --assetPath resources --ios",
     "cap:sync": "cap sync",
     "cap:open:ios": "cap open ios"
   },

@@ -379,7 +379,7 @@ export function AppSidebar({ latestNewsPublishedAt }: AppSidebarProps) {
 
       <Sidebar collapsible="icon">
         {/* Header */}
-        <SidebarHeader className="pb-0 pt-3">
+        <SidebarHeader className="pb-0 pt-[max(0.75rem,env(safe-area-inset-top))]">
           <div className="flex items-center justify-end px-2 group-data-[collapsible=icon]:hidden">
             <SidebarTrigger className="text-sidebar-foreground/60 transition-colors duration-150 hover:text-sidebar-foreground" />
           </div>

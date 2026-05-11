@@ -512,7 +512,7 @@ export function ChatWindow({
 
   return (
     <SidebarInset
-      className="flex h-screen min-h-0 max-h-screen flex-col overflow-hidden bg-background"
+      className="flex min-h-0 flex-col overflow-hidden bg-background pt-[env(safe-area-inset-top)] md:pt-0"
       style={{ height: "100dvh", maxHeight: "100dvh" }}
     >
       <div ref={swipeContainerRef} className="contents">
@@ -592,7 +592,7 @@ export function ChatWindow({
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -8 }}
             transition={{ duration: 0.2, ease: [0.22, 1, 0.36, 1] }}
-            className="absolute left-3 top-[calc(0.75rem+env(safe-area-inset-top))] z-30 md:hidden"
+            className="absolute left-3 top-3 z-30 md:hidden"
           >
             <SidebarTrigger className="rounded-xl border border-border/50 bg-background/80 text-muted-foreground shadow-sm backdrop-blur" />
           </motion.div>
