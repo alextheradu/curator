@@ -595,6 +595,14 @@ export function SettingsModal() {
                           size="sm"
                           className="rounded-lg"
                           onClick={async () => {
+                            // Clear native Google session so it doesn't auto-restore
+                            try {
+                              const { Capacitor } = await import("@capacitor/core");
+                              if (Capacitor.isNativePlatform()) {
+                                const { GoogleSignIn } = await import("@capawesome/capacitor-google-sign-in");
+                                await GoogleSignIn.signOut();
+                              }
+                            } catch {}
                             await signOut({ redirect: false });
                             setSettingsOpen(false);
                             router.push("/");
