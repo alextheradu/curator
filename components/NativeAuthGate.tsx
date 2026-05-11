@@ -29,10 +29,17 @@ export function NativeAuthGate({ children }: { children: React.ReactNode }) {
     });
   }, []);
 
-  // Not native, or still loading, or authenticated — render app normally
-  if (!isNative || status === "loading" || status === "authenticated") {
-    return <>{children}</>;
+  // Non-native: always render app
+  if (!isNative) return <>{children}</>;
+
+  // Native + loading: show blank dark screen so there's no flash-through
+  if (status === "loading") {
+    return <div className="h-dvh w-full bg-[#0f0f0f]" />;
   }
+
+  // Native + authenticated: render app
+  if (status === "authenticated") return <>{children}</>;
+
 
   const handleSignIn = async () => {
     setSigning(true);
