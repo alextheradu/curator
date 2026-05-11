@@ -632,14 +632,14 @@ export function AppSidebar({ latestNewsPublishedAt }: AppSidebarProps) {
                   </button>
                 </div>
               ) : (
-                <div className="flex w-full items-center gap-1 group-data-[collapsible=icon]:justify-center">
-                  <SidebarMenuButton
-                    className="h-8 flex-1 rounded-lg border border-sidebar-border text-[13px] text-sidebar-foreground/60 transition-colors hover:bg-sidebar-accent/50 hover:text-sidebar-foreground group-data-[collapsible=icon]:hidden"
+                <div className="flex w-full flex-col gap-2 group-data-[collapsible=icon]:items-center">
+                  <button
+                    type="button"
                     onClick={() => void nativeGoogleSignIn()}
-                    tooltip="Sign in"
+                    className="flex h-11 w-full items-center justify-center rounded-xl border border-sidebar-border bg-sidebar-accent/30 text-[14px] font-medium text-sidebar-foreground transition-colors hover:bg-sidebar-accent/60 group-data-[collapsible=icon]:hidden"
                   >
-                    <span className="font-medium">Sign in with Google</span>
-                  </SidebarMenuButton>
+                    Sign in with Google
+                  </button>
                   <button
                     type="button"
                     className="flex size-8 shrink-0 items-center justify-center rounded-lg text-sidebar-foreground/50 transition-colors duration-150 hover:bg-sidebar-accent hover:text-sidebar-foreground group-data-[collapsible=icon]:mx-auto"
