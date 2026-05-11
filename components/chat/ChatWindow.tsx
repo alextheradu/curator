@@ -592,7 +592,7 @@ export function ChatWindow({
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -8 }}
             transition={{ duration: 0.2, ease: [0.22, 1, 0.36, 1] }}
-            className="absolute left-3 top-3 z-30 md:hidden"
+            className="absolute left-3 top-[calc(0.75rem+env(safe-area-inset-top))] z-30 md:hidden"
           >
             <SidebarTrigger className="rounded-xl border border-border/50 bg-background/80 text-muted-foreground shadow-sm backdrop-blur" />
           </motion.div>

@@ -15,7 +15,8 @@ import {
   Settings,
   XIcon,
 } from "lucide-react";
-import { signIn, useSession } from "next-auth/react";
+import { useSession } from "next-auth/react";
+import { nativeGoogleSignIn } from "@/lib/native-auth";
 import { NewsBadge } from "@/components/news/NewsBadge";
 import { useSidebarActions } from "@/hooks/useSidebarActions";
 import {
@@ -456,7 +457,7 @@ export function AppSidebar({ latestNewsPublishedAt }: AppSidebarProps) {
                     <SidebarMenuButton
                       onClick={() => {
                         if (!canUseProjects) {
-                          void signIn("google", { callbackUrl: "/" });
+                          void nativeGoogleSignIn();
                           return;
                         }
                         openNewProjectDialog();
@@ -573,7 +574,7 @@ export function AppSidebar({ latestNewsPublishedAt }: AppSidebarProps) {
         </SidebarContent>
 
         {/* Footer — user nav */}
-        <SidebarFooter className="border-t border-sidebar-border pt-2 pb-3">
+        <SidebarFooter className="border-t border-sidebar-border pt-2 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
           <SidebarMenu>
             <SidebarMenuItem>
               {isSessionLoading ? (
@@ -634,7 +635,7 @@ export function AppSidebar({ latestNewsPublishedAt }: AppSidebarProps) {
                 <div className="flex w-full items-center gap-1 group-data-[collapsible=icon]:justify-center">
                   <SidebarMenuButton
                     className="h-8 flex-1 rounded-lg border border-sidebar-border text-[13px] text-sidebar-foreground/60 transition-colors hover:bg-sidebar-accent/50 hover:text-sidebar-foreground group-data-[collapsible=icon]:hidden"
-                    onClick={() => signIn("google", { callbackUrl: "/" })}
+                    onClick={() => void nativeGoogleSignIn()}
                     tooltip="Sign in"
                   >
                     <span className="font-medium">Sign in with Google</span>

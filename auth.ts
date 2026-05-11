@@ -1,14 +1,15 @@
 import NextAuth from "next-auth";
 import Google from "next-auth/providers/google";
 import Apple from "next-auth/providers/apple";
+import Credentials from "next-auth/providers/credentials";
 import { DrizzleAdapter } from "@auth/drizzle-adapter";
-import { eq } from "drizzle-orm";
+import { and, eq } from "drizzle-orm";
 import { pgTable, text, timestamp } from "drizzle-orm/pg-core";
 import { db } from "@/lib/db";
 import { withSystemDbAccess } from "@/lib/db/access";
 import { DEFAULT_CHAT_MODE, readUserAccountSettings } from "@/lib/account-settings";
 import { isAdminEmail } from "@/lib/admin-emails";
-import { accounts, bannedEmails, sessions, verificationTokens } from "@/lib/db/schema";
+import { accounts, bannedEmails, sessions, users, verificationTokens } from "@/lib/db/schema";
 
 type GoogleProfile = {
   sub: string;
@@ -56,6 +57,85 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
           image: profile.picture ?? null,
           emailVerified: profile.email_verified ? new Date() : null,
         };
+      },
+    }),
+    // Native iOS Google Sign-In: receives an idToken from the device,
+    // verifies it with Google, then finds or creates the user in the DB.
+    Credentials({
+      id: "google-id-token",
+      credentials: { idToken: {} },
+      async authorize(credentials) {
+        const idToken = credentials?.idToken;
+        if (typeof idToken !== "string" || !idToken) return null;
+
+        const res = await fetch(
+          `https://oauth2.googleapis.com/tokeninfo?id_token=${encodeURIComponent(idToken)}`
+        );
+        if (!res.ok) return null;
+
+        const payload = await res.json() as {
+          sub?: string; email?: string; email_verified?: string;
+          name?: string; picture?: string; aud?: string;
+        };
+
+        const validAuds = [
+          process.env.AUTH_GOOGLE_ID,
+          process.env.AUTH_GOOGLE_IOS_CLIENT_ID,
+        ].filter(Boolean);
+
+        if (!payload.sub || !payload.email || !validAuds.includes(payload.aud)) return null;
+
+        const email = payload.email.toLowerCase();
+
+        const [ban] = await withSystemDbAccess((tx) =>
+          tx.select({ email: bannedEmails.email })
+            .from(bannedEmails)
+            .where(eq(bannedEmails.email, email))
+            .limit(1)
+        );
+        if (ban) return null;
+
+        // Find existing account link → user
+        const [existingAccount] = await db
+          .select({ userId: accounts.userId })
+          .from(accounts)
+          .where(and(eq(accounts.provider, "google"), eq(accounts.providerAccountId, payload.sub)))
+          .limit(1);
+
+        let userId: string;
+
+        if (existingAccount) {
+          userId = existingAccount.userId;
+        } else {
+          // Find by email or create user
+          const [existingUser] = await db
+            .select({ id: users.id })
+            .from(users)
+            .where(eq(users.email, email))
+            .limit(1);
+
+          if (existingUser) {
+            userId = existingUser.id;
+          } else {
+            userId = crypto.randomUUID();
+            await db.insert(authAdapterUsers).values({
+              id: userId,
+              email,
+              name: payload.name ?? null,
+              image: payload.picture ?? null,
+              emailVerified: payload.email_verified === "true" ? new Date() : null,
+            });
+          }
+
+          await db.insert(accounts).values({
+            userId,
+            type: "oidc",
+            provider: "google",
+            providerAccountId: payload.sub,
+          }).onConflictDoNothing();
+        }
+
+        return { id: userId, email, name: payload.name ?? null, image: payload.picture ?? null };
       },
     }),
     ...(process.env.AUTH_APPLE_ID && process.env.AUTH_APPLE_SECRET
