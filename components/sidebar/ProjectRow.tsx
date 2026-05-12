@@ -39,7 +39,7 @@ export function ProjectRow({
     <div className="group/project relative">
       <SidebarMenuButton
         onClick={onToggle}
-        className="h-8 rounded-lg px-2 text-[13px] text-sidebar-foreground/70 transition-colors duration-150 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground"
+        className="h-8 rounded-lg px-2 text-[13px] text-sidebar-foreground/70 transition-colors duration-150 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground max-md:h-10 max-md:rounded-xl max-md:px-3 max-md:text-[14px]"
       >
         <ChevronRight className={cn("size-3.5 transition-transform", expanded && "rotate-90")} />
         <span className={cn("flex size-5 shrink-0 items-center justify-center rounded-md ring-1", getProjectColorClass(project.color))}>
@@ -53,7 +53,7 @@ export function ProjectRow({
           <SidebarMenuAction
             showOnHover
             aria-label={`${project.name} options`}
-            className="right-1 rounded-md text-sidebar-foreground/30 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
+            className="right-1 rounded-md text-sidebar-foreground/30 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground max-md:top-2 max-md:size-6 max-md:text-sidebar-foreground/45"
           >
             <MoreHorizontal className="size-3.5" />
           </SidebarMenuAction>
@@ -87,7 +87,7 @@ export function ProjectRow({
         </DropdownMenuContent>
       </DropdownMenu>
       {expanded && (
-        <div className="mt-1 border-l border-sidebar-border/70 pl-3">
+        <div className="mt-1 border-l border-sidebar-border/70 pl-3 max-md:ml-3 max-md:pl-3">
           {children}
         </div>
       )}

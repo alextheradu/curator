@@ -20,7 +20,7 @@ const TosModal = lazy(() =>
 const AuthModal = lazy(() =>
   import("@/components/auth/AuthModal").then((m) => ({ default: m.AuthModal }))
 );
-import { SidebarInset, SidebarTrigger, useSidebar } from "@/components/ui/sidebar";
+import { SidebarInset, SidebarTrigger } from "@/components/ui/sidebar";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -102,8 +102,6 @@ export function ChatWindow({
     consumeGuestTurn,
   } = useGuestLimit(isAuthenticated, accountTosAccepted);
 
-  const { setOpenMobile: setSidebarOpenMobile } = useSidebar();
-
   const [factCheckEnabled, setFactCheckEnabled] = useState(false);
   const [searchMode, setSearchMode] = useState<SearchMode>("fast");
   const [streamingSearchActivity, setStreamingSearchActivity] = useState<SearchActivity | undefined>();
@@ -132,56 +130,10 @@ export function ChatWindow({
 
   const abortRef = useRef<AbortController | null>(null);
   const pendingMessageRef = useRef<string | null>(null);
-  const swipeTouchRef = useRef<{ x: number; y: number } | null>(null);
-  const swipeContainerRef = useRef<HTMLDivElement>(null);
   const [viewerCitation, setViewerCitation] = useState<Citation | null>(null);
   const [shareDialogOpen, setShareDialogOpen] = useState(false);
   const [streamStatus, setStreamStatus] = useState("");
   const [origin] = useState(() => (typeof window !== "undefined" ? window.location.origin : ""));
-
-  useEffect(() => {
-    const el = swipeContainerRef.current;
-    if (!el) return;
-
-    const onTouchStart = (e: TouchEvent) => {
-      const touch = e.touches[0];
-      if (touch && touch.clientX < window.innerWidth / 2) {
-        swipeTouchRef.current = { x: touch.clientX, y: touch.clientY };
-      }
-    };
-
-    const onTouchMove = (e: TouchEvent) => {
-      if (!swipeTouchRef.current) return;
-      const touch = e.touches[0];
-      if (!touch) return;
-      const dx = touch.clientX - swipeTouchRef.current.x;
-      const dy = Math.abs(touch.clientY - swipeTouchRef.current.y);
-      if (dx > 8 && dx > dy) {
-        e.preventDefault();
-      }
-    };
-
-    const onTouchEnd = (e: TouchEvent) => {
-      if (!swipeTouchRef.current) return;
-      const touch = e.changedTouches[0];
-      if (!touch) return;
-      const dx = touch.clientX - swipeTouchRef.current.x;
-      const dy = Math.abs(touch.clientY - swipeTouchRef.current.y);
-      swipeTouchRef.current = null;
-      if (dx > 60 && dy < dx) {
-        setSidebarOpenMobile(true);
-      }
-    };
-
-    el.addEventListener("touchstart", onTouchStart, { passive: true });
-    el.addEventListener("touchmove", onTouchMove, { passive: false });
-    el.addEventListener("touchend", onTouchEnd, { passive: true });
-    return () => {
-      el.removeEventListener("touchstart", onTouchStart);
-      el.removeEventListener("touchmove", onTouchMove);
-      el.removeEventListener("touchend", onTouchEnd);
-    };
-  }, [setSidebarOpenMobile]);
 
   const conversation = conversationOverride ?? activeConversation();
   const { containerRef, scrollToBottom } = useAutoScroll([
@@ -514,7 +466,6 @@ export function ChatWindow({
     <SidebarInset
       className="flex min-h-0 flex-col overflow-hidden bg-background pt-[env(safe-area-inset-top)] md:pt-0"
     >
-      <div ref={swipeContainerRef} className="contents">
       <Suspense>
         <TosModal open={showTosModal} onAccept={handleAcceptTos} />
         <AuthModal open={showAuthModal} onOpenChange={setShowAuthModal} />
@@ -823,7 +774,6 @@ export function ChatWindow({
             />
           )}
         </div>
-      </div>
       </div>
     </SidebarInset>
   );

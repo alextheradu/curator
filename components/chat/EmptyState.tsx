@@ -174,7 +174,7 @@ export function EmptyState({ onPromptSelect }: Props) {
               <button
                 type="button"
                 onClick={() => onPromptSelect(suggestion)}
-                className="flex h-full w-full cursor-pointer items-center rounded-xl border border-border/50 bg-card/35 px-2.5 py-2 text-left text-[11px] leading-snug text-foreground/75 transition-all duration-200 hover:-translate-y-0.5 hover:bg-card/60 hover:text-foreground hover:shadow-[var(--shadow-card)]"
+                className="flex h-full w-full cursor-pointer items-center rounded-xl border border-border/50 bg-card/35 px-2.5 py-2 text-left text-[11px] leading-snug text-foreground/75 transition-all duration-200 hover:-translate-y-0.5 hover:bg-card/60 hover:text-foreground hover:shadow-[var(--shadow-card)] md:px-3 md:py-2.5 md:text-xs"
               >
                 {suggestion}
               </button>

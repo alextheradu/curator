@@ -145,7 +145,7 @@ export function ConversationItem({
           clearPendingClick();
           startEditing();
         }}
-        className="h-8 rounded-lg px-2 text-[13px] text-sidebar-foreground/70 transition-colors duration-150 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground data-[active=true]:bg-sidebar-accent data-[active=true]:text-sidebar-accent-foreground"
+        className="h-8 rounded-lg px-2 text-[13px] text-sidebar-foreground/70 transition-colors duration-150 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground data-[active=true]:bg-sidebar-accent data-[active=true]:text-sidebar-accent-foreground max-md:h-10 max-md:rounded-xl max-md:px-3 max-md:text-[14px]"
       >
         {isEditing ? (
           <input
@@ -198,7 +198,7 @@ export function ConversationItem({
               setMenuOpen(true);
             }}
             aria-label="Conversation options"
-            className="right-1 rounded-md text-sidebar-foreground/30 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
+            className="right-1 rounded-md text-sidebar-foreground/30 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground max-md:top-2 max-md:size-6 max-md:text-sidebar-foreground/45"
           >
             <MoreHorizontal className="size-3.5" />
           </SidebarMenuAction>

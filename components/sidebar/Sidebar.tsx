@@ -380,7 +380,7 @@ export function AppSidebar({ latestNewsPublishedAt }: AppSidebarProps) {
 
       <Sidebar collapsible="icon">
         {/* Header */}
-        <SidebarHeader className="pb-0 pt-[max(0.75rem,env(safe-area-inset-top))]">
+        <SidebarHeader className="pb-0 pt-[max(0.75rem,env(safe-area-inset-top))] max-md:border-b max-md:border-sidebar-border/60 max-md:px-3 max-md:pb-2">
           <div className="flex items-center justify-end px-2 group-data-[collapsible=icon]:hidden">
             <SidebarTrigger className="text-sidebar-foreground/60 transition-colors duration-150 hover:text-sidebar-foreground" />
           </div>
@@ -398,13 +398,13 @@ export function AppSidebar({ latestNewsPublishedAt }: AppSidebarProps) {
         </SidebarHeader>
 
         {/* Content */}
-        <SidebarContent>
-          <SidebarGroup className="pt-1">
+        <SidebarContent className="max-md:px-2 max-md:py-2">
+          <SidebarGroup className="pt-1 max-md:px-1">
             <SidebarGroupContent>
-              <SidebarMenu className="space-y-2">
+              <SidebarMenu className="space-y-2 max-md:space-y-2.5">
                 <SidebarMenuItem>
                   <SidebarMenuButton
-                    className="h-9 justify-start gap-2.5 rounded-xl border border-sidebar-border px-4 text-[13px] text-sidebar-foreground/70 transition-colors duration-150 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground"
+                    className="h-9 justify-start gap-2.5 rounded-xl border border-sidebar-border px-4 text-[13px] text-sidebar-foreground/70 transition-colors duration-150 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground max-md:h-11 max-md:rounded-2xl max-md:px-3.5 max-md:text-[15px]"
                     onClick={() => {
                       setOpenMobile(false);
                       void createConversation();
@@ -417,7 +417,7 @@ export function AppSidebar({ latestNewsPublishedAt }: AppSidebarProps) {
                 </SidebarMenuItem>
                 <SidebarMenuItem>
                   <SidebarMenuButton
-                    className="h-9 justify-start gap-2.5 rounded-xl border border-sidebar-border px-4 text-[13px] text-sidebar-foreground/70 transition-colors duration-150 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground"
+                    className="h-9 justify-start gap-2.5 rounded-xl border border-sidebar-border px-4 text-[13px] text-sidebar-foreground/70 transition-colors duration-150 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground max-md:h-11 max-md:rounded-2xl max-md:px-3.5 max-md:text-[15px]"
                     onClick={() => setSearchOpen(true)}
                     tooltip="Search chats"
                   >
@@ -428,7 +428,7 @@ export function AppSidebar({ latestNewsPublishedAt }: AppSidebarProps) {
                 <SidebarMenuItem>
                   <SidebarMenuButton
                     isActive={pathname.startsWith("/news")}
-                    className="h-9 justify-start gap-2.5 rounded-xl border border-sidebar-border px-4 text-[13px] text-sidebar-foreground/70 transition-colors duration-150 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground data-[active=true]:bg-sidebar-accent/60 data-[active=true]:text-sidebar-foreground"
+                    className="h-9 justify-start gap-2.5 rounded-xl border border-sidebar-border px-4 text-[13px] text-sidebar-foreground/70 transition-colors duration-150 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground data-[active=true]:bg-sidebar-accent/60 data-[active=true]:text-sidebar-foreground max-md:h-11 max-md:rounded-2xl max-md:px-3.5 max-md:text-[15px]"
                     tooltip="News"
                     onClick={() => {
                       setOpenMobile(false);
@@ -447,8 +447,8 @@ export function AppSidebar({ latestNewsPublishedAt }: AppSidebarProps) {
           </SidebarGroup>
 
           {!isSessionLoading && (
-            <SidebarGroup className="group-data-[collapsible=icon]:hidden">
-              <SidebarGroupLabel className="text-[10px] font-semibold uppercase tracking-[0.12em] text-sidebar-foreground/70">
+            <SidebarGroup className="group-data-[collapsible=icon]:hidden max-md:px-1 max-md:pt-3">
+              <SidebarGroupLabel className="text-[10px] font-semibold uppercase tracking-[0.12em] text-sidebar-foreground/70 max-md:h-7 max-md:px-3 max-md:text-[11px]">
                 Projects
               </SidebarGroupLabel>
               <SidebarGroupContent>
@@ -462,14 +462,14 @@ export function AppSidebar({ latestNewsPublishedAt }: AppSidebarProps) {
                         }
                         openNewProjectDialog();
                       }}
-                      className="h-8 rounded-lg px-2 text-[13px] text-sidebar-foreground/70 transition-colors duration-150 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground"
+                      className="h-8 rounded-lg px-2 text-[13px] text-sidebar-foreground/70 transition-colors duration-150 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground max-md:h-10 max-md:rounded-xl max-md:px-3 max-md:text-[14px]"
                     >
                       <FolderPlusIcon className="size-4" />
                       <span>{canUseProjects ? "New project" : "Sign in for projects"}</span>
                     </SidebarMenuButton>
                   </SidebarMenuItem>
                   {canUseProjects && (
-                    <div className="mt-1 flex flex-col gap-1">
+                    <div className="mt-1 flex flex-col gap-1 max-md:gap-1.5">
                       {projectSections.map(({ project, conversations: projectConversations }) => (
                         <SidebarMenuItem key={project.id}>
                           <ProjectRow
@@ -522,24 +522,24 @@ export function AppSidebar({ latestNewsPublishedAt }: AppSidebarProps) {
 
           {/* History grouped by date */}
           {history.length === 0 ? (
-            <SidebarGroup className="group-data-[collapsible=icon]:hidden">
+            <SidebarGroup className="group-data-[collapsible=icon]:hidden max-md:px-1 max-md:pt-3">
               <SidebarGroupContent>
-                <div className="px-2 text-[13px] text-sidebar-foreground/50">
+                <div className="px-3 py-4 text-[14px] leading-5 text-sidebar-foreground/50">
                   Your conversations will appear here.
                 </div>
               </SidebarGroupContent>
             </SidebarGroup>
           ) : (
-            <SidebarGroup className="group-data-[collapsible=icon]:hidden">
-              <SidebarGroupLabel className="text-[10px] font-semibold uppercase tracking-[0.12em] text-sidebar-foreground/70">
+            <SidebarGroup className="group-data-[collapsible=icon]:hidden max-md:px-1 max-md:pt-3">
+              <SidebarGroupLabel className="text-[10px] font-semibold uppercase tracking-[0.12em] text-sidebar-foreground/70 max-md:h-7 max-md:px-3 max-md:text-[11px]">
                 History
               </SidebarGroupLabel>
               <SidebarGroupContent>
                 <SidebarMenu>
-                  <div className="flex flex-col gap-4">
+                  <div className="flex flex-col gap-4 max-md:gap-5">
                     {groups.map((group) => (
                       <div key={group.label}>
-                        <div className="px-2 py-1 text-[10px] font-semibold uppercase tracking-[0.12em] text-sidebar-foreground/50">
+                        <div className="px-3 py-1.5 text-[10px] font-semibold uppercase tracking-[0.12em] text-sidebar-foreground/50 max-md:text-[11px]">
                           {group.label}
                         </div>
                         {group.items.map((conv) => (
@@ -574,7 +574,7 @@ export function AppSidebar({ latestNewsPublishedAt }: AppSidebarProps) {
         </SidebarContent>
 
         {/* Footer — user nav */}
-        <SidebarFooter className="border-t border-sidebar-border pt-2 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
+        <SidebarFooter className="border-t border-sidebar-border pt-2 pb-[max(0.75rem,env(safe-area-inset-bottom))] max-md:px-3 max-md:pt-3">
           <SidebarMenu>
             <SidebarMenuItem>
               {isSessionLoading ? (
@@ -586,7 +586,7 @@ export function AppSidebar({ latestNewsPublishedAt }: AppSidebarProps) {
 
                   <button
                     type="button"
-                    className="flex size-8 shrink-0 items-center justify-center rounded-lg text-sidebar-foreground/50 transition-colors duration-150 hover:bg-sidebar-accent hover:text-sidebar-foreground group-data-[collapsible=icon]:mx-auto"
+                    className="flex size-8 shrink-0 items-center justify-center rounded-lg text-sidebar-foreground/50 transition-colors duration-150 hover:bg-sidebar-accent hover:text-sidebar-foreground group-data-[collapsible=icon]:mx-auto max-md:size-10 max-md:rounded-xl"
                     title="Settings"
                     aria-label="Settings"
                     onClick={() => setSettingsOpen(true)}
@@ -597,7 +597,7 @@ export function AppSidebar({ latestNewsPublishedAt }: AppSidebarProps) {
               ) : session?.user ? (
                 <div className="flex w-full items-center gap-1 group-data-[collapsible=icon]:justify-center">
                   <SidebarMenuButton
-                    className="h-8 flex-1 rounded-lg bg-transparent px-2 text-sidebar-foreground/70 transition-colors duration-150 hover:text-sidebar-foreground group-data-[collapsible=icon]:hidden"
+                    className="h-8 flex-1 rounded-lg bg-transparent px-2 text-sidebar-foreground/70 transition-colors duration-150 hover:text-sidebar-foreground group-data-[collapsible=icon]:hidden max-md:h-10 max-md:rounded-xl max-md:px-3"
                   >
                     {avatarUrl && !avatarLoadFailed ? (
                       <Image
@@ -623,7 +623,7 @@ export function AppSidebar({ latestNewsPublishedAt }: AppSidebarProps) {
 
                   <button
                     type="button"
-                    className="flex size-8 shrink-0 items-center justify-center rounded-lg text-sidebar-foreground/50 transition-colors duration-150 hover:bg-sidebar-accent hover:text-sidebar-foreground group-data-[collapsible=icon]:mx-auto"
+                    className="flex size-8 shrink-0 items-center justify-center rounded-lg text-sidebar-foreground/50 transition-colors duration-150 hover:bg-sidebar-accent hover:text-sidebar-foreground group-data-[collapsible=icon]:mx-auto max-md:size-10 max-md:rounded-xl"
                     title="Settings"
                     aria-label="Settings"
                     onClick={() => setSettingsOpen(true)}
@@ -636,13 +636,13 @@ export function AppSidebar({ latestNewsPublishedAt }: AppSidebarProps) {
                   <button
                     type="button"
                     onClick={() => void nativeGoogleSignIn()}
-                    className="flex h-11 w-full items-center justify-center rounded-xl border border-sidebar-border bg-sidebar-accent/30 text-[14px] font-medium text-sidebar-foreground transition-colors hover:bg-sidebar-accent/60 group-data-[collapsible=icon]:hidden"
+                    className="flex h-11 w-full items-center justify-center rounded-xl border border-sidebar-border bg-sidebar-accent/30 text-[14px] font-medium text-sidebar-foreground transition-colors hover:bg-sidebar-accent/60 group-data-[collapsible=icon]:hidden max-md:h-12 max-md:rounded-2xl max-md:text-[15px]"
                   >
                     Sign in with Google
                   </button>
                   <button
                     type="button"
-                    className="flex size-8 shrink-0 items-center justify-center rounded-lg text-sidebar-foreground/50 transition-colors duration-150 hover:bg-sidebar-accent hover:text-sidebar-foreground group-data-[collapsible=icon]:mx-auto"
+                    className="flex size-8 shrink-0 items-center justify-center rounded-lg text-sidebar-foreground/50 transition-colors duration-150 hover:bg-sidebar-accent hover:text-sidebar-foreground group-data-[collapsible=icon]:mx-auto max-md:size-10 max-md:rounded-xl"
                     title="Settings"
                     aria-label="Settings"
                     onClick={() => setSettingsOpen(true)}
