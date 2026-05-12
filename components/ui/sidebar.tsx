@@ -396,7 +396,7 @@ function Sidebar({
           {...props}
         >
           <div className="sr-only" aria-live="polite">Sidebar</div>
-          <div className="flex h-full w-full flex-col">{children}</div>
+          <div className="flex h-full w-full flex-col pl-[env(safe-area-inset-left,0px)]">{children}</div>
         </div>
       </>
     )
