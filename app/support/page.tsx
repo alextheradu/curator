@@ -20,7 +20,7 @@ export const metadata: Metadata = buildPublicPageMetadata({
 
 export default function SupportPage() {
   return (
-    <div className="min-h-svh bg-[#0f0f0f] px-6 py-12">
+    <div className="h-svh overflow-y-auto bg-[#0f0f0f] px-6 py-12">
       <div className="mx-auto max-w-2xl space-y-8">
         <div>
           <Link href="/" className="mb-8 inline-block text-sm text-[#0066B3] hover:underline">
