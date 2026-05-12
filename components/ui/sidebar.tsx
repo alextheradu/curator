@@ -10,19 +10,17 @@ import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Separator } from "@/components/ui/separator"
-import {
-  Sheet,
-  SheetContent,
-  SheetDescription,
-  SheetHeader,
-  SheetTitle,
-} from "@/components/ui/sheet"
 import { Skeleton } from "@/components/ui/skeleton"
 import {
   Tooltip,
   TooltipContent,
   TooltipTrigger,
 } from "@/components/ui/tooltip"
+import {
+  MOBILE_SIDEBAR_WIDTH_PX,
+  clampMobileSidebarOffset,
+  resolveMobileSidebarOpen,
+} from "@/lib/sidebar-gesture"
 import {
   SIDEBAR_COOKIE_MAX_AGE,
   SIDEBAR_COOKIE_NAME,
@@ -36,7 +34,7 @@ const SIDEBAR_MIN_WIDTH_PX = 208
 const SIDEBAR_MAX_WIDTH_PX = 352
 const SIDEBAR_COLLAPSE_THRESHOLD_PX = 190
 const SIDEBAR_WIDTH = `${SIDEBAR_DEFAULT_WIDTH_PX}px`
-const SIDEBAR_WIDTH_MOBILE = "18rem"
+const SIDEBAR_WIDTH_MOBILE = `${MOBILE_SIDEBAR_WIDTH_PX}px`
 const SIDEBAR_WIDTH_ICON = "3rem"
 const SIDEBAR_KEYBOARD_SHORTCUT = "b"
 
@@ -207,6 +205,140 @@ function Sidebar({
   collapsible?: "offcanvas" | "icon" | "none"
 }) {
   const { isMobile, state, openMobile, setOpenMobile } = useSidebar()
+  const [mobileDragOffset, setMobileDragOffset] = React.useState<number | null>(null)
+  const [mobileIsDragging, setMobileIsDragging] = React.useState(false)
+  const mobileSettleTimerRef = React.useRef<number | null>(null)
+  const mobileGestureRef = React.useRef<{
+    active: boolean
+    startX: number
+    startY: number
+    lastX: number
+    lastTime: number
+    velocityX: number
+    wasOpen: boolean
+  } | null>(null)
+
+  React.useEffect(() => {
+    return () => {
+      if (mobileSettleTimerRef.current !== null) {
+        window.clearTimeout(mobileSettleTimerRef.current)
+      }
+    }
+  }, [])
+
+  React.useEffect(() => {
+    if (!isMobile) return
+
+    const clearSettleTimer = () => {
+      if (mobileSettleTimerRef.current !== null) {
+        window.clearTimeout(mobileSettleTimerRef.current)
+        mobileSettleTimerRef.current = null
+      }
+    }
+
+    const finishDrag = (open: boolean) => {
+      clearSettleTimer()
+      setMobileIsDragging(false)
+      setOpenMobile(open)
+      setMobileDragOffset(open ? MOBILE_SIDEBAR_WIDTH_PX : 0)
+      mobileSettleTimerRef.current = window.setTimeout(() => {
+        setMobileDragOffset(null)
+        mobileSettleTimerRef.current = null
+      }, 220)
+    }
+
+    const onTouchStart = (event: TouchEvent) => {
+      if (event.touches.length !== 1) return
+
+      const touch = event.touches[0]
+      if (!touch) return
+
+      clearSettleTimer()
+      mobileGestureRef.current = {
+        active: false,
+        startX: touch.clientX,
+        startY: touch.clientY,
+        lastX: touch.clientX,
+        lastTime: performance.now(),
+        velocityX: 0,
+        wasOpen: openMobile,
+      }
+    }
+
+    const onTouchMove = (event: TouchEvent) => {
+      const gesture = mobileGestureRef.current
+      const touch = event.touches[0]
+      if (!gesture || !touch) return
+
+      const dx = touch.clientX - gesture.startX
+      const dy = Math.abs(touch.clientY - gesture.startY)
+      const movingHorizontally = Math.abs(dx) > 8 && Math.abs(dx) > dy * 1.2
+      const movingInSidebarDirection = gesture.wasOpen ? dx < -8 : dx > 8
+
+      if (!gesture.active) {
+        if (!movingHorizontally || !movingInSidebarDirection) {
+          if (dy > 10 && dy > Math.abs(dx)) {
+            mobileGestureRef.current = null
+          }
+          return
+        }
+
+        gesture.active = true
+        setMobileIsDragging(true)
+      }
+
+      event.preventDefault()
+
+      const now = performance.now()
+      const elapsed = Math.max(1, now - gesture.lastTime)
+      gesture.velocityX = (touch.clientX - gesture.lastX) / elapsed
+      gesture.lastX = touch.clientX
+      gesture.lastTime = now
+
+      const visibleOffset = gesture.wasOpen
+        ? clampMobileSidebarOffset(MOBILE_SIDEBAR_WIDTH_PX + dx, MOBILE_SIDEBAR_WIDTH_PX)
+        : clampMobileSidebarOffset(dx, MOBILE_SIDEBAR_WIDTH_PX)
+
+      setMobileDragOffset(visibleOffset)
+    }
+
+    const onTouchEnd = (event: TouchEvent) => {
+      const gesture = mobileGestureRef.current
+      if (!gesture) return
+
+      mobileGestureRef.current = null
+      if (!gesture.active) return
+
+      const touch = event.changedTouches[0]
+      const deltaX = touch ? touch.clientX - gesture.startX : 0
+      const shouldOpen = resolveMobileSidebarOpen({
+        deltaX,
+        velocityX: gesture.velocityX,
+        width: MOBILE_SIDEBAR_WIDTH_PX,
+        wasOpen: gesture.wasOpen,
+      })
+
+      finishDrag(shouldOpen)
+    }
+
+    const onTouchCancel = () => {
+      const wasOpen = mobileGestureRef.current?.wasOpen ?? openMobile
+      mobileGestureRef.current = null
+      finishDrag(wasOpen)
+    }
+
+    document.addEventListener("touchstart", onTouchStart, { passive: true })
+    document.addEventListener("touchmove", onTouchMove, { passive: false })
+    document.addEventListener("touchend", onTouchEnd, { passive: true })
+    document.addEventListener("touchcancel", onTouchCancel, { passive: true })
+
+    return () => {
+      document.removeEventListener("touchstart", onTouchStart)
+      document.removeEventListener("touchmove", onTouchMove)
+      document.removeEventListener("touchend", onTouchEnd)
+      document.removeEventListener("touchcancel", onTouchCancel)
+    }
+  }, [isMobile, openMobile, setOpenMobile])
 
   if (collapsible === "none") {
     return (
@@ -224,28 +356,49 @@ function Sidebar({
   }
 
   if (isMobile) {
+    const visibleOffset = mobileDragOffset ?? (openMobile ? MOBILE_SIDEBAR_WIDTH_PX : 0)
+    const progress = visibleOffset / MOBILE_SIDEBAR_WIDTH_PX
+    const isMobileSidebarVisible = openMobile || mobileDragOffset !== null
+
     return (
-      <Sheet open={openMobile} onOpenChange={setOpenMobile} {...props}>
-        <SheetContent
+      <>
+        {isMobileSidebarVisible && (
+          <button
+            type="button"
+            aria-label="Close sidebar"
+            className={cn(
+              "fixed inset-0 z-40 bg-black transition-opacity duration-200",
+              mobileIsDragging ? "transition-none" : ""
+            )}
+            style={{ opacity: progress * 0.22 }}
+            onClick={() => setOpenMobile(false)}
+          />
+        )}
+        <div
           dir={dir}
           data-sidebar="sidebar"
           data-slot="sidebar"
           data-mobile="true"
-          className="w-(--sidebar-width) bg-sidebar p-0 text-sidebar-foreground [&>button]:hidden"
+          role="dialog"
+          aria-modal={isMobileSidebarVisible ? true : undefined}
+          aria-hidden={!isMobileSidebarVisible}
+          className={cn(
+            "fixed inset-y-0 left-0 z-50 flex w-(--sidebar-width) flex-col bg-sidebar text-sidebar-foreground shadow-[0_24px_80px_rgba(0,0,0,0.28)] transition-transform duration-200 ease-out",
+            mobileIsDragging ? "transition-none" : "",
+            !isMobileSidebarVisible && "pointer-events-none"
+          )}
           style={
             {
               "--sidebar-width": SIDEBAR_WIDTH_MOBILE,
+              transform: `translate3d(${visibleOffset - MOBILE_SIDEBAR_WIDTH_PX}px, 0, 0)`,
             } as React.CSSProperties
           }
-          side={side}
+          {...props}
         >
-          <SheetHeader className="sr-only">
-            <SheetTitle>Sidebar</SheetTitle>
-            <SheetDescription>Displays the mobile sidebar.</SheetDescription>
-          </SheetHeader>
+          <div className="sr-only" aria-live="polite">Sidebar</div>
           <div className="flex h-full w-full flex-col">{children}</div>
-        </SheetContent>
-      </Sheet>
+        </div>
+      </>
     )
   }
 
