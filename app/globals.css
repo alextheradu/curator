@@ -152,16 +152,14 @@
 
 @layer base {
   body {
-    overflow-x: hidden;
-    overflow-y: auto;
+    overflow: hidden;
     overscroll-behavior: none;
     -webkit-overflow-scrolling: auto;
     position: relative;
   }
 
   html {
-    overflow-x: hidden;
-    overflow-y: auto;
+    overflow: hidden;
     overscroll-behavior: none;
     -webkit-overflow-scrolling: auto;
   }

@@ -513,7 +513,6 @@ export function ChatWindow({
   return (
     <SidebarInset
       className="flex min-h-0 flex-col overflow-hidden bg-background pt-[env(safe-area-inset-top)] md:pt-0"
-      style={{ height: "100dvh", maxHeight: "100dvh" }}
     >
       <div ref={swipeContainerRef} className="contents">
       <Suspense>
