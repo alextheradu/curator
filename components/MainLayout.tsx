@@ -1,13 +1,9 @@
 "use client";
 
-import { lazy, Suspense } from "react";
 import { AppSidebar } from "@/components/sidebar/Sidebar";
+import { SettingsModal } from "@/components/ui/SettingsModal";
 import { SidebarProvider } from "@/components/ui/sidebar";
 import { NativeAuthGate } from "@/components/NativeAuthGate";
-
-const SettingsModal = lazy(() =>
-  import("@/components/ui/SettingsModal").then((m) => ({ default: m.SettingsModal }))
-);
 
 interface MainLayoutProps {
   children: React.ReactNode;
@@ -20,9 +16,7 @@ export function MainLayout({ children, latestNewsPublishedAt }: MainLayoutProps)
       <SidebarProvider>
         <div className="flex h-svh w-full overflow-hidden overscroll-none bg-[var(--background)] text-[var(--foreground)]">
           <AppSidebar latestNewsPublishedAt={latestNewsPublishedAt} />
-          <Suspense>
-            <SettingsModal />
-          </Suspense>
+          <SettingsModal />
           {children}
         </div>
       </SidebarProvider>
