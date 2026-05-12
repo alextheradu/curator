@@ -337,7 +337,7 @@ export function SettingsModal() {
 
   return (
     <Dialog open={settingsOpen} onOpenChange={setSettingsOpen}>
-      <DialogContent className="h-[100dvh] w-[100vw] max-w-none overflow-hidden rounded-none border-0 bg-card p-0 shadow-none [&>button]:hidden md:h-auto md:w-full md:max-w-4xl md:max-h-[calc(100dvh-2rem)] md:rounded-2xl md:border md:border-border/60 md:shadow-[var(--shadow-float)] md:[&>button]:flex">
+      <DialogContent className="left-0 top-0 h-[100dvh] w-full max-w-none translate-x-0 translate-y-0 overflow-hidden rounded-none border-0 bg-card p-0 shadow-none [&>button]:hidden md:left-[50%] md:top-[50%] md:h-auto md:w-full md:max-w-4xl md:max-h-[calc(100dvh-2rem)] md:translate-x-[-50%] md:translate-y-[-50%] md:rounded-2xl md:border md:border-border/60 md:shadow-[var(--shadow-float)] md:[&>button]:flex">
         <DialogTitle className="sr-only">Settings</DialogTitle>
         <DialogDescription className="sr-only">
           Manage account, appearance, privacy, data, and support settings for Curator.
@@ -379,8 +379,8 @@ export function SettingsModal() {
           <div className="min-h-0 flex-1 overflow-y-auto px-4 py-4 sm:px-6 sm:py-6">
             <div className="mx-auto max-w-2xl">
 
-              {/* Section title — visible on mobile only (desktop nav has it) */}
-              <h2 className="mb-4 text-base font-semibold text-foreground sm:mb-6 md:sr-only">
+              {/* Section title — visible on desktop only */}
+              <h2 className="mb-6 hidden text-base font-semibold text-foreground md:sr-only">
                 {selectedSection.label}
               </h2>
 
