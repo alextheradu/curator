@@ -367,7 +367,7 @@ function Sidebar({
             type="button"
             aria-label="Close sidebar"
             className={cn(
-              "fixed inset-0 z-40 bg-black transition-opacity duration-200",
+              "fixed inset-0 z-40 h-[100dvh] bg-black transition-opacity duration-200",
               mobileIsDragging ? "transition-none" : ""
             )}
             style={{ opacity: progress * 0.22 }}
@@ -383,7 +383,7 @@ function Sidebar({
           aria-modal={isMobileSidebarVisible ? true : undefined}
           aria-hidden={!isMobileSidebarVisible}
           className={cn(
-            "fixed inset-y-0 left-0 z-50 flex w-(--sidebar-width) flex-col bg-sidebar text-sidebar-foreground shadow-[0_24px_80px_rgba(0,0,0,0.28)] transition-transform duration-200 ease-out",
+            "fixed inset-y-0 left-0 z-50 flex h-[100dvh] max-h-[100dvh] w-(--sidebar-width) flex-col bg-sidebar text-sidebar-foreground shadow-[0_24px_80px_rgba(0,0,0,0.28)] transition-transform duration-200 ease-out",
             mobileIsDragging ? "transition-none" : "",
             !isMobileSidebarVisible && "pointer-events-none"
           )}
