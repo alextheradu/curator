@@ -107,10 +107,10 @@ function NavItem({
       type="button"
       onClick={onClick}
       className={cn(
-        "flex items-center gap-2 whitespace-nowrap rounded-full px-3 py-1.5 text-xs font-medium transition-colors md:w-full md:rounded-xl md:px-3 md:py-2 md:text-left md:text-sm",
+        "flex h-9 w-full min-w-0 items-center justify-center gap-2 rounded-xl px-3 py-1.5 text-center text-xs font-medium leading-tight transition-colors md:justify-start md:px-3 md:py-2 md:text-left md:text-sm",
         active
-          ? "bg-muted text-foreground md:font-medium"
-          : "text-muted-foreground hover:bg-muted/60 hover:text-foreground"
+          ? "border border-border/60 bg-muted text-foreground md:border-transparent md:font-medium"
+          : "border border-border/45 bg-background/35 text-muted-foreground hover:bg-muted/60 hover:text-foreground md:border-transparent md:bg-transparent"
       )}
     >
       <Icon className="hidden size-4 shrink-0 md:block" />
@@ -132,7 +132,7 @@ function SettingRow({
 }) {
   return (
     <div className={cn(
-      "border-b border-border/50 py-3.5 last:border-0",
+      "min-w-0 border-b border-border/50 py-3.5 last:border-0",
       fullWidth
         ? "flex flex-col gap-3"
         : "flex flex-col gap-2.5 sm:flex-row sm:items-center sm:justify-between"
@@ -140,10 +140,10 @@ function SettingRow({
       <div className="min-w-0">
         <p className="text-sm font-medium text-foreground">{label}</p>
         {description ? (
-          <p className="mt-0.5 text-xs leading-5 text-muted-foreground">{description}</p>
+          <p className="mt-0.5 max-w-full text-wrap break-words text-xs leading-5 text-muted-foreground">{description}</p>
         ) : null}
       </div>
-      <div className={cn(!fullWidth && "sm:shrink-0")}>{children}</div>
+      <div className={cn("min-w-0 max-w-full", fullWidth ? "w-full" : "w-full sm:w-auto sm:shrink-0")}>{children}</div>
     </div>
   );
 }
@@ -158,14 +158,14 @@ function SegmentedControl<T extends string>({
   onChange: (v: T) => void;
 }) {
   return (
-    <div className="flex w-full overflow-hidden rounded-lg border border-border bg-muted/40 text-sm">
+    <div className="flex w-full min-w-0 max-w-full overflow-hidden rounded-lg border border-border bg-muted/40 text-sm">
       {options.map((opt) => (
         <button
           key={opt.value}
           type="button"
           onClick={() => onChange(opt.value)}
           className={cn(
-            "min-w-0 flex-1 px-3 py-2 text-center text-xs leading-tight transition-colors sm:text-sm",
+            "min-w-0 flex-1 text-wrap break-words px-2 py-2 text-center text-[11px] leading-tight transition-colors sm:px-3 sm:text-sm",
             value === opt.value
               ? "bg-foreground font-medium text-background"
               : "text-muted-foreground hover:bg-muted hover:text-foreground"
@@ -337,12 +337,12 @@ export function SettingsModal() {
 
   return (
     <Dialog open={settingsOpen} onOpenChange={setSettingsOpen}>
-      <DialogContent className="left-0 top-0 h-[100dvh] w-full max-w-none translate-x-0 translate-y-0 overflow-hidden rounded-none border-0 bg-card p-0 shadow-none [&>button]:hidden md:left-[50%] md:top-[50%] md:h-auto md:w-full md:max-w-4xl md:max-h-[calc(100dvh-2rem)] md:translate-x-[-50%] md:translate-y-[-50%] md:rounded-2xl md:border md:border-border/60 md:shadow-[var(--shadow-float)] md:[&>button]:flex">
+      <DialogContent className="!left-0 !top-0 !h-[100dvh] !w-full !max-w-none !translate-x-0 !translate-y-0 overflow-hidden overflow-x-hidden rounded-none border-0 bg-card p-0 shadow-none [&>button]:hidden md:!left-[50%] md:!top-[50%] md:!h-auto md:!w-full md:!max-w-4xl md:!max-h-[calc(100dvh-2rem)] md:!translate-x-[-50%] md:!translate-y-[-50%] md:rounded-2xl md:border md:border-border/60 md:shadow-[var(--shadow-float)] md:[&>button]:flex">
         <DialogTitle className="sr-only">Settings</DialogTitle>
         <DialogDescription className="sr-only">
           Manage account, appearance, privacy, data, and support settings for Curator.
         </DialogDescription>
-        <div className="flex h-full min-h-0 flex-col pt-[env(safe-area-inset-top)] pb-[env(safe-area-inset-bottom)] md:h-[76dvh] md:flex-row md:pt-0 md:pb-0">
+        <div className="flex h-full min-h-0 min-w-0 flex-col pt-[env(safe-area-inset-top)] pb-[env(safe-area-inset-bottom)] md:h-[76dvh] md:flex-row md:pt-0 md:pb-0">
 
           {/* Mobile header */}
           <div className="flex shrink-0 items-center justify-between border-b border-border/50 px-4 py-3 md:hidden">
@@ -358,13 +358,13 @@ export function SettingsModal() {
           </div>
 
           {/* Nav — horizontal scroll on mobile, vertical sidebar on desktop */}
-          <div className="shrink-0 border-b border-border/50 bg-card md:flex md:w-52 md:flex-col md:border-b-0 md:border-r">
+          <div className="min-w-0 shrink-0 border-b border-border/50 bg-card md:flex md:w-52 md:flex-col md:border-b-0 md:border-r">
             <div className="hidden px-4 pb-2 pt-5 md:block">
               <p className="text-base font-semibold text-foreground">Settings</p>
             </div>
-            <nav className="no-scrollbar flex gap-1 overflow-x-auto px-4 py-2 md:flex-col md:overflow-x-hidden md:overflow-y-auto md:px-3 md:pt-1 md:pb-3">
+            <nav className="grid min-w-0 grid-cols-2 gap-1.5 px-4 py-3 md:flex md:flex-col md:overflow-x-hidden md:overflow-y-auto md:px-3 md:pt-1 md:pb-3">
               {SECTIONS.map((section) => (
-                <div key={section.id} className="shrink-0">
+                <div key={section.id} className="min-w-0 last:col-span-2 md:last:col-span-1">
                   <NavItem
                     active={section.id === activeSection}
                     section={section}
@@ -376,8 +376,8 @@ export function SettingsModal() {
           </div>
 
           {/* Content */}
-          <div className="min-h-0 flex-1 overflow-y-auto px-4 py-4 sm:px-6 sm:py-6">
-            <div className="mx-auto max-w-2xl">
+          <div className="min-h-0 min-w-0 flex-1 overflow-y-auto overflow-x-hidden px-4 py-4 sm:px-6 sm:py-6">
+            <div className="mx-auto min-w-0 max-w-2xl">
 
               {/* Section title — visible on desktop only */}
               <h2 className="mb-6 hidden text-base font-semibold text-foreground md:sr-only">
