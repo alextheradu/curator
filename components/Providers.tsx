@@ -12,6 +12,20 @@ import { Toaster } from "@/components/ui/sonner";
 import { ErrorToastListener } from "@/components/ui/ErrorToast";
 import { TooltipProvider } from "@/components/ui/tooltip";
 
+/**
+ * Detects native Capacitor shell and adds `html.capacitor` so CSS can
+ * target the native environment (safe-area padding, scroll-lock, etc.).
+ */
+function CapacitorShell() {
+  useEffect(() => {
+    if (typeof window !== "undefined" && "Capacitor" in window) {
+      document.documentElement.classList.add("capacitor");
+    }
+  }, []);
+
+  return null;
+}
+
 const ASSET_RECOVERY_KEY = "curator:asset-recovery";
 const ASSET_RECOVERY_PARAM = "__asset_recovery";
 const ASSET_RECOVERY_WINDOW_MS = 30_000;
@@ -152,6 +166,7 @@ export function Providers({ children }: { children: ReactNode }) {
           <PwaRuntime />
           <SlowConnectionBanner />
           <CapacitorOfflineScreen />
+          <CapacitorShell />
           <AssetRecovery />
           <ErrorToastListener />
           {children}

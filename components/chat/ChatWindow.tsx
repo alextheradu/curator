@@ -464,7 +464,7 @@ export function ChatWindow({
 
   return (
     <SidebarInset
-      className="flex min-h-0 flex-col overflow-hidden bg-background pt-[env(safe-area-inset-top)] md:pt-0"
+      className="flex min-h-0 flex-col overflow-hidden bg-background pt-[env(safe-area-inset-top)] pr-[env(safe-area-inset-right)] md:pt-0 md:pr-0"
     >
       <Suspense>
         <TosModal open={showTosModal} onAccept={handleAcceptTos} />
