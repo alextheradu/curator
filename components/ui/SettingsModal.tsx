@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useMemo, useState, useSyncExternalStore, type ComponentType } from "react";
 import { signIn, signOut, useSession } from "next-auth/react";
+import { XIcon } from "lucide-react";
 import { useTheme } from "next-themes";
 import {
   CircleHelpIcon,
@@ -106,13 +107,13 @@ function NavItem({
       type="button"
       onClick={onClick}
       className={cn(
-        "flex w-full items-center gap-2.5 rounded-xl px-3 py-2 text-left text-sm transition-colors",
+        "flex items-center gap-2 whitespace-nowrap rounded-full px-3 py-1.5 text-xs font-medium transition-colors md:w-full md:rounded-xl md:px-3 md:py-2 md:text-left md:text-sm",
         active
-          ? "bg-muted font-medium text-foreground"
+          ? "bg-muted text-foreground md:font-medium"
           : "text-muted-foreground hover:bg-muted/60 hover:text-foreground"
       )}
     >
-      <Icon className="size-4 shrink-0" />
+      <Icon className="hidden size-4 shrink-0 md:block" />
       {section.label}
     </button>
   );
@@ -336,21 +337,34 @@ export function SettingsModal() {
 
   return (
     <Dialog open={settingsOpen} onOpenChange={setSettingsOpen}>
-      <DialogContent className="h-[calc(100dvh-1rem)] w-[calc(100vw-1rem)] max-w-none overflow-hidden rounded-2xl border-border/60 bg-card p-0 shadow-[var(--shadow-float)] md:h-auto md:w-full md:max-w-4xl md:max-h-[calc(100dvh-2rem)]">
+      <DialogContent className="h-[100dvh] w-[100vw] max-w-none overflow-hidden rounded-none border-0 bg-card p-0 shadow-none [&>button]:hidden md:h-auto md:w-full md:max-w-4xl md:max-h-[calc(100dvh-2rem)] md:rounded-2xl md:border md:border-border/60 md:shadow-[var(--shadow-float)] md:[&>button]:flex">
         <DialogTitle className="sr-only">Settings</DialogTitle>
         <DialogDescription className="sr-only">
           Manage account, appearance, privacy, data, and support settings for Curator.
         </DialogDescription>
-        <div className="flex h-full min-h-0 flex-col md:h-[76dvh] md:flex-row">
+        <div className="flex h-full min-h-0 flex-col pt-[env(safe-area-inset-top)] pb-[env(safe-area-inset-bottom)] md:h-[76dvh] md:flex-row md:pt-0 md:pb-0">
 
-          {/* Nav sidebar */}
-          <div className="border-b border-border/50 bg-card md:flex md:w-52 md:shrink-0 md:flex-col md:border-b-0 md:border-r">
+          {/* Mobile header */}
+          <div className="flex shrink-0 items-center justify-between border-b border-border/50 px-4 py-3 md:hidden">
+            <h2 className="text-base font-semibold text-foreground">Settings</h2>
+            <button
+              type="button"
+              onClick={() => setSettingsOpen(false)}
+              className="flex size-8 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+              aria-label="Close settings"
+            >
+              <XIcon className="size-4" />
+            </button>
+          </div>
+
+          {/* Nav — horizontal scroll on mobile, vertical sidebar on desktop */}
+          <div className="shrink-0 border-b border-border/50 bg-card md:flex md:w-52 md:flex-col md:border-b-0 md:border-r">
             <div className="hidden px-4 pb-2 pt-5 md:block">
               <p className="text-base font-semibold text-foreground">Settings</p>
             </div>
-            <nav className="grid grid-cols-2 gap-1 px-3 py-3 sm:grid-cols-3 md:flex md:flex-col md:overflow-y-auto md:overflow-x-hidden md:px-3 md:pt-1 md:pb-3">
+            <nav className="no-scrollbar flex gap-1 overflow-x-auto px-4 py-2 md:flex-col md:overflow-x-hidden md:overflow-y-auto md:px-3 md:pt-1 md:pb-3">
               {SECTIONS.map((section) => (
-                <div key={section.id} className="min-w-0">
+                <div key={section.id} className="shrink-0">
                   <NavItem
                     active={section.id === activeSection}
                     section={section}
