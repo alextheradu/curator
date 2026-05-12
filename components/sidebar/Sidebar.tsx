@@ -3,7 +3,7 @@
 import Image from "next/image";
 import { usePathname, useRouter } from "next/navigation";
 import { isToday, isYesterday, subWeeks, subMonths } from "date-fns";
-import { useMemo, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { motion } from "framer-motion";
 import {
   FolderPlusIcon,
@@ -150,6 +150,11 @@ export function AppSidebar({ latestNewsPublishedAt }: AppSidebarProps) {
 
   const { projects: projectSections, history } = deriveProjectSidebar(projects, conversations);
   const grouped = groupConversationsByDate(history);
+
+  const openSettings = useCallback(() => {
+    setOpenMobile(false);
+    setSettingsOpen(true);
+  }, [setOpenMobile, setSettingsOpen]);
 
 
   const groups: { label: string; items: Conversation[] }[] = [
@@ -589,7 +594,7 @@ export function AppSidebar({ latestNewsPublishedAt }: AppSidebarProps) {
                     className="flex size-8 shrink-0 items-center justify-center rounded-lg text-sidebar-foreground/50 transition-colors duration-150 hover:bg-sidebar-accent hover:text-sidebar-foreground group-data-[collapsible=icon]:mx-auto max-md:size-10 max-md:rounded-xl"
                     title="Settings"
                     aria-label="Settings"
-                    onClick={() => setSettingsOpen(true)}
+                    onClick={openSettings}
                   >
                     <Settings className="size-4" />
                   </button>
@@ -626,7 +631,7 @@ export function AppSidebar({ latestNewsPublishedAt }: AppSidebarProps) {
                     className="flex size-8 shrink-0 items-center justify-center rounded-lg text-sidebar-foreground/50 transition-colors duration-150 hover:bg-sidebar-accent hover:text-sidebar-foreground group-data-[collapsible=icon]:mx-auto max-md:size-10 max-md:rounded-xl"
                     title="Settings"
                     aria-label="Settings"
-                    onClick={() => setSettingsOpen(true)}
+                    onClick={openSettings}
                   >
                     <Settings className="size-4" />
                   </button>
@@ -645,7 +650,7 @@ export function AppSidebar({ latestNewsPublishedAt }: AppSidebarProps) {
                     className="flex size-8 shrink-0 items-center justify-center rounded-lg text-sidebar-foreground/50 transition-colors duration-150 hover:bg-sidebar-accent hover:text-sidebar-foreground group-data-[collapsible=icon]:mx-auto max-md:size-10 max-md:rounded-xl"
                     title="Settings"
                     aria-label="Settings"
-                    onClick={() => setSettingsOpen(true)}
+                    onClick={openSettings}
                   >
                     <Settings className="size-4" />
                   </button>
