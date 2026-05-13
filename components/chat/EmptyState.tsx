@@ -31,48 +31,13 @@ const SUGGESTION_GROUPS = {
     "Explain what judges usually look for in pit interviews.",
   ],
 } as const;
+
 const SUGGESTION_GROUP_NAMES = Object.keys(SUGGESTION_GROUPS) as Array<keyof typeof SUGGESTION_GROUPS>;
-const VISIBLE_SUGGESTION_COUNT = 4;
-const GREETING_PREFIXES = [
-  "Howdy",
-  "Hey",
-  "Hello",
-  "Hi there",
-  "Hi",
-  "What's up",
-  "How's it going",
-  "Glad you're here",
-  "Ahoy",
-  "Hola",
-  "Bonjour",
-  "Beep boop",
-  "Sup",
-  "Greetings",
-  "Heyo",
-  "Salutations",
-  "Ready when you are",
-  "At your service",
-  "Fancy seeing you here",
-  "Good to see you",
-  "Look who it is",
-  "Hello hello",
-  "What's cookin'",
-  "How goes it",
-];
 
-function selectRandomSuggestions(count: number) {
-  const pool = [...Object.values(SUGGESTION_GROUPS).flat()];
-
-  for (let i = pool.length - 1; i > 0; i -= 1) {
-    const randomIndex = Math.floor(Math.random() * (i + 1));
-    [pool[i], pool[randomIndex]] = [pool[randomIndex], pool[i]];
-  }
-
-  return pool.slice(0, count);
-}
-
-interface Props {
-  onPromptSelect: (prompt: string) => void;
+function getGreeting(hour: number): string {
+  if (hour < 12) return "Good morning";
+  if (hour < 18) return "Good afternoon";
+  return "Good evening";
 }
 
 function getGreetingName(preferredName?: string | null, fullName?: string | null) {
@@ -87,19 +52,21 @@ function getGreetingName(preferredName?: string | null, fullName?: string | null
   return null;
 }
 
+interface Props {
+  onPromptSelect: (prompt: string) => void;
+}
+
 export function EmptyState({ onPromptSelect }: Props) {
   const { data: session } = useSession();
-  const [suggestions] = useState(() => selectRandomSuggestions(VISIBLE_SUGGESTION_COUNT));
   const [activeGroup, setActiveGroup] = useState<keyof typeof SUGGESTION_GROUPS>("Rules");
-  const [greetingPrefix] = useState(
-    () => GREETING_PREFIXES[Math.floor(Math.random() * GREETING_PREFIXES.length)] ?? "Howdy"
-  );
+
+  const greetingBase = getGreeting(new Date().getHours());
   const greetingName = getGreetingName(session?.user?.preferredName, session?.user?.name);
-  const greeting = greetingName ? `${greetingPrefix}, ${greetingName}!` : `${greetingPrefix}!`;
+  const greeting = greetingName ? `${greetingBase}, ${greetingName}` : greetingBase;
 
   return (
     <div className="flex w-full flex-1 flex-col justify-center">
-      <div className="flex flex-col items-center justify-start gap-3 px-1 pb-6 pt-0 text-center">
+      <div className="flex flex-col items-center justify-start gap-4 px-1 pb-8 pt-0 text-center">
         <motion.div
           initial={{ opacity: 0, scale: 0.85 }}
           animate={{ opacity: 1, scale: 1 }}
@@ -121,25 +88,14 @@ export function EmptyState({ onPromptSelect }: Props) {
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.35, duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
-          className="text-center text-xl font-semibold tracking-tight text-foreground md:text-2xl"
+          className="text-center text-2xl font-medium tracking-tight text-foreground"
         >
           {greeting}
         </motion.h1>
-        <motion.div
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.5, duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
-          className="max-w-sm text-center text-xs leading-5 text-muted-foreground"
-        >
-          Ask about FRC rules, strategy, programming, or game documentation.
-        </motion.div>
       </div>
 
       <div className="w-full px-1 pb-0">
-        <div className="mb-1.5 flex items-center justify-between px-1">
-          <p className="text-[10px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
-            Quick starts
-          </p>
+        <div className="mb-2 flex items-center justify-end px-1">
           <div className="flex items-center gap-1 overflow-x-auto">
             {SUGGESTION_GROUP_NAMES.map((group) => (
               <button
@@ -157,8 +113,8 @@ export function EmptyState({ onPromptSelect }: Props) {
             ))}
           </div>
         </div>
-        <div className="grid w-full grid-cols-2 gap-1.5">
-          {(SUGGESTION_GROUPS[activeGroup] ?? suggestions).map((suggestion, index) => (
+        <div className="grid w-full grid-cols-2 gap-2">
+          {SUGGESTION_GROUPS[activeGroup].map((suggestion, index) => (
             <motion.div
               key={suggestion}
               initial={{ opacity: 0, y: 16 }}
@@ -174,7 +130,7 @@ export function EmptyState({ onPromptSelect }: Props) {
               <button
                 type="button"
                 onClick={() => onPromptSelect(suggestion)}
-                className="flex h-full w-full cursor-pointer items-center rounded-xl border border-border/50 bg-card/35 px-2.5 py-2 text-left text-[11px] leading-snug text-foreground/75 transition-all duration-200 hover:-translate-y-0.5 hover:bg-card/60 hover:text-foreground hover:shadow-[var(--shadow-card)] md:px-3 md:py-2.5 md:text-xs"
+                className="flex h-full w-full cursor-pointer items-center rounded-xl border border-border/40 bg-card/35 px-2.5 py-3 text-left text-[11px] leading-snug text-foreground/75 transition-all duration-200 hover:-translate-y-0.5 hover:bg-card/60 hover:text-foreground hover:shadow-[var(--shadow-card)] md:px-3 md:py-3.5 md:text-xs"
               >
                 {suggestion}
               </button>
