@@ -107,6 +107,7 @@ export function ChatWindow({
     consumeGuestTurn,
   } = useGuestLimit(isAuthenticated, accountTosAccepted);
 
+  const [nativeBarReady, setNativeBarReady] = useState(false);
   const [factCheckEnabled, setFactCheckEnabled] = useState(false);
   const [searchMode, setSearchMode] = useState<SearchMode>("fast");
   const [streamingSearchActivity, setStreamingSearchActivity] = useState<SearchActivity | undefined>();
@@ -468,18 +469,23 @@ export function ChatWindow({
     let removeListeners: (() => void) | undefined;
 
     void (async () => {
-      const { LiquidGlassComposer } = await import('@/lib/plugins/liquid-glass-composer');
-      await LiquidGlassComposer.show();
-      const sendListener = await LiquidGlassComposer.addListener('send', (data) => {
-        handleSend(data.value);
-      });
-      const stopListener = await LiquidGlassComposer.addListener('stop', () => {
-        void stopStreaming();
-      });
-      removeListeners = () => {
-        sendListener.remove();
-        stopListener.remove();
-      };
+      try {
+        const { LiquidGlassComposer } = await import('@/lib/plugins/liquid-glass-composer');
+        await LiquidGlassComposer.show();
+        setNativeBarReady(true);
+        const sendListener = await LiquidGlassComposer.addListener('send', (data) => {
+          handleSend(data.value);
+        });
+        const stopListener = await LiquidGlassComposer.addListener('stop', () => {
+          void stopStreaming();
+        });
+        removeListeners = () => {
+          sendListener.remove();
+          stopListener.remove();
+        };
+      } catch {
+        // Plugin not available (e.g. old app build) — keep web InputBar visible
+      }
     })();
 
     return () => {
@@ -487,7 +493,7 @@ export function ChatWindow({
       void import('@/lib/plugins/liquid-glass-composer').then(({ LiquidGlassComposer }) => {
         void LiquidGlassComposer.removeAllListeners();
         void LiquidGlassComposer.hide();
-      });
+      }).catch(() => {});
     };
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [readOnly]);
@@ -750,7 +756,7 @@ export function ChatWindow({
               animate={{ opacity: 1, y: 0, scale: 1 }}
               exit={{ opacity: 0, y: -8, scale: 0.992 }}
               transition={{ duration: 0.24, ease: [0.22, 1, 0.36, 1] }}
-              className={`mx-auto flex min-h-full w-full max-w-3xl flex-col px-3 sm:px-4 md:px-6 ${isCapacitorIOS ? 'pb-28' : 'pb-24'} sm:pb-40`}
+              className={`mx-auto flex min-h-full w-full max-w-3xl flex-col px-3 sm:px-4 md:px-6 ${nativeBarReady ? 'pb-28' : 'pb-24'} sm:pb-40`}
             >
               <div className="flex flex-col gap-4 pt-4 sm:gap-6 sm:pt-8">
                 {messages.map((message) => (
@@ -802,7 +808,7 @@ export function ChatWindow({
                 <Link href="/" className="font-medium text-foreground underline-offset-4 hover:underline">Open Curator</Link>
               </div>
             </div>
-          ) : !isCapacitorIOS ? (
+          ) : !nativeBarReady ? (
             <InputBar
               onSend={handleSend}
               onStop={() => void stopStreaming()}
