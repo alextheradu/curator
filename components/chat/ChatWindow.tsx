@@ -58,6 +58,11 @@ interface ChatWindowProps {
   initialPrompt?: string;
 }
 
+const isCapacitorIOS =
+  typeof window !== 'undefined' &&
+  'Capacitor' in window &&
+  (window as { Capacitor?: { getPlatform?: () => string } }).Capacitor?.getPlatform?.() === 'ios';
+
 export function ChatWindow({
   conversationOverride = null,
   readOnly = false,
@@ -456,6 +461,44 @@ export function ChatWindow({
     toast.success(makePublic ? "This chat is now public." : "This chat is private again.");
   }, [conversation, onShareChange]);
 
+  // Native Liquid Glass composer bar (Capacitor iOS only)
+  useEffect(() => {
+    if (!isCapacitorIOS || readOnly) return;
+
+    let removeListeners: (() => void) | undefined;
+
+    void (async () => {
+      const { LiquidGlassComposer } = await import('@/lib/plugins/liquid-glass-composer');
+      await LiquidGlassComposer.show();
+      const sendListener = await LiquidGlassComposer.addListener('send', (data) => {
+        handleSend(data.value);
+      });
+      const stopListener = await LiquidGlassComposer.addListener('stop', () => {
+        void stopStreaming();
+      });
+      removeListeners = () => {
+        sendListener.remove();
+        stopListener.remove();
+      };
+    })();
+
+    return () => {
+      removeListeners?.();
+      void import('@/lib/plugins/liquid-glass-composer').then(({ LiquidGlassComposer }) => {
+        void LiquidGlassComposer.removeAllListeners();
+        void LiquidGlassComposer.hide();
+      });
+    };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [readOnly]);
+
+  useEffect(() => {
+    if (!isCapacitorIOS || readOnly) return;
+    void import('@/lib/plugins/liquid-glass-composer').then(({ LiquidGlassComposer }) => {
+      void LiquidGlassComposer.setStreaming({ value: isStreaming });
+    });
+  }, [isStreaming, readOnly]);
+
   const messages = conversation?.messages ?? [];
   const firstUserPrompt = messages.find((message) => message.role === "user")?.content;
   const isEmpty = messages.length === 0 && !isStreaming;
@@ -707,7 +750,7 @@ export function ChatWindow({
               animate={{ opacity: 1, y: 0, scale: 1 }}
               exit={{ opacity: 0, y: -8, scale: 0.992 }}
               transition={{ duration: 0.24, ease: [0.22, 1, 0.36, 1] }}
-              className="mx-auto flex min-h-full w-full max-w-3xl flex-col px-3 pb-24 sm:px-4 sm:pb-40 md:px-6"
+              className={`mx-auto flex min-h-full w-full max-w-3xl flex-col px-3 sm:px-4 md:px-6 ${isCapacitorIOS ? 'pb-28' : 'pb-24'} sm:pb-40`}
             >
               <div className="flex flex-col gap-4 pt-4 sm:gap-6 sm:pt-8">
                 {messages.map((message) => (
@@ -759,7 +802,7 @@ export function ChatWindow({
                 <Link href="/" className="font-medium text-foreground underline-offset-4 hover:underline">Open Curator</Link>
               </div>
             </div>
-          ) : (
+          ) : !isCapacitorIOS ? (
             <InputBar
               onSend={handleSend}
               onStop={() => void stopStreaming()}
@@ -772,7 +815,7 @@ export function ChatWindow({
               onSearchModeChange={handleSearchModeChange}
               initialValue={initialPrompt}
             />
-          )}
+          ) : null}
         </div>
       </div>
     </SidebarInset>
