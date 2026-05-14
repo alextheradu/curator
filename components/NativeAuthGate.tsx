@@ -22,6 +22,7 @@ export function NativeAuthGate({ children }: { children: React.ReactNode }) {
   const [isNative, setIsNative] = useState(false);
   const [signing, setSigning] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [loadingTimedOut, setLoadingTimedOut] = useState(false);
 
   useEffect(() => {
     import("@capacitor/core").then(({ Capacitor }) => {
@@ -29,11 +30,18 @@ export function NativeAuthGate({ children }: { children: React.ReactNode }) {
     });
   }, []);
 
+  // If session stays "loading" for too long in native, stop blocking
+  useEffect(() => {
+    if (!isNative || status !== "loading") return;
+    const timer = setTimeout(() => setLoadingTimedOut(true), 5000);
+    return () => clearTimeout(timer);
+  }, [isNative, status]);
+
   // Non-native: always render app
   if (!isNative) return <>{children}</>;
 
-  // Native + loading: show blank dark screen so there's no flash-through
-  if (status === "loading") {
+  // Native + loading (with timeout fallback): show blank dark screen briefly
+  if (status === "loading" && !loadingTimedOut) {
     return <div className="h-dvh w-full bg-[#0f0f0f]" />;
   }
 

@@ -1,0 +1,27 @@
+- generic [active] [ref=e1]:
+  - generic [ref=e6]:
+    - button "Toggle Sidebar" [ref=e9]:
+      - img
+      - generic [ref=e10]: Toggle Sidebar
+    - generic [ref=e11]:
+      - list [ref=e14]:
+        - listitem [ref=e15]:
+          - button "New chat" [ref=e16]:
+            - img [ref=e17]
+            - generic [ref=e20]: New chat
+        - listitem [ref=e21]:
+          - button "Search chats" [ref=e22]:
+            - img [ref=e23]
+            - generic [ref=e26]: Search chats
+        - listitem [ref=e27]:
+          - button "News New posts" [ref=e28]:
+            - img [ref=e29]
+            - generic [ref=e32]: News
+            - generic "New posts" [ref=e33]
+      - generic [ref=e36]: Your conversations will appear here.
+    - list [ref=e38]:
+      - listitem [ref=e39]:
+        - button "Settings" [ref=e44]:
+          - img [ref=e45]
+    - button "Toggle Sidebar" [ref=e48]
+  - region "Notifications alt+T"

@@ -24,13 +24,13 @@ function buildCsp(): string {
   const scriptSrcExtras = isDev ? " 'unsafe-eval'" : "";
 
   return [
-    "default-src 'self'",
-    `script-src 'self' 'unsafe-inline'${scriptSrcExtras} https://www.googletagmanager.com https://static.cloudflareinsights.com`,
+    "default-src 'self' capacitor://localhost",
+    `script-src 'self' 'unsafe-inline'${scriptSrcExtras} capacitor://localhost https://www.googletagmanager.com https://static.cloudflareinsights.com`,
     "worker-src 'self' blob:",
     "style-src 'self' 'unsafe-inline'",
-    "img-src 'self' data: https:",
-    "font-src 'self'",
-    "connect-src 'self' https://www.google-analytics.com https://region1.google-analytics.com https://cloudflareinsights.com https://static.cloudflareinsights.com",
+    "img-src 'self' data: https: capacitor://localhost",
+    "font-src 'self' capacitor://localhost",
+    "connect-src 'self' capacitor://localhost https://www.google-analytics.com https://region1.google-analytics.com https://cloudflareinsights.com https://static.cloudflareinsights.com",
     `frame-src ${frameSrc}`,
     "object-src 'none'",
     "base-uri 'self'",
@@ -47,7 +47,7 @@ const securityHeaders = [
     key: "Permissions-Policy",
     value: "camera=(), microphone=(), geolocation=(), payment=()",
   },
-  { key: "Cross-Origin-Opener-Policy", value: "same-origin" },
+  { key: "Cross-Origin-Opener-Policy", value: "same-origin-allow-popups" },
   { key: "Content-Security-Policy", value: buildCsp() },
 ];
 
