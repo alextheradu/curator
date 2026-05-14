@@ -7,6 +7,7 @@ const config: CapacitorConfig = {
   server: {
     url: "https://curatorfrc.com",
     cleartext: false,
+    allowNavigation: ["curatorfrc.com", "*.curatorfrc.com"],
   },
   ios: {
     backgroundColor: "#0f0f0f",
