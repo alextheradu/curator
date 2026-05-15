@@ -22,7 +22,6 @@ export function NativeAuthGate({ children }: { children: React.ReactNode }) {
   const [isNative, setIsNative] = useState(false);
   const [signing, setSigning] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [loadingTimedOut, setLoadingTimedOut] = useState(false);
 
   useEffect(() => {
     import("@capacitor/core").then(({ Capacitor }) => {
@@ -30,24 +29,16 @@ export function NativeAuthGate({ children }: { children: React.ReactNode }) {
     });
   }, []);
 
-  // If session stays "loading" for too long in native, stop blocking
-  useEffect(() => {
-    if (!isNative || status !== "loading") return;
-    const timer = setTimeout(() => setLoadingTimedOut(true), 5000);
-    return () => clearTimeout(timer);
-  }, [isNative, status]);
-
   // Non-native: always render app
   if (!isNative) return <>{children}</>;
-
-  // Native + loading (with timeout fallback): show blank dark screen briefly
-  if (status === "loading" && !loadingTimedOut) {
-    return <div className="h-dvh w-full bg-[#0f0f0f]" />;
-  }
 
   // Native + authenticated: render app
   if (status === "authenticated") return <>{children}</>;
 
+  // Native + unauthenticated or loading: show sign-in screen.
+  // Button is disabled while session is still resolving to avoid a sign-in
+  // attempt before we know the user is actually logged out.
+  const sessionLoading = status === "loading";
 
   const handleSignIn = async () => {
     setSigning(true);
@@ -111,11 +102,11 @@ export function NativeAuthGate({ children }: { children: React.ReactNode }) {
         <button
           type="button"
           onClick={() => void handleSignIn()}
-          disabled={signing}
+          disabled={signing || sessionLoading}
           className="flex h-14 w-full items-center justify-center gap-3 rounded-2xl bg-white text-[15px] font-semibold text-black transition-opacity active:opacity-80 disabled:opacity-60"
         >
           <GoogleIcon />
-          {signing ? "Signing in…" : "Continue with Google"}
+          {signing ? "Signing in…" : sessionLoading ? "Loading…" : "Continue with Google"}
         </button>
 
         <p className="text-center text-[11px] leading-5 text-white/30">
