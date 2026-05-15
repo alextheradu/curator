@@ -1,0 +1,18 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Curator</title>
+  <style>html, body { margin: 0; padding: 0; background: #0f0f0f; }</style>
+  <script>
+    // When Capacitor loads this local bundle instead of the remote server URL,
+    // redirect to the production app. This happens if the native build predates
+    // the server.url config being applied via cap sync + Xcode rebuild.
+    if (window.location.hostname !== 'curatorfrc.com') {
+      window.location.replace('https://curatorfrc.com');
+    }
+  </script>
+</head>
+<body></body>
+</html>
