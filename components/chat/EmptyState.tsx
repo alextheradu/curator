@@ -32,7 +32,7 @@ const SUGGESTION_GROUPS = {
   ],
 } as const;
 
-const SUGGESTION_GROUP_NAMES = Object.keys(SUGGESTION_GROUPS) as Array<keyof typeof SUGGESTION_GROUPS>;
+const ALL_SUGGESTIONS = Object.values(SUGGESTION_GROUPS).flat();
 
 const GREETINGS = [
   "Howdy",
@@ -84,12 +84,23 @@ function getGreetingName(preferredName?: string | null, fullName?: string | null
   return null;
 }
 
+function shuffleSuggestions(suggestions: string[]) {
+  const shuffled = [...suggestions];
+
+  for (let index = shuffled.length - 1; index > 0; index -= 1) {
+    const swapIndex = Math.floor(Math.random() * (index + 1));
+    [shuffled[index], shuffled[swapIndex]] = [shuffled[swapIndex], shuffled[index]];
+  }
+
+  return shuffled;
+}
+
 interface Props {
   onPromptSelect: (prompt: string) => void;
   isNativeIOS?: boolean;
 }
 
-function NativeEmptyState({ onPromptSelect: _ }: Props) {
+function NativeEmptyState() {
   const { data: session } = useSession();
 
   const hour = new Date().getHours();
@@ -134,10 +145,10 @@ function NativeEmptyState({ onPromptSelect: _ }: Props) {
 
 export function EmptyState({ onPromptSelect, isNativeIOS = false }: Props) {
   const { data: session } = useSession();
-  const [activeGroup, setActiveGroup] = useState<keyof typeof SUGGESTION_GROUPS>("Rules");
+  const [suggestions] = useState(() => shuffleSuggestions(ALL_SUGGESTIONS));
 
   if (isNativeIOS) {
-    return <NativeEmptyState onPromptSelect={onPromptSelect} />;
+    return <NativeEmptyState />;
   }
 
   const greetingBase = getGreeting(new Date().getHours());
@@ -175,26 +186,8 @@ export function EmptyState({ onPromptSelect, isNativeIOS = false }: Props) {
       </div>
 
       <div className="w-full px-1 pb-0">
-        <div className="mb-2 flex items-center justify-end px-1">
-          <div className="flex items-center gap-1 overflow-x-auto">
-            {SUGGESTION_GROUP_NAMES.map((group) => (
-              <button
-                key={group}
-                type="button"
-                onClick={() => setActiveGroup(group)}
-                className={`shrink-0 rounded-full border px-2.5 py-1 text-[10px] font-medium transition-colors ${
-                  activeGroup === group
-                    ? "border-[#0066B3]/30 bg-[#0066B3]/10 text-[#8cc6f3]"
-                    : "border-border/50 bg-card/30 text-muted-foreground hover:bg-card/60"
-                }`}
-              >
-                {group}
-              </button>
-            ))}
-          </div>
-        </div>
-        <div className="grid w-full grid-cols-2 gap-2">
-          {SUGGESTION_GROUPS[activeGroup].map((suggestion, index) => (
+        <div className="grid w-full grid-cols-2 gap-2 md:grid-cols-4">
+          {suggestions.map((suggestion, index) => (
             <motion.div
               key={suggestion}
               initial={{ opacity: 0, y: 16 }}
