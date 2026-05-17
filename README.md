@@ -16,7 +16,7 @@
     |
     <a href="public/terms-of-service.md">Terms</a>
     |
-    <a href="LICENSE.md">License</a>
+    <a href="LICENSE">License</a>
   </p>
   
 
