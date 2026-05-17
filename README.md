@@ -15,7 +15,10 @@
     <a href="public/privacy-policy.md">Privacy Policy</a>
     |
     <a href="public/terms-of-service.md">Terms</a>
+    |
+    <a href="LICENSE.md">License</a>
   </p>
+  
 
   <p>
     <img src="https://hackatime-badge.hackclub.com/U0AFWJX9CP2/curator" alt="Hackatime project activity" />
