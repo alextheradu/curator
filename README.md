@@ -18,7 +18,6 @@
     |
     <a href="LICENSE">License</a>
   </p>
-  
 
   <p>
     <img src="https://hackatime-badge.hackclub.com/U0AFWJX9CP2/curator" alt="Hackatime project activity" />
@@ -37,20 +36,24 @@
 
 ## Overview
 
-Curator is a Next.js 16 app built for FRC teams that need quick, grounded help during build season and competition season. It combines a focused chat interface, document-backed retrieval, live FRC data lookups, project memory, public chat sharing, support/reporting workflows, and an admin console for maintaining the knowledge base.
+Curator is a Next.js 16 app for FRC teams that need grounded answers, source-backed rules help, live event context, and structured team memory in one workspace. It combines a chat interface, retrieval over indexed season documents, optional live web and The Blue Alliance lookups, project organization, public chat sharing, support/reporting tools, a public news feed, and an admin console for operations and content management.
 
-Curator is not affiliated with FIRST. Official manuals, rules, awards guidance, and event sources remain the authority.
+Curator is not affiliated with FIRST. Official manuals, Q&A, awards guidance, event data, and field documentation remain the authority.
 
 ## What It Does
 
-- Answers FRC questions with a system prompt tuned for fair, verifiable team support.
-- Searches indexed season and general documents with citations back to stored source files.
-- Supports rookie and veteran chat modes, season selection, fact checking, and deeper search flows.
-- Uses live web search for fresh or time-sensitive FRC context when enabled.
-- Integrates with The Blue Alliance MCP path for event, match, ranking, and team context when configured.
-- Persists conversations, projects, account settings, onboarding state, public shares, reports, and support requests.
-- Gives admins tools for document uploads, document descriptions, reports, chats, users, blog posts, and operational stats.
-- Ships as a PWA with metadata, Open Graph assets, sitemap, robots rules, and optional IndexNow submission.
+- Answers FRC questions with season-aware prompts tuned for rookie and veteran audiences.
+- Supports `fast`, `balanced`, and `deep` search modes for different retrieval depth and latency tradeoffs.
+- Pulls citations from indexed PDFs, optional live web search, and optional The Blue Alliance tool calls.
+- Stores season-scoped and general document chunks in Qdrant and serves source files from MinIO-compatible storage.
+- Organizes chats into projects with context summaries and project-level memory.
+- Supports guest chats in browser storage, then transfers them into the account after sign-in.
+- Lets users publish chats with shareable public links and browse public chat views safely.
+- Includes onboarding, default chat/search preferences, theme controls, cookie preferences, data export, and support forms.
+- Captures answer-quality feedback, message reports, support requests, and moderation signals.
+- Publishes a `/news` feed backed by admin-managed blog posts.
+- Ships an admin workspace for stats, documents, news posts, users, chats, reports, feedback, and operational triage.
+- Runs as a PWA and includes a Capacitor iOS shell with native Google sign-in support, offline handling, and keyboard/runtime fixes.
 
 ## Stack
 
@@ -58,13 +61,15 @@ Curator is not affiliated with FIRST. Official manuals, rules, awards guidance, 
 | --- | --- |
 | App | Next.js 16 App Router, React 19, TypeScript |
 | UI | Tailwind CSS 4, Radix UI, Base UI, lucide-react, Framer Motion |
-| Auth | Auth.js / NextAuth with Google OAuth |
-| Database | PostgreSQL with Drizzle ORM and migrations |
-| Retrieval | Qdrant vector search plus MinIO document storage |
+| Auth | Auth.js / NextAuth with Google OAuth, Apple Sign In, and native iOS Google token sign-in |
+| State | Zustand persisted client state for chat UI preferences and guest conversations |
+| Database | PostgreSQL with Drizzle ORM and SQL migrations |
+| Retrieval | Qdrant vector search plus MinIO-compatible object storage |
 | AI | OpenRouter chat, title, and document-description models |
-| Search | Optional LangSearch web search and optional The Blue Alliance MCP |
-| Observability | Sentry, app logs, client error endpoint |
-| Tests | Vitest and React Testing Library-compatible component tests |
+| Search | Indexed FRC docs, optional LangSearch web search, optional The Blue Alliance MCP bridge |
+| Observability | Sentry, app logs, client error ingestion, rate limiting |
+| Delivery | PWA assets, service worker, metadata, Open Graph, sitemap, robots, IndexNow, Capacitor iOS |
+| Tests | Vitest |
 
 ## Quick Start
 
@@ -72,9 +77,17 @@ Requirements:
 
 - Node.js 20+
 - npm
-- Docker, if you want local Postgres and Qdrant from `docker-compose.yml`
+- PostgreSQL
+- Qdrant
 - Google OAuth credentials
 - OpenRouter API key
+
+Optional but commonly used:
+
+- Docker for local Postgres and Qdrant from `docker-compose.yml`
+- MinIO or another S3-compatible object store for document uploads and source-file viewing
+- LangSearch API key for live web search
+- The Blue Alliance API key for TBA-backed live lookups
 
 Install dependencies:
 
@@ -82,13 +95,20 @@ Install dependencies:
 npm install
 ```
 
-Create a local environment file:
+Create local environment files:
 
 ```bash
 cp .env.example .env.local
+cp .env.example .env.development.local
 ```
 
-If you use the included Docker services, make sure `DATABASE_URL` points at the compose port:
+If you plan to use `npm run build`, `npm run build:ci`, or `npm start`, also create `.env` because those scripts load that file explicitly:
+
+```bash
+cp .env.example .env
+```
+
+If you use the included Docker services, make sure your DB settings match the compose port:
 
 ```bash
 DATABASE_URL=postgresql://curator:curatordevpw@localhost:5437/curator
@@ -102,7 +122,9 @@ Start local infrastructure:
 docker compose --env-file .env.local up -d postgres qdrant
 ```
 
-Run migrations. Either export `DATABASE_URL` in your shell, or keep the same database settings in `.env.development.local` and use the dev helper:
+The compose file does not start MinIO. Point the MinIO vars at an existing bucket or run your own S3-compatible store separately if you want document upload and document viewing to work end to end.
+
+Run migrations:
 
 ```bash
 npm run db:migrate:dev
@@ -118,18 +140,20 @@ Open [http://localhost:3000](http://localhost:3000).
 
 ## Environment
 
-The full list lives in [.env.example](.env.example). The most important groups are:
+The baseline template lives in [.env.example](.env.example). The app currently references the following groups of variables:
 
 | Group | Variables |
 | --- | --- |
-| Core | `NEXT_PUBLIC_SITE_URL`, `AUTH_URL`, `AUTH_SECRET`, `DATABASE_URL` |
-| Auth | `AUTH_GOOGLE_ID`, `AUTH_GOOGLE_SECRET`, `ADMIN_EMAILS` |
+| Core | `NEXT_PUBLIC_SITE_URL`, `AUTH_URL`, `AUTH_SECRET`, `DATABASE_URL`, `PORT` |
+| Web auth | `AUTH_GOOGLE_ID`, `AUTH_GOOGLE_SECRET`, `NEXT_PUBLIC_AUTH_GOOGLE_ID`, `ADMIN_EMAILS` |
+| Native and Apple auth | `AUTH_GOOGLE_IOS_CLIENT_ID`, `AUTH_APPLE_ID`, `AUTH_APPLE_SECRET`, `NEXT_PUBLIC_APPLE_SIGNIN_ENABLED` |
 | AI | `OPENROUTER_API_KEY`, `OPENROUTER_CHAT_MODELS`, `OPENROUTER_DESCRIPTION_MODELS`, `OPENROUTER_TITLE_MODEL` |
-| Retrieval | `QDRANT_URL`, `QDRANT_COLLECTION`, `MINIO_ENDPOINT`, `MINIO_ACCESS_KEY`, `MINIO_SECRET_KEY`, `MINIO_BUCKET` |
-| Optional search | `LANGSEARCH_API_KEY`, `TBA_MCP_ENABLED`, `TBA_API_KEY` |
-| Analytics | `NEXT_PUBLIC_GOOGLE_ANALYTICS_ID`, `NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION` |
-| Sentry | `NEXT_PUBLIC_SENTRY_DSN`, `SENTRY_DSN`, `SENTRY_ENVIRONMENT`, `SENTRY_TRACES_SAMPLE_RATE`, `SENTRY_AUTH_TOKEN`, `SENTRY_ORG`, `SENTRY_PROJECT` |
+| Retrieval | `QDRANT_URL`, `QDRANT_COLLECTION`, `MINIO_ENDPOINT`, `MINIO_USE_SSL`, `MINIO_ACCESS_KEY`, `MINIO_SECRET_KEY`, `MINIO_BUCKET` |
+| Optional live search | `LANGSEARCH_API_KEY`, `TBA_MCP_ENABLED`, `TBA_API_KEY` |
+| Site and analytics | `NEXT_PUBLIC_GOOGLE_ANALYTICS_ID`, `NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION`, `NEXT_PUBLIC_APP_BUILD_ID` |
+| Sentry | `NEXT_PUBLIC_SENTRY_DSN`, `SENTRY_DSN`, `SENTRY_ENVIRONMENT`, `SENTRY_TRACES_SAMPLE_RATE`, `NEXT_PUBLIC_SENTRY_TRACES_SAMPLE_RATE`, `NEXT_PUBLIC_SENTRY_REPLAY_SESSION_SAMPLE_RATE`, `NEXT_PUBLIC_SENTRY_REPLAY_ON_ERROR_SAMPLE_RATE`, `SENTRY_RELEASE_MANAGEMENT_ENABLED`, `SENTRY_AUTH_TOKEN`, `SENTRY_ORG`, `SENTRY_PROJECT` |
 | Indexing | `INDEXNOW_KEY`, `INDEXNOW_SITE_URL`, `INDEXNOW_SUBMIT_ON_START`, `INDEXNOW_SUBMIT_DELAY_MS` |
+| Runtime helpers | `PM2_PROCESS_NAME`, `EVAL_BASE_URL` |
 
 Generate an auth secret with:
 
@@ -137,23 +161,69 @@ Generate an auth secret with:
 openssl rand -base64 32
 ```
 
+For Apple Sign In, generate the client secret separately if you configure that provider:
+
+```bash
+node scripts/generate-apple-secret.mjs
+```
+
+## User Flows
+
+### Chat workspace
+
+- Empty-state prompt suggestions, season selection, streaming responses, markdown/code rendering, and citations.
+- Search modes:
+  - `fast`: answer from current context and a smaller document pass.
+  - `balanced`: short document, web, and live-tool loop.
+  - `deep`: broader tool loop with larger document searches and more web coverage.
+- Optional fact-check pass for answers that should be re-verified against retrieved document context.
+- Guest usage is stored locally and currently limited to `3` message sends before sign-in is required.
+
+### Accounts and settings
+
+- Google sign-in on web.
+- Apple sign-in on web when Apple credentials are configured.
+- Native Google sign-in for Capacitor iOS using an ID-token credentials flow.
+- Onboarding captures preferred name, team number, chat mode, and search mode.
+- Settings support theme selection, default chat mode, default search mode, cookie preferences, account export, and reset controls.
+
+### Collaboration and support
+
+- Projects group chats and maintain a reusable project context summary.
+- Public conversation sharing exposes read-only share links for opted-in chats.
+- Users can report assistant messages, submit quality feedback, and send support requests from the support form.
+- Account export includes user profile data, settings, projects, conversations with messages, support requests, and reports.
+
+### Content and admin
+
+- `/news` renders published blog posts managed from the admin panel.
+- Admin routes cover stats, news, documents, users, chats, reports, feedback, and ops.
+- Document uploads can be stored in object storage, chunked, embedded, and indexed into Qdrant.
+- Admin stats compare database chunk counts with Qdrant vector counts and surface moderation and auth health.
+
 ## Scripts
 
 | Command | Purpose |
 | --- | --- |
 | `npm run dev` | Start the Next.js dev server on the default port. |
-| `npm run dev:local` | Start the dev server on port 3001. |
-| `npm run build` | Clean `.next`, build with `.env`, then restart the PM2 `curator` process. |
-| `npm start` | Run the production server through `scripts/start-next.js`. |
+| `npm run dev:local` | Start the dev server on port `3001`. |
+| `npm run build:next` | Remove `.next` and build using values loaded from `.env`. |
+| `npm run build` | Run the production build, then restart the PM2 process. |
+| `npm run build:ci` | Build without the PM2 restart step. |
+| `npm start` | Start the production server through `scripts/start-next.js` using `.env`. |
 | `npm run lint` | Run ESLint. |
 | `npm test` | Run the Vitest suite. |
+| `npm run eval:chat` | Run chat evaluation cases against the configured base URL. |
 | `npm run db:generate` | Generate Drizzle migrations. |
 | `npm run db:migrate` | Run Drizzle migrations with the current shell environment. |
-| `npm run db:migrate:dev` | Run Drizzle migrations through `.env.development.local`. |
-| `npm run db:studio` | Open Drizzle Studio. |
+| `npm run db:migrate:dev` | Run Drizzle migrations using `.env.development.local`. |
+| `npm run db:studio` | Open Drizzle Studio with the current shell environment. |
+| `npm run db:studio:dev` | Open Drizzle Studio using `.env.development.local`. |
+| `npm run site:check-assets` | Check public SEO and asset endpoints against a target URL. |
 | `npm run indexnow:submit` | Submit key site URLs to IndexNow. |
-| `npm run site:check-assets` | Check public site assets against a target URL. |
-| `npm run eval:chat` | Run chat evaluation cases. |
+| `npm run cap:assets` | Generate Capacitor iOS app icons from `resources`. |
+| `npm run cap:sync` | Sync web assets and plugins into the Capacitor project. |
+| `npm run cap:open:ios` | Open the iOS workspace in Xcode. |
 
 ## Production Notes
 
@@ -164,31 +234,34 @@ npm run build
 npm start
 ```
 
-`npm start` uses `scripts/start-next.js` so PM2 and similar process managers can pass ports consistently. The same startup script can optionally submit IndexNow URLs once per process start:
+`npm run build` assumes a PM2-managed process and calls `scripts/restart-curator.mjs`. Set `PM2_PROCESS_NAME` if the deployed process is not named `curator`.
+
+`npm start` uses `scripts/start-next.js` so process managers can pass ports consistently. The same startup path can also submit IndexNow once per process start:
 
 ```bash
 INDEXNOW_SUBMIT_ON_START=true
 INDEXNOW_SUBMIT_DELAY_MS=5000
 ```
 
-Curator exposes production search and sharing surfaces through:
+Curator exposes public discovery surfaces through:
 
 - `robots.txt` from `app/robots.ts`
 - `sitemap.xml` from `app/sitemap.ts`
-- Open Graph and PWA assets in `app/` and `public/`
+- Open Graph and app metadata in `app/` and `public/`
+- `llms.txt` in `public/llms.txt`
 - an IndexNow key route at `/indexnow-key.txt`
 
-Admin routes, admin APIs, and shared chat internals are marked `noindex` and also emit `X-Robots-Tag` headers where appropriate.
+Admin routes and admin APIs are marked `noindex`, and shared/private conversation boundaries are enforced in route handlers before content is returned.
 
-## Observability and Consent
+## Observability, Consent, and PWA Behavior
 
-Google Analytics only loads after the visitor accepts analytics cookies from the consent banner:
+Google Analytics stays off until the visitor accepts analytics cookies:
 
 ```bash
 NEXT_PUBLIC_GOOGLE_ANALYTICS_ID=G-XXXXXXXXXX
 ```
 
-Sentry is supported for browser and server errors, tracing, logs, and Session Replay:
+Sentry supports browser and server errors, tracing, logs, and replay sampling:
 
 ```bash
 NEXT_PUBLIC_SENTRY_DSN=https://...
@@ -196,9 +269,11 @@ SENTRY_DSN=https://...
 SENTRY_ENVIRONMENT=production
 SENTRY_TRACES_SAMPLE_RATE=0.1
 NEXT_PUBLIC_SENTRY_TRACES_SAMPLE_RATE=0.1
+NEXT_PUBLIC_SENTRY_REPLAY_SESSION_SAMPLE_RATE=0
+NEXT_PUBLIC_SENTRY_REPLAY_ON_ERROR_SAMPLE_RATE=1
 ```
 
-When `NEXT_PUBLIC_SENTRY_DSN` is configured, browser events are sent through the app's `/_events` tunnel route. Source map upload is opt-in and only runs when release management is enabled and the Sentry build credentials are present:
+When `NEXT_PUBLIC_SENTRY_DSN` is configured, browser events are tunneled through `/_events`. Source map upload only runs when release management is enabled and Sentry build credentials are present:
 
 ```bash
 SENTRY_RELEASE_MANAGEMENT_ENABLED=true
@@ -207,17 +282,32 @@ SENTRY_ORG=your-org-slug
 SENTRY_PROJECT=your-project-slug
 ```
 
+The app also:
+
+- registers a service worker outside local dev
+- serves an offline screen at `/offline`
+- attempts asset recovery when stale Next.js chunks fail to load
+- shows a slow-connection banner and a native Capacitor offline shell when appropriate
+
 ## Project Map
 
 ```text
-app/                         Next.js routes, API routes, metadata, PWA assets
-components/                  Chat, admin, auth, sidebar, analytics, and UI components
-lib/                         AI, retrieval, database, caching, rate limiting, site utilities
-lib/db/schema.ts             Drizzle schema for app data and Auth.js tables
-public/                      Legal docs, icons, logo, manifest assets
-scripts/                     Runtime helpers, indexing, evals, asset checks
-tests/                       Vitest coverage for chat, projects, sidebar, and settings flows
-docs/superpowers/            Design specs and implementation plans
+app/                         App Router pages, route handlers, metadata, PWA entrypoints
+app/(main)/                  Main chat and public news routes
+app/admin/                   Admin workspace routes
+app/api/                     Chat, account, admin, support, feedback, and document APIs
+components/analytics/        Consent banner and Google Analytics loader
+components/auth/             Auth, onboarding, and ToS modals
+components/chat/             Chat app, window, input, markdown, search activity, citations
+components/admin/            Admin panels for docs, chats, reports, users, blog, and ops
+components/pwa/              Service-worker runtime and offline UX helpers
+components/sidebar/          Main workspace sidebar, projects, history, and dialogs
+lib/                         AI, retrieval, auth helpers, DB access, logging, rate limiting, SEO
+lib/db/                      Drizzle schema and SQL migrations
+public/                      Legal docs, PWA assets, logos, icons, and `llms.txt`
+scripts/                     Build/runtime helpers, evals, asset checks, IndexNow, Apple secret
+tests/                       Vitest coverage
+docs/superpowers/            Internal design specs and implementation plans
 ```
 
 ## Legal Document Rule
@@ -236,10 +326,10 @@ Before shipping a change, run the checks that match the touched surface:
 ```bash
 npm run lint
 npm test
-npm run build
+npm run build:ci
 ```
 
-For analytics, Sentry, SEO, or PWA work, also verify the relevant browser behavior and run:
+For analytics, Sentry, SEO, PWA, or static-asset work, also run:
 
 ```bash
 npm run site:check-assets
