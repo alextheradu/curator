@@ -1,7 +1,7 @@
 # Curator – Copilot Review Instructions
 
 ## Stack
-Next.js 16 App Router, React 19, TypeScript, Tailwind CSS 4, Auth.js (Google OAuth),
+Next.js 16 App Router, React 19, TypeScript, Tailwind CSS 4, Auth.js (Google and Apple OAuth),
 PostgreSQL + Drizzle ORM, Qdrant vector search, MinIO storage, OpenRouter AI,
 LangSearch web search, The Blue Alliance MCP, Sentry, Vitest.
 
