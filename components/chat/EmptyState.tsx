@@ -34,10 +34,42 @@ const SUGGESTION_GROUPS = {
 
 const SUGGESTION_GROUP_NAMES = Object.keys(SUGGESTION_GROUPS) as Array<keyof typeof SUGGESTION_GROUPS>;
 
+const GREETINGS = [
+  "Howdy",
+  "Hey",
+  "Hello",
+  "Hi there",
+  "Hi",
+  "What's up",
+  "How's it going",
+  "Glad you're here",
+  "Ahoy",
+  "Hola",
+  "Bonjour",
+  "Beep boop",
+  "Sup",
+  "Greetings",
+  "Heyo",
+  "Salutations",
+  "Ready when you are",
+  "At your service",
+  "Fancy seeing you here",
+  "Good to see you",
+  "Look who it is",
+  "Hello hello",
+  "What's cookin'",
+  "How goes it",
+  "Aloha",
+  "Good morning",
+  "Good afternoon",
+  "Good evening",
+];
+
 function getGreeting(hour: number): string {
-  if (hour < 12) return "Good morning";
-  if (hour < 18) return "Good afternoon";
-  return "Good evening";
+  const timeGreeting = hour < 12 ? "Good morning" : hour < 18 ? "Good afternoon" : "Good evening";
+  const pool = GREETINGS.filter((g) => g !== "Good morning" && g !== "Good afternoon" && g !== "Good evening");
+  pool.push(timeGreeting);
+  return pool[Math.floor(Math.random() * pool.length)];
 }
 
 function getGreetingName(preferredName?: string | null, fullName?: string | null) {
