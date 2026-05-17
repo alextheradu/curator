@@ -36,9 +36,9 @@ jobs:
 
       - name: Update deployment checkout
         run: |
-          if [ -n "$(git status --porcelain)" ]; then
-            echo "::error::Deployment checkout has uncommitted changes. Commit or stash them before deploying."
-            git status --short
+          if [ -n "$(git status --porcelain --untracked-files=no)" ]; then
+            echo "::error::Deployment checkout has tracked local changes. Commit or stash them before deploying."
+            git status --short --untracked-files=no
             exit 1
           fi
 
