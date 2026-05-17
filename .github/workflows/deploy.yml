@@ -51,6 +51,8 @@ jobs:
 
       - name: Build and restart PM2
         run: npm run build
+        env:
+          RUNNER_TRACKING_ID: ""
 
       - name: Verify deployment health
         run: |
