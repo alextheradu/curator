@@ -270,9 +270,26 @@ textarea:focus-visible {
 
 /* ─── Capacitor / iOS native shell ───────────────────────────────── */
 
-/* Prevent rubber-band / bounce scrolling on native shell */
 html.capacitor,
 html.capacitor body {
   overflow: hidden;
   overscroll-behavior: none;
+}
+
+/* Pin layout to viewport. Shrink bottom by keyboard height so content
+   and input bar stay in the visible area above the keyboard.
+   height:auto is required — without it the explicit h-svh wins and bottom is ignored. */
+html.capacitor [data-capacitor-root] {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: var(--keyboard-height, 0px);
+  height: auto;
+}
+
+/* When keyboard open: shift empty-state content toward top so title stays visible */
+html.capacitor.keyboard-open [data-native-empty] {
+  justify-content: flex-start;
+  padding-top: 2rem;
 }

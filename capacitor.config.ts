@@ -14,7 +14,12 @@ const config: CapacitorConfig = {
     allowsLinkPreview: false,
     scrollEnabled: false,
   },
-  plugins: {},
+  plugins: {
+    Keyboard: {
+      accessoryBarVisible: false,
+      resize: "none",
+    },
+  },
 };
 
 export default config;

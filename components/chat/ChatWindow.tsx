@@ -747,7 +747,7 @@ export function ChatWindow({
               transition={{ duration: 0.28, ease: [0.22, 1, 0.36, 1] }}
               className="mx-auto flex min-h-full w-full max-w-3xl flex-col px-3 py-4 sm:px-4 sm:py-8 md:px-6"
             >
-              <EmptyState onPromptSelect={handleSend} />
+              <EmptyState onPromptSelect={handleSend} isNativeIOS={isCapacitorIOS} />
             </motion.div>
           ) : (
             <motion.div
@@ -791,7 +791,7 @@ export function ChatWindow({
         </AnimatePresence>
       </div>
 
-      <div className="sticky inset-x-0 bottom-0 z-20 mt-auto shrink-0 bg-gradient-to-t from-background via-background/96 to-transparent px-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))] pt-4 [&:has(textarea:focus)]:pb-2 sm:px-4 sm:pb-[calc(1rem+env(safe-area-inset-bottom))] sm:pt-6 sm:[&:has(textarea:focus)]:pb-3 md:px-6">
+      <div data-capacitor-input className="sticky inset-x-0 bottom-0 z-20 mt-auto shrink-0 bg-gradient-to-t from-background via-background/96 to-transparent px-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))] pt-4 [&:has(textarea:focus)]:pb-2 sm:px-4 sm:pb-[calc(1rem+env(safe-area-inset-bottom))] sm:pt-6 sm:[&:has(textarea:focus)]:pb-3 md:px-6">
         <div className="mx-auto w-full max-w-3xl">
           {readOnly ? (
             <div className="flex flex-wrap items-center justify-between gap-2 rounded-2xl border border-border/40 bg-card/70 px-4 py-3 text-sm text-muted-foreground shadow-[var(--shadow-composer)]">

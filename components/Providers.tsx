@@ -12,17 +12,41 @@ import { Toaster } from "@/components/ui/sonner";
 import { ErrorToastListener } from "@/components/ui/ErrorToast";
 import { TooltipProvider } from "@/components/ui/tooltip";
 
-/**
- * Detects native Capacitor shell and adds `html.capacitor` so CSS can
- * target the native environment (safe-area padding, scroll-lock, etc.).
- */
 function CapacitorShell() {
   useEffect(() => {
-    if (typeof window !== "undefined" && "Capacitor" in window) {
-      document.documentElement.classList.add("capacitor");
-    }
+    if (typeof window === "undefined" || !("Capacitor" in window)) return;
+    document.documentElement.classList.add("capacitor");
   }, []);
+  return null;
+}
 
+// Tracks keyboard height via Visual Viewport API and exposes it as
+// --keyboard-height CSS variable. Only runs on Capacitor iOS.
+function CapacitorKeyboard() {
+  useEffect(() => {
+    if (typeof window === "undefined" || !("Capacitor" in window)) return;
+    const vv = window.visualViewport;
+    if (!vv) return;
+
+    const sync = () => {
+      // Don't subtract vv.offsetTop — it under-counts and misses the accessory bar.
+      const kb = Math.max(0, window.innerHeight - vv.height);
+      document.documentElement.style.setProperty("--keyboard-height", `${kb}px`);
+      // Toggle class so CSS can react to keyboard open/closed state.
+      document.documentElement.classList.toggle("keyboard-open", kb > 0);
+    };
+
+    const resetScroll = () => window.scrollTo(0, 0);
+
+    vv.addEventListener("resize", sync);
+    window.addEventListener("scroll", resetScroll, { passive: true });
+
+    return () => {
+      vv.removeEventListener("resize", sync);
+      window.removeEventListener("scroll", resetScroll);
+      document.documentElement.style.removeProperty("--keyboard-height");
+    };
+  }, []);
   return null;
 }
 
@@ -167,6 +191,7 @@ export function Providers({ children }: { children: ReactNode }) {
           <SlowConnectionBanner />
           <CapacitorOfflineScreen />
           <CapacitorShell />
+          <CapacitorKeyboard />
           <AssetRecovery />
           <ErrorToastListener />
           {children}
