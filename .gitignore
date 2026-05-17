@@ -33,6 +33,7 @@ yarn-error.log*
 Screenshot*.png
 IMG*.PNG
 logs*
+.playwright*
 
 # env files (can opt-in for committing if needed)
 .env
