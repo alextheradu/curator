@@ -98,7 +98,7 @@ To the maximum extent permitted by law, Curator and its operators shall not be l
 
 ## 10. Changes to Terms
 
-We may update these Terms at any time. Continued use of the Service after changes constitutes acceptance of the new Terms. The "Last updated" date at the top of this document will reflect any changes. We will notify authenticated users of material changes via the app.
+We may update these Terms at any time. Continued use of the Service after changes constitutes acceptance of the new Terms. The "Last updated" date at the top of this document will reflect any changes.
 
 ---
 
