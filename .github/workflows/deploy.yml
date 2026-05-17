@@ -1,0 +1,53 @@
+name: Deploy Curator
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  deployments: write
+
+concurrency:
+  group: curator-production
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    name: Build and restart production
+    runs-on:
+      - self-hosted
+      - curator
+
+    environment:
+      name: production
+      url: https://curatorfrc.com
+
+    defaults:
+      run:
+        shell: bash
+        working-directory: /srv/md0/robotics/curator
+
+    steps:
+      - name: Mark deployment checkout as safe
+        run: git config --global --add safe.directory /srv/md0/robotics/curator
+
+      - name: Update deployment checkout
+        run: |
+          if [ -n "$(git status --porcelain)" ]; then
+            echo "::error::Deployment checkout has uncommitted changes. Commit or stash them before deploying."
+            git status --short
+            exit 1
+          fi
+
+          git fetch --tags origin main
+          git checkout main
+          git pull --ff-only --tags origin main
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build and restart PM2
+        run: npm run build

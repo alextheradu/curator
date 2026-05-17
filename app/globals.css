@@ -288,8 +288,3 @@ html.capacitor [data-capacitor-root] {
   height: auto;
 }
 
-/* When keyboard open: shift empty-state content toward top so title stays visible */
-html.capacitor.keyboard-open [data-native-empty] {
-  justify-content: flex-start;
-  padding-top: 2rem;
-}
