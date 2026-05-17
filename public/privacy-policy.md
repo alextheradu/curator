@@ -26,7 +26,8 @@ This Privacy Policy explains how Curator ("the Service", "we", "us") collects, u
 
 ### 2b. Authenticated users (Google or Apple sign-in)
 
-- **From Google OAuth or Apple Sign-In:** your name, email address, and profile picture URL (Apple only sends your name on the very first sign-in; profile pictures are not provided by Apple)
+- **From Google OAuth:** your name, email address, and profile picture URL
+- **From Apple Sign-In:** your name and email address (Apple only sends your name on the very first sign-in; profile pictures are not provided by Apple)
 - **Onboarding profile:** your preferred name and optional FRC team number
 - **Conversation history:** all messages you send and receive, stored in our database so they persist across devices
 - **Projects:** project names, icon/color choices, chat-to-project organization, and hidden AI-generated project context summaries derived from chats inside each project
