@@ -1,0 +1,30 @@
+Copyright (c) 2026 Alex Radu. All rights reserved.
+
+CURATOR — PROPRIETARY SOURCE-AVAILABLE LICENSE
+
+This software and all associated source code, design, concepts, and
+intellectual property ("Software") are the exclusive property of Alex Radu.
+
+PERMITTED:
+  - Viewing the source code for personal reference or learning.
+  - Submitting pull requests or issues to the official repository.
+
+NOT PERMITTED without prior written permission from Alex Radu:
+  - Running, executing, or deploying this Software or any derivative of it.
+  - Self-hosting this Software for any purpose, including internal team use.
+  - Copying, reproducing, or reimplementing the concept, design, or
+    functionality of this Software in another product or service.
+  - Distributing, sublicensing, or selling this Software or any portion of it.
+  - Using this Software's name, branding, or identity in any other project.
+
+CONTRIBUTIONS:
+  By submitting a pull request or contribution, you agree that your
+  contribution becomes the sole property of Alex Radu under this license,
+  with no rights retained by the contributor.
+
+THE SOFTWARE IS PROVIDED "AS IS" WITHOUT WARRANTY OF ANY KIND. ALEX RADU
+SHALL NOT BE LIABLE FOR ANY CLAIM, DAMAGES, OR OTHER LIABILITY ARISING
+FROM THE SOFTWARE.
+
+To request a commercial license or special permission, contact:
+  alex@alexradu.co
