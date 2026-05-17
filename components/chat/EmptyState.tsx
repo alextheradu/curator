@@ -145,7 +145,7 @@ function NativeEmptyState() {
 
 export function EmptyState({ onPromptSelect, isNativeIOS = false }: Props) {
   const { data: session } = useSession();
-  const [suggestions] = useState(() => shuffleSuggestions(ALL_SUGGESTIONS));
+  const [suggestions] = useState(() => shuffleSuggestions(ALL_SUGGESTIONS).slice(0, 4));
 
   if (isNativeIOS) {
     return <NativeEmptyState />;
@@ -186,7 +186,7 @@ export function EmptyState({ onPromptSelect, isNativeIOS = false }: Props) {
       </div>
 
       <div className="w-full px-1 pb-0">
-        <div className="grid w-full grid-cols-2 gap-2 md:grid-cols-4">
+        <div className="grid w-full grid-cols-2 gap-2">
           {suggestions.map((suggestion, index) => (
             <motion.div
               key={suggestion}
