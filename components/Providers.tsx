@@ -42,6 +42,7 @@ function CapacitorKeyboard() {
 
     // Keyboard plugin events (more reliable — fires after npx cap sync + rebuild).
     void import("@capacitor/keyboard").then(({ Keyboard }) => {
+      void Keyboard.setAccessoryBarVisible({ isVisible: false }).catch(() => {});
       void Keyboard.addListener("keyboardWillShow", (info) => setHeight(info.keyboardHeight));
       void Keyboard.addListener("keyboardWillHide", () => setHeight(0));
     }).catch(() => {});

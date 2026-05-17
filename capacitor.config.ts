@@ -1,4 +1,5 @@
 import type { CapacitorConfig } from "@capacitor/cli";
+import { KeyboardResize } from "@capacitor/keyboard";
 
 const config: CapacitorConfig = {
   appId: "com.curatorfrc.app",
@@ -16,8 +17,7 @@ const config: CapacitorConfig = {
   },
   plugins: {
     Keyboard: {
-      accessoryBarVisible: false,
-      resize: "none",
+      resize: KeyboardResize.None,
     },
   },
 };
