@@ -6,7 +6,7 @@
     "dev": "next dev",
     "dev:local": "next dev -p 3001",
     "build:next": "rm -rf .next && node scripts/run-with-env.mjs .env next build",
-    "build": "npm run build:next && pm2 restart curator --update-env",
+    "build": "npm run build:next && node scripts/restart-curator.mjs",
     "build:ci": "npm run build:next",
     "start": "node scripts/run-with-env.mjs .env node scripts/start-next.js",
     "site:check-assets": "node scripts/check-site-assets.mjs",
