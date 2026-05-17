@@ -94,6 +94,15 @@ const child = spawn(
   },
 );
 
+let forwardedSignal = false;
+
+for (const signal of ["SIGINT", "SIGTERM", "SIGHUP"]) {
+  process.on(signal, () => {
+    forwardedSignal = true;
+    child.kill(signal);
+  });
+}
+
 child.on("spawn", () => {
   if (!shouldSubmitIndexNow) return;
 
@@ -106,9 +115,9 @@ child.on("exit", (code, signal) => {
   }
 
   if (signal) {
-    process.kill(process.pid, signal);
+    process.exit(0);
     return;
   }
 
-  process.exit(code ?? 0);
+  process.exit(forwardedSignal ? 0 : code ?? 0);
 });

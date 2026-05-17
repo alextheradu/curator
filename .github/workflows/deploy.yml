@@ -51,3 +51,17 @@ jobs:
 
       - name: Build and restart PM2
         run: npm run build
+
+      - name: Verify deployment health
+        run: |
+          node -e '
+            const { execFileSync } = require("node:child_process");
+            const processes = JSON.parse(execFileSync("pm2", ["jlist"], { encoding: "utf8" }));
+            const curator = processes.find((process) => process.name === "curator");
+            if (!curator) throw new Error("PM2 process curator was not found");
+            if (curator.pm2_env?.status !== "online") {
+              throw new Error(`PM2 process curator is ${curator.pm2_env?.status}`);
+            }
+          '
+
+          curl --fail --silent --show-error --retry 10 --retry-delay 1 http://127.0.0.1:3145/ >/dev/null

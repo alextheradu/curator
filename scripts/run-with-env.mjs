@@ -50,11 +50,20 @@ const child = spawn(command, args, {
   stdio: "inherit",
 });
 
+let forwardedSignal = false;
+
+for (const signal of ["SIGINT", "SIGTERM", "SIGHUP"]) {
+  process.on(signal, () => {
+    forwardedSignal = true;
+    child.kill(signal);
+  });
+}
+
 child.on("exit", (code, signal) => {
   if (signal) {
-    process.kill(process.pid, signal);
+    process.exit(0);
     return;
   }
 
-  process.exit(code ?? 1);
+  process.exit(forwardedSignal ? 0 : code ?? 1);
 });
