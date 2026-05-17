@@ -54,11 +54,59 @@ function getGreetingName(preferredName?: string | null, fullName?: string | null
 
 interface Props {
   onPromptSelect: (prompt: string) => void;
+  isNativeIOS?: boolean;
 }
 
-export function EmptyState({ onPromptSelect }: Props) {
+function NativeEmptyState({ onPromptSelect: _ }: Props) {
+  const { data: session } = useSession();
+
+  const hour = new Date().getHours();
+  const greetingName = getGreetingName(session?.user?.preferredName, session?.user?.name);
+  const question = hour < 12
+    ? "What can I help you with this morning?"
+    : hour < 18
+      ? "What can I help you with this afternoon?"
+      : "What can I help you with this evening?";
+
+  return (
+    <div data-native-empty className="flex w-full flex-1 flex-col items-center justify-center gap-5 px-8 text-center">
+      <motion.div
+        initial={{ opacity: 0, scale: 0.8 }}
+        animate={{ opacity: 1, scale: 1 }}
+        transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
+        className="relative flex items-center justify-center"
+      >
+        <div className="absolute h-20 w-20 rounded-full bg-red-900/50 blur-2xl" />
+        <Image
+          src="/logo.png"
+          alt="Curator"
+          width={72}
+          height={72}
+          priority
+          sizes="72px"
+          className="relative object-contain"
+        />
+      </motion.div>
+
+      <motion.h1
+        initial={{ opacity: 0, y: 14 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.1, duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
+        className="text-2xl font-medium tracking-tight text-white"
+      >
+        {greetingName ? `How can I help you, ${greetingName}?` : question}
+      </motion.h1>
+    </div>
+  );
+}
+
+export function EmptyState({ onPromptSelect, isNativeIOS = false }: Props) {
   const { data: session } = useSession();
   const [activeGroup, setActiveGroup] = useState<keyof typeof SUGGESTION_GROUPS>("Rules");
+
+  if (isNativeIOS) {
+    return <NativeEmptyState onPromptSelect={onPromptSelect} />;
+  }
 
   const greetingBase = getGreeting(new Date().getHours());
   const greetingName = getGreetingName(session?.user?.preferredName, session?.user?.name);

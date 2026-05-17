@@ -14,7 +14,7 @@ export function MainLayout({ children, latestNewsPublishedAt }: MainLayoutProps)
   return (
     <NativeAuthGate>
       <SidebarProvider>
-        <div className="flex h-svh w-full overflow-hidden overscroll-none bg-[var(--background)] text-[var(--foreground)]">
+        <div data-capacitor-root className="flex h-svh w-full overflow-hidden overscroll-none bg-[var(--background)] text-[var(--foreground)]">
           <AppSidebar latestNewsPublishedAt={latestNewsPublishedAt} />
           <SettingsModal />
           {children}
