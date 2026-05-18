@@ -6,6 +6,7 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import { SUPPORT_LIMITS } from "@/lib/user-input-limits";
 
 const SUBJECTS = [
   "Bug report",
@@ -81,6 +82,7 @@ export function SupportForm({ onSuccess }: SupportFormProps = {}) {
             onChange={(event) => setName(event.target.value)}
             placeholder="Your name"
             autoComplete="name"
+            maxLength={SUPPORT_LIMITS.name}
           />
         </label>
         <label className="space-y-2">
@@ -93,6 +95,7 @@ export function SupportForm({ onSuccess }: SupportFormProps = {}) {
             onChange={(event) => setEmail(event.target.value)}
             placeholder="you@example.com"
             autoComplete="email"
+            maxLength={SUPPORT_LIMITS.email}
           />
         </label>
       </div>
@@ -123,6 +126,7 @@ export function SupportForm({ onSuccess }: SupportFormProps = {}) {
           onChange={(event) => setMessage(event.target.value)}
           placeholder="What happened, what you expected, and any relevant context."
           className="min-h-40 resize-y"
+          maxLength={SUPPORT_LIMITS.message}
         />
       </label>
 

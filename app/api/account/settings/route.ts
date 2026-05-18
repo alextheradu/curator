@@ -2,8 +2,9 @@ import { auth } from "@/auth";
 import { DEFAULT_CHAT_MODE, readUserDefaultChatMode } from "@/lib/account-settings";
 import { withSessionDbAccess } from "@/lib/db/access";
 import { users } from "@/lib/db/schema";
+import { validateJsonMutationRequest } from "@/lib/request-security";
 import { eq } from "drizzle-orm";
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 
 const VALID_CHAT_MODES = new Set(["rookie", "veteran"]);
 
@@ -18,7 +19,10 @@ export async function GET() {
   });
 }
 
-export async function PATCH(request: Request) {
+export async function PATCH(request: NextRequest) {
+  const invalidMutation = validateJsonMutationRequest(request);
+  if (invalidMutation) return invalidMutation;
+
   const session = await auth();
   if (!session?.user?.id) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });

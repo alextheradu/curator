@@ -60,6 +60,8 @@ You may use the Service as a guest for a limited number of messages. Guest conve
 
 If you choose to make a chat public, anyone with that link may view the conversation until you disable sharing or delete the chat. You are responsible for maintaining the security of your account and for any names, chat content, or other information you choose to place in projects or share publicly.
 
+You may delete your account from Settings. Account deletion removes your account, saved chats, projects, and account settings; limited support, operational, moderation, or audit records may be retained in redacted form where needed for security, accountability, abuse prevention, or legal compliance as described in the Privacy Policy.
+
 ---
 
 ## 6. Intellectual Property

@@ -1,10 +1,15 @@
 import { auth } from "@/auth";
 import { withSessionDbAccess } from "@/lib/db/access";
 import { users } from "@/lib/db/schema";
+import { hasValidMutationOrigin } from "@/lib/request-security";
 import { eq } from "drizzle-orm";
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 
-export async function PATCH() {
+export async function PATCH(req: NextRequest) {
+  if (!hasValidMutationOrigin(req)) {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
+
   const session = await auth();
   if (!session?.user?.id) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });

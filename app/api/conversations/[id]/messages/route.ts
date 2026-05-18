@@ -1,6 +1,5 @@
 import { auth } from "@/auth";
-import { withDbAccessContext, withSessionDbAccess } from "@/lib/db/access";
-import { db } from "@/lib/db";
+import { withDbAccessContext, withGuestDbAccess, withSessionDbAccess } from "@/lib/db/access";
 import { messages, conversations, reports } from "@/lib/db/schema";
 import { revalidateConversationDerivedCaches, revalidateReportDerivedCaches } from "@/lib/cache-tags";
 import { getCachedPublicConversationMessages, revalidatePublicConversation } from "@/lib/public-conversations";
@@ -8,8 +7,11 @@ import { captureException } from "@/lib/logging";
 import { scanMessageForModeration } from "@/lib/moderation";
 import { applyRateLimitHeaders, enforceRequestRateLimit } from "@/lib/rate-limit";
 import { readGuestSessionId } from "@/lib/guest-session";
+import { parsePersistedMessageInput } from "@/lib/message-validation";
+import { validateJsonMutationRequest } from "@/lib/request-security";
+import { isUuid } from "@/lib/uuid";
 import { eq, and, asc } from "drizzle-orm";
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 
 async function autoFlagUserMessage(userId: string, message: { id: string; conversationId: string; content: string }) {
   const moderation = scanMessageForModeration(message.content);
@@ -44,19 +46,20 @@ async function autoFlagUserMessage(userId: string, message: { id: string; conver
 export async function GET(_: Request, { params }: { params: Promise<{ id: string }> }) {
   const session = await auth();
   const { id } = await params;
+  if (!isUuid(id)) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
   if (!session?.user?.id) {
     // Check guest ownership first
     const guestId = await readGuestSessionId();
     if (guestId) {
-      const [conv] = await db.select({ id: conversations.id }).from(conversations)
+      const [conv] = await withGuestDbAccess(guestId, (tx) => tx.select({ id: conversations.id }).from(conversations)
         .where(and(eq(conversations.id, id), eq(conversations.guestId, guestId)))
-        .limit(1);
+        .limit(1));
 
       if (conv) {
-        const rows = await db.select().from(messages)
+        const rows = await withGuestDbAccess(guestId, (tx) => tx.select().from(messages)
           .where(eq(messages.conversationId, id))
-          .orderBy(asc(messages.createdAt));
+          .orderBy(asc(messages.createdAt)));
         return NextResponse.json(rows);
       }
     }
@@ -86,31 +89,57 @@ export async function GET(_: Request, { params }: { params: Promise<{ id: string
   return NextResponse.json(rows);
 }
 
-export async function POST(req: Request, { params }: { params: Promise<{ id: string }> }) {
+export async function POST(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  const invalidMutation = validateJsonMutationRequest(req);
+  if (invalidMutation) return invalidMutation;
+
   const session = await auth();
   const { id } = await params;
-  const { role, content, citations, id: msgId } = await req.json();
+  if (!isUuid(id)) return NextResponse.json({ error: "Invalid conversation id" }, { status: 400 });
+
+  const parsed = parsePersistedMessageInput(await req.json().catch(() => null));
+  if (!parsed.ok) return NextResponse.json({ error: parsed.error }, { status: 400 });
+  const { role, content, citations, id: msgId } = parsed.value;
 
   if (!session?.user?.id) {
+    const rateLimit = await enforceRequestRateLimit(req, "conversationMessageWrite");
+    const headers = new Headers();
+    applyRateLimitHeaders(headers, rateLimit);
+    if (!rateLimit.ok) {
+      return NextResponse.json({ error: "Too many conversation updates. Please slow down." }, { status: 429, headers });
+    }
+
     const guestId = await readGuestSessionId();
-    if (!guestId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    if (!guestId) return NextResponse.json({ error: "Unauthorized" }, { status: 401, headers });
 
-    const [conv] = await db.select({ id: conversations.id }).from(conversations)
+    const [conv] = await withGuestDbAccess(guestId, (tx) => tx.select({ id: conversations.id }).from(conversations)
       .where(and(eq(conversations.id, id), eq(conversations.guestId, guestId)))
-      .limit(1);
+      .limit(1));
 
-    if (!conv) return NextResponse.json({ error: "Not found" }, { status: 404 });
+    if (!conv) return NextResponse.json({ error: "Not found" }, { status: 404, headers });
 
-    const [msg] = await db.insert(messages)
+    const [msg] = await withGuestDbAccess(guestId, (tx) => tx.insert(messages)
       .values({ ...(msgId ? { id: msgId } : {}), conversationId: id, role, content, citations })
-      .returning();
+      .returning());
 
-    await db.update(conversations)
+    await withGuestDbAccess(guestId, (tx) => tx.update(conversations)
       .set({ updatedAt: new Date() })
-      .where(eq(conversations.id, id));
+      .where(eq(conversations.id, id)));
+
+    if (role === "user" && content.trim()) {
+      await autoFlagUserMessage(`guest:${guestId}`, {
+        id: msg.id,
+        conversationId: id,
+        content,
+      }).catch(async (error) => {
+        await captureException("auto-moderation", error, {
+          details: { conversationId: id, messageId: msg.id, guestId },
+        });
+      });
+    }
 
     revalidateConversationDerivedCaches();
-    return NextResponse.json(msg);
+    return NextResponse.json(msg, { headers });
   }
 
   const rateLimit = await enforceRequestRateLimit(req, "conversationMessageWrite", session.user.id);

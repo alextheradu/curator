@@ -6,6 +6,7 @@ import { NewsCards } from "@/components/news/NewsCards";
 import { NewsHero } from "@/components/news/NewsHero";
 import { getCachedPublicBlogPosts } from "@/lib/blog";
 import { buildPublicPageMetadata, NO_INDEX_ROBOTS } from "@/lib/seo";
+import { sanitizeReturnHref } from "@/lib/url-safety";
 
 export const metadata: Metadata = {
   ...buildPublicPageMetadata({
@@ -25,7 +26,7 @@ export default async function NewsPage({
   const { from } = await searchParams;
   const posts = await getCachedPublicBlogPosts();
   const [latest, ...older] = posts;
-  const backHref = from ? decodeURIComponent(from) : "/";
+  const backHref = sanitizeReturnHref(from);
   const backLabel = backHref.startsWith("/c/") ? "Back to chat" : "New chat";
 
   return (

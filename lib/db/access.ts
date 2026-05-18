@@ -3,6 +3,7 @@ import { db } from "@/lib/db";
 
 export type DbAccessContext = {
   userId?: string | null;
+  guestId?: string | null;
   isAdmin?: boolean;
   isSystem?: boolean;
 };
@@ -15,6 +16,7 @@ export async function withDbAccessContext<T>(
     await tx.execute(sql`
       select
         set_config('app.user_id', ${context.userId ?? ""}, true),
+        set_config('app.guest_id', ${context.guestId ?? ""}, true),
         set_config('app.is_admin', ${context.isAdmin ? "true" : "false"}, true),
         set_config('app.is_system', ${context.isSystem ? "true" : "false"}, true)
     `);
@@ -49,4 +51,11 @@ export async function withSystemDbAccess<T>(
   callback: (tx: Parameters<Parameters<typeof db.transaction>[0]>[0]) => Promise<T>,
 ) {
   return withDbAccessContext({ userId: "system", isSystem: true }, callback);
+}
+
+export async function withGuestDbAccess<T>(
+  guestId: string,
+  callback: (tx: Parameters<Parameters<typeof db.transaction>[0]>[0]) => Promise<T>,
+) {
+  return withDbAccessContext({ guestId }, callback);
 }

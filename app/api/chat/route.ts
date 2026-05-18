@@ -11,6 +11,7 @@ import {
   parseChatSearchOptions,
   type DeepSearchConfig,
 } from "@/lib/chat-search-options";
+import { parseClientChatMessages } from "@/lib/chat-request-validation";
 import type { SearchActivity, SearchActivityStep, SearchMode } from "@/lib/search-activity";
 import { DEFAULT_SEASON_YEAR } from "@/lib/seasons";
 import { isTbaMcpEnabled } from "@/lib/tba";
@@ -22,6 +23,7 @@ import { readGuestSessionId } from "@/lib/guest-session";
 import { captureException, logAppEvent } from "@/lib/logging";
 import { applyRateLimitHeaders, enforceRateLimit } from "@/lib/rate-limit";
 import { getClientIp } from "@/lib/request-context";
+import { validateJsonMutationRequest } from "@/lib/request-security";
 import { NextRequest, NextResponse } from "next/server";
 import { and, eq } from "drizzle-orm";
 
@@ -653,7 +655,13 @@ async function updateProjectSummary({
   const userId = session.user?.id;
   if (!userId || !assistantMessage.trim()) return;
 
-  const input = compactProjectSummaryInput({ previousSummary, userMessage, assistantMessage });
+  const [latestProject] = await withSessionDbAccess(session, (tx) => tx
+    .select({ contextSummary: projects.contextSummary })
+    .from(projects)
+    .where(and(eq(projects.id, projectId), eq(projects.userId, userId)))
+    .limit(1));
+  const latestSummary = latestProject?.contextSummary ?? previousSummary;
+  const input = compactProjectSummaryInput({ previousSummary: latestSummary, userMessage, assistantMessage });
   const response = await fetch(OR_URL, {
     method: "POST",
     headers: orHeaders(apiKey),
@@ -759,6 +767,9 @@ function filterUsedCitations(
 }
 
 export async function POST(request: NextRequest) {
+  const invalidMutation = validateJsonMutationRequest(request);
+  if (invalidMutation) return invalidMutation;
+
   const session = await auth();
   const userAccountSettings = session?.user?.id
     ? await readUserAccountSettings(session.user.id)
@@ -798,11 +809,15 @@ export async function POST(request: NextRequest) {
 
   const body = await request.json();
   const {
-    messages,
     temperature = 0.2,
     seasonYear = DEFAULT_SEASON_YEAR,
     chatMode = "veteran",
   } = body;
+  const parsedMessages = parseClientChatMessages(body.messages);
+  if (!parsedMessages.ok) {
+    return NextResponse.json({ error: parsedMessages.error }, { status: 400 });
+  }
+  const messages = parsedMessages.value;
   const conversationId = typeof body.conversationId === "string" ? body.conversationId : null;
   const projectId = typeof body.projectId === "string" ? body.projectId : null;
   const searchOptions = parseChatSearchOptions(body);

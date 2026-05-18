@@ -1,11 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requireAdmin } from "@/lib/admin-auth";
 import {
-  revalidateConversationDerivedCaches,
-  revalidateReportDerivedCaches,
   revalidateUserDerivedCaches,
 } from "@/lib/cache-tags";
 import { validateAdminUserMutation } from "@/lib/admin-user-mutations";
+import { deleteUserAccountByAdmin } from "@/lib/account-deletion";
 import { writeAdminAuditLog } from "@/lib/admin-audit";
 import { withAdminDbAccess } from "@/lib/db/access";
 import { users, bannedEmails } from "@/lib/db/schema";
@@ -124,16 +123,6 @@ export async function DELETE(req: NextRequest, { params }: Params) {
     return NextResponse.json({ error: validation.error }, { status: validation.status, headers });
   }
 
-  await withAdminDbAccess(adminAuth.userId, (tx) => tx.delete(users).where(eq(users.id, id)));
-  revalidateUserDerivedCaches();
-  revalidateConversationDerivedCaches();
-  revalidateReportDerivedCaches();
-  await writeAdminAuditLog(req, {
-    actorUserId: adminAuth.userId,
-    action: "delete",
-    targetType: "user",
-    targetId: id,
-    details: { targetEmail: target.email },
-  });
+  await deleteUserAccountByAdmin(req, adminAuth.userId, target);
   return NextResponse.json({ ok: true }, { headers });
 }

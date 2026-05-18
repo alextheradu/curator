@@ -63,4 +63,13 @@ describe("search indexing", () => {
     delete process.env.INDEXNOW_KEY;
     delete process.env.NEXT_PUBLIC_SITE_URL;
   });
+
+  it("treats encoded excluded paths as non-indexable", async () => {
+    const { isSearchIndexablePath } = await import("@/lib/seo");
+
+    expect(isSearchIndexablePath("/c%2F11111111-1111-4111-8111-111111111111")).toBe(false);
+    expect(isSearchIndexablePath("/%63/11111111-1111-4111-8111-111111111111")).toBe(false);
+    expect(isSearchIndexablePath("/api%2Fchat")).toBe(false);
+    expect(isSearchIndexablePath("/support")).toBe(true);
+  });
 });

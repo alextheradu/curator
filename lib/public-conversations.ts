@@ -2,6 +2,20 @@ import { unstable_cache, revalidateTag } from "next/cache";
 import { asc, eq } from "drizzle-orm";
 import { withDbAccessContext } from "@/lib/db/access";
 import { conversations, messages } from "@/lib/db/schema";
+import { isUuid } from "@/lib/uuid";
+
+type ConversationRow = typeof conversations.$inferSelect;
+
+export function toPublicConversationDTO(conversation: ConversationRow) {
+  return {
+    id: conversation.id,
+    title: conversation.title,
+    seasonYear: conversation.seasonYear,
+    isPublic: conversation.isPublic,
+    createdAt: conversation.createdAt,
+    updatedAt: conversation.updatedAt,
+  };
+}
 
 export function getPublicConversationCacheTag(id: string) {
   return `public-conversation:${id}`;
@@ -17,6 +31,8 @@ export function revalidatePublicConversation(id: string) {
 }
 
 export async function getCachedPublicConversation(id: string) {
+  if (!isUuid(id)) return null;
+
   const load = unstable_cache(
     async () => withDbAccessContext({}, async (tx) => {
       const [conversation] = await tx
@@ -29,7 +45,7 @@ export async function getCachedPublicConversation(id: string) {
         return null;
       }
 
-      return conversation;
+      return toPublicConversationDTO(conversation);
     }),
     ["public-conversation", id],
     {
@@ -42,6 +58,8 @@ export async function getCachedPublicConversation(id: string) {
 }
 
 export async function getCachedPublicConversationMessages(id: string) {
+  if (!isUuid(id)) return null;
+
   const load = unstable_cache(
     async () => withDbAccessContext({}, async (tx) => {
       const [conversation] = await tx

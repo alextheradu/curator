@@ -4,9 +4,15 @@ import { withDbAccessContext } from "@/lib/db/access";
 import { reports, messages } from "@/lib/db/schema";
 import { revalidateReportDerivedCaches } from "@/lib/cache-tags";
 import { applyRateLimitHeaders, enforceRequestRateLimit } from "@/lib/rate-limit";
+import { validateJsonMutationRequest } from "@/lib/request-security";
+import { validateReportReason } from "@/lib/user-input-limits";
+import { isUuid } from "@/lib/uuid";
 import { eq, and } from "drizzle-orm";
 
 export async function POST(req: NextRequest) {
+  const invalidMutation = validateJsonMutationRequest(req);
+  if (invalidMutation) return invalidMutation;
+
   const userAuth = await requireAuth();
   if (!userAuth.ok) return userAuth.response;
   const rateLimit = await enforceRequestRateLimit(req, "report", userAuth.userId);
@@ -18,9 +24,13 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Too many reports submitted. Try again later." }, { status: 429, headers });
   }
 
-  const { messageId, reason } = await req.json() as { messageId: string; reason: string };
-  if (!messageId || !reason?.trim()) {
-    return NextResponse.json({ error: "messageId and reason are required" }, { status: 400, headers });
+  const { messageId, reason } = await req.json().catch(() => ({})) as { messageId?: string; reason?: string };
+  if (!messageId || !isUuid(messageId)) {
+    return NextResponse.json({ error: "Valid messageId is required" }, { status: 400, headers });
+  }
+  const parsedReason = validateReportReason(reason);
+  if (!parsedReason.ok) {
+    return NextResponse.json({ error: parsedReason.error }, { status: 400, headers });
   }
 
   const [msg] = await withDbAccessContext({ userId: userAuth.userId }, (tx) => tx
@@ -45,7 +55,7 @@ export async function POST(req: NextRequest) {
     conversationId: msg.conversationId,
     messageId,
     reportedById: userAuth.userId,
-    reason: reason.trim(),
+    reason: parsedReason.value,
     source: "user_report",
   }));
 
