@@ -15,6 +15,9 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 function CapacitorShell() {
   useEffect(() => {
     if (typeof window === "undefined" || !("Capacitor" in window)) return;
+    const Capacitor = (window as { Capacitor?: { isNativePlatform?: () => boolean } }).Capacitor;
+    if (typeof Capacitor?.isNativePlatform !== "function" || !Capacitor.isNativePlatform()) return;
+
     document.documentElement.classList.add("capacitor");
   }, []);
   return null;
@@ -26,7 +29,10 @@ function CapacitorShell() {
 function CapacitorKeyboard() {
   useEffect(() => {
     if (typeof window === "undefined" || !("Capacitor" in window)) return;
-    const platform = (window as { Capacitor?: { getPlatform?: () => string } }).Capacitor?.getPlatform?.();
+    const Capacitor = (window as { Capacitor?: { getPlatform?: () => string; isNativePlatform?: () => boolean } }).Capacitor;
+    if (typeof Capacitor?.isNativePlatform !== "function" || !Capacitor.isNativePlatform()) return;
+
+    const platform = Capacitor.getPlatform?.();
     if (platform !== "ios" && platform !== "android") return;
 
     const setHeight = (px: number) => {

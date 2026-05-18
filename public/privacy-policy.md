@@ -22,7 +22,7 @@ This Privacy Policy explains how Curator ("the Service", "we", "us") collects, u
 - A persistent `guest_session_id` cookie that links your browser to your guest conversations stored in our database (see §7)
 - A cookie recording your cookie-consent choice (`necessary` or `accepted`)
 - Optional sidebar preference cookies recording whether the sidebar is open and what width you chose
-- Browser cache entries created by the app's installable web-app/service-worker layer for offline support and faster reloads
+- Browser cache entries created by the app's installable web-app/service-worker layer for offline support; this cache is limited to the offline fallback page, manifest, and app icons
 - Your chat messages: stored server-side in our database, linked to your `guest_session_id` cookie, and also cached in your browser's `localStorage` for fast access. If you sign in, your guest conversations are transferred to your account.
 
 ### 2b. Authenticated users (Google or Apple sign-in)
@@ -120,7 +120,7 @@ If you do not consent to analytics cookies, Google Analytics never loads and no 
 - Moderation reports, matched-term metadata, and banned-email records are stored in PostgreSQL.
 - Support requests, application logs, admin audit logs, and rate-limit counters are stored in PostgreSQL.
 - Response feedback is stored in PostgreSQL as an operational log entry.
-- The installable web app stores a browser-managed offline cache of selected app shell files, icons, and a small set of public pages on your device.
+- The installable web app stores a browser-managed offline cache of the offline fallback page, manifest, and app icons on your device. It does not intentionally cache route HTML or Next.js build assets in the app service-worker cache.
 - PDF documents, including season-specific references and general team reference files, are stored in a self-hosted MinIO instance.
 - Vector embeddings are stored in a self-hosted Qdrant instance.
 - Short-lived server caches may hold copies of public pages and admin read responses for performance until those caches expire or are invalidated.
@@ -131,7 +131,7 @@ If you do not consent to analytics cookies, Google Analytics never loads and no 
 ## 6. Data Retention
 
 - **Guest conversations:** stored server-side in our database, linked to your `guest_session_id` cookie, and also cached in your browser's `localStorage`. Guest conversations and their messages are deleted 90 days after creation. If you sign in, your guest conversations are transferred to your account and retained according to the authenticated-user policy above. Clearing your browser data removes the local cache only — the server copy is retained until the 90-day window expires or you sign in and then delete the conversations from your account.
-- **Offline app cache:** stored in your browser until the browser clears site data, the service worker replaces the cache during an update, or you manually remove the site's stored data.
+- **Offline app cache:** limited to the offline fallback page, manifest, and app icons; stored in your browser until the browser clears site data, the service worker replaces the cache during an update, or you manually remove the site's stored data.
 - **Authenticated user data:** retained for as long as your account exists. This includes saved onboarding profile fields, chat-mode preference, Terms of Service acceptance state, and conversation history. You may delete your account and all associated data at any time from the Settings page.
 - **OpenRouter/upstream model-provider data:** prompts and model outputs sent for inference may be retained by OpenRouter and/or the selected upstream model provider according to their own retention and training policies (which can vary by model tier, including free models).
 - **Projects:** retained for as long as your account exists unless you delete a project. Deleting a project removes its project metadata and hidden summary while returning its chats to normal history.
