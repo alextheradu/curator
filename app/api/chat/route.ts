@@ -129,7 +129,7 @@ const WEB_SEARCH_TOOL: OpenAiTool = {
   type: "function",
   function: {
     name: "web_search",
-    description: "Search the web for current FRC news, announcements, or supplementary context not available from The Blue Alliance. Use for recent news, rule Q&As, team updates, or anything TBA doesn't cover.",
+    description: "Search the web for current FRC news, announcements, rule Q&As, team updates, or anything TBA doesn't cover. Also use for any question about whether a specific part, motor, sensor, or component is legal in FRC — training data is often outdated on part legality.",
     parameters: {
       type: "object",
       properties: {
