@@ -160,9 +160,11 @@ type JsonObject = Record<string, unknown>;
 let clientPromise: Promise<Client> | null = null;
 
 async function createClient() {
-  const env = Object.fromEntries(
-    Object.entries(process.env).filter((entry): entry is [string, string] => typeof entry[1] === "string"),
-  );
+  const env = {
+    PATH: process.env.PATH ?? "",
+    NODE_ENV: process.env.NODE_ENV ?? "",
+    TBA_API_KEY: process.env.TBA_API_KEY ?? "",
+  };
 
   const transport = new StdioClientTransport({
     command: process.execPath,
@@ -175,7 +177,7 @@ async function createClient() {
   stderr?.on("data", (chunk) => {
     const message = chunk.toString().trim();
     if (message) {
-      console.error("[tba-mcp]", message);
+      console.error("[tba-mcp]", message.replace(/(x-tba-auth-key:\s*)\S+/gi, "$1[REDACTED]"));
     }
   });
 
@@ -204,7 +206,13 @@ export async function callTbaTool<T = JsonObject>(
   args: JsonObject,
 ): Promise<{ data: T; url?: string }> {
   const client = await getClient();
-  const result = await client.callTool({ name, arguments: args });
+  let result: Awaited<ReturnType<Client["callTool"]>>;
+  try {
+    result = await client.callTool({ name, arguments: args });
+  } catch (error) {
+    clientPromise = null;
+    throw error;
+  }
 
   if (result.isError) {
     const content = (result as { content?: Array<{ type: string; text?: string }> }).content ?? [];

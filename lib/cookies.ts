@@ -5,6 +5,7 @@ type SerializeCookieOptions = {
   path?: string;
   sameSite?: SameSitePolicy;
   secure?: boolean;
+  httpOnly?: boolean;
 };
 
 const DEFAULT_PATH = "/";
@@ -28,6 +29,10 @@ export function serializeCookie(
   const shouldUseSecure = options.secure ?? process.env.NODE_ENV === "production";
   if (shouldUseSecure) {
     parts.push("Secure");
+  }
+
+  if (options.httpOnly) {
+    parts.push("HttpOnly");
   }
 
   return parts.join("; ");

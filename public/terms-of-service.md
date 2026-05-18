@@ -1,7 +1,7 @@
 # Terms of Service
 
 **Curator — FRC AI Assistant**
-**Last updated: May 17, 2026**
+**Last updated: May 18, 2026**
 
 ---
 
@@ -18,7 +18,7 @@ Curator is an AI-powered assistant designed to help FRC teams find information f
 The Service also includes:
 
 - A support channel for bug reports, account/privacy questions, and feature requests
-- Operational monitoring tools including browser Session Replay and cookie-free performance analytics to detect errors, measure performance, and diagnose failures
+- Operational monitoring tools including error/performance telemetry and cookie-free performance analytics to detect errors, measure performance, and diagnose failures. Browser Session Replay is disabled by default and, if enabled for debugging, masks text and blocks media.
 - Optional response feedback controls that let users flag helpful or unhelpful answers, bad citations, or missed sources for quality review
 - A public blog where Curator admins may publish product updates, release notes, and operator announcements. Published blog posts may show the author's preferred name when available.
 - An installable web app (PWA) that may be added to your device home screen. Installed/offline behavior is subject to browser support and the limits described in the Privacy Policy.
@@ -79,7 +79,8 @@ Key points:
 - We do not sell your personal information.
 - We do not share your personal information with third parties for advertising purposes.
 - Analytics cookies (Google Analytics) are only activated if you explicitly accept them through the cookie consent banner. You may change this choice at any time from the in-app cookie preferences control.
-- Sentry is used for error monitoring and Session Replay for debugging. Sentry processes data on our behalf and does not sell or share it.
+- Sentry is used for error monitoring and performance tracing. Session Replay is disabled by default and, if enabled for debugging, masks text and blocks media. Sentry processes data on our behalf and does not sell or share it.
+- Admin actions and admin transcript views may be logged for security, accountability, and abuse investigation.
 - Chat messages are sent to OpenRouter for AI processing. Depending on the model selected, upstream providers may retain prompt and response data under their own terms.
 
 ---

@@ -26,18 +26,15 @@ export async function nativeGoogleSignIn(): Promise<void> {
     }
 
     const result = await GoogleSignIn.signIn();
-    console.log("[native-auth] GoogleSignIn result:", JSON.stringify(result));
 
     const idToken = result.idToken;
     if (!idToken) throw new Error("No ID token returned from Google");
 
-    console.log("[native-auth] Calling NextAuth with idToken aud check…");
     const response = await signIn("google-id-token", {
       idToken,
       callbackUrl: "/",
       redirect: false,
     });
-    console.log("[native-auth] NextAuth response:", JSON.stringify(response));
 
     if (response?.error) {
       throw new Error(`Auth failed: ${response.error} (url: ${response.url ?? ""})`);

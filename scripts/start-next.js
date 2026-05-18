@@ -63,6 +63,33 @@ const shouldSubmitIndexNow = process.env.INDEXNOW_SUBMIT_ON_START === "true";
 const indexNowDelayMs = Number.parseInt(process.env.INDEXNOW_SUBMIT_DELAY_MS ?? "5000", 10);
 let indexNowTimeout;
 
+function assertProductionSecrets() {
+  if (process.env.NODE_ENV !== "production") return;
+
+  const forbiddenValues = new Set(["curatordevpw", "minioadmin"]);
+  const requiredSecrets = [
+    "AUTH_SECRET",
+    "DATABASE_URL",
+    "POSTGRES_PASSWORD",
+    "OPENROUTER_API_KEY",
+    "QDRANT_API_KEY",
+    "MINIO_ACCESS_KEY",
+    "MINIO_SECRET_KEY",
+  ];
+
+  const unsafe = requiredSecrets.filter((key) => {
+    const value = process.env[key]?.trim() ?? "";
+    return !value || value.startsWith("CHANGEME_") || forbiddenValues.has(value) || [...forbiddenValues].some((item) => value.includes(item));
+  });
+
+  if (unsafe.length > 0) {
+    console.error(`Refusing to start with unset or placeholder production secrets: ${unsafe.join(", ")}`);
+    process.exit(1);
+  }
+}
+
+assertProductionSecrets();
+
 function runIndexNowSubmission() {
   if (!shouldSubmitIndexNow) return;
 

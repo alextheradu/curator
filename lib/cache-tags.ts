@@ -83,5 +83,6 @@ export function revalidateBlogDerivedCaches(currentSlug?: string | null, previou
 
 export function normalizeCacheKeyPart(value?: string | null) {
   const normalized = value?.trim();
-  return normalized ? normalized : "_";
+  if (!normalized) return "_";
+  return normalized.length > 80 ? `${normalized.slice(0, 80)}:${normalized.length}` : normalized;
 }

@@ -10,20 +10,30 @@ function getMinioConfig(): Minio.ClientOptions {
 
   const defaultUseSSL = process.env.MINIO_USE_SSL === "true";
 
+  const assertProductionSsl = (useSSL: boolean) => {
+    if (process.env.NODE_ENV === "production" && !useSSL) {
+      throw new Error("MINIO_ENDPOINT must use HTTPS in production");
+    }
+  };
+
   if (rawEndpoint.startsWith("http://") || rawEndpoint.startsWith("https://")) {
     const parsed = new URL(rawEndpoint);
     if (parsed.pathname !== "/" && parsed.pathname !== "") {
       throw new Error("MINIO_ENDPOINT must not include a path");
     }
+    const useSSL = parsed.protocol === "https:";
+    assertProductionSsl(useSSL);
 
     return {
       endPoint: parsed.hostname,
       port: parsed.port ? Number(parsed.port) : undefined,
-      useSSL: parsed.protocol === "https:",
+      useSSL,
       accessKey: process.env.MINIO_ACCESS_KEY!,
       secretKey: process.env.MINIO_SECRET_KEY!,
     };
   }
+
+  assertProductionSsl(defaultUseSSL);
 
   return {
     endPoint: rawEndpoint,
@@ -53,7 +63,7 @@ export async function uploadPdf(key: string, buffer: Buffer, size: number) {
   await client.putObject(BUCKET, key, buffer, size, { "Content-Type": "application/pdf" });
 }
 
-export async function getPresignedUrl(key: string, expirySeconds = 3600): Promise<string> {
+export async function getPresignedUrl(key: string, expirySeconds = 300): Promise<string> {
   return getClient().presignedGetObject(BUCKET, key, expirySeconds);
 }
 

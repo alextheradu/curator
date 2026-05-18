@@ -617,6 +617,7 @@ export function SettingsModal() {
                                 await GoogleSignIn.signOut();
                               }
                             } catch {}
+                            await fetch("/api/session/end", { method: "POST" }).catch(() => {});
                             await signOut({ redirect: false });
                             setSettingsOpen(false);
                             router.push("/");

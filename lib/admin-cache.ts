@@ -66,7 +66,7 @@ export async function getCachedAdminReports() {
 export async function getCachedAdminChats(userId?: string | null, search?: string | null) {
   const normalizedUserId = normalizeCacheKeyPart(userId);
   const normalizedSearch = normalizeCacheKeyPart(search);
-  const searchValue = search?.trim() ?? "";
+  const searchValue = (search?.trim() ?? "").slice(0, 80);
 
   const load = unstable_cache(
     async () => {
@@ -121,7 +121,7 @@ export async function getCachedAdminChats(userId?: string | null, search?: strin
 export async function getCachedAdminUsers(search?: string | null, filter?: string | null) {
   const normalizedSearch = normalizeCacheKeyPart(search);
   const normalizedFilter = normalizeCacheKeyPart(filter);
-  const searchValue = search?.trim() ?? "";
+  const searchValue = (search?.trim() ?? "").slice(0, 80);
   const filterValue = filter?.trim() || "all";
 
   const load = unstable_cache(

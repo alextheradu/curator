@@ -15,9 +15,16 @@ export function generateGuestSessionId(): string {
 export function serializeGuestSessionCookie(guestId: string): string {
   return serializeCookie(GUEST_SESSION_ID_COOKIE_NAME, guestId, {
     maxAge: GUEST_SESSION_MAX_AGE,
+    httpOnly: true,
+    sameSite: "Lax",
+    secure: true,
   });
 }
 
 export function deleteGuestSessionCookie(): string {
-  return deleteCookie(GUEST_SESSION_ID_COOKIE_NAME);
+  return deleteCookie(GUEST_SESSION_ID_COOKIE_NAME, {
+    httpOnly: true,
+    sameSite: "Lax",
+    secure: true,
+  });
 }
