@@ -41,7 +41,7 @@ function ErrorState() {
   return (
     <div className="flex h-svh w-full items-center justify-center bg-[var(--background)] px-6">
       <div className="max-w-md rounded-3xl border border-border/60 bg-card/60 p-8 text-center shadow-[var(--shadow-card)]">
-        <h1 className="text-xl font-semibold text-foreground">Couldn't load your chats</h1>
+        <h1 className="text-xl font-semibold text-foreground">Couldn&apos;t load your chats</h1>
         <p className="mt-3 text-sm leading-6 text-muted-foreground">
           The connection timed out. This can happen on slow competition Wi-Fi.
         </p>
