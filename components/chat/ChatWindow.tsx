@@ -164,7 +164,7 @@ export function ChatWindow({
   }, [conversation, onShareDialogHandled, readOnly, shareDialogConversationId]);
 
   const persistLatestAssistantMessage = useCallback(async (conversationId: string, citations?: Citation[]) => {
-    if (!isAuthenticated || readOnly) {
+    if (readOnly) {
       return;
     }
 
@@ -189,7 +189,7 @@ export function ChatWindow({
       console.error(error);
       toast.error("The latest assistant reply could not be saved.");
     }
-  }, [isAuthenticated, readOnly]);
+  }, [readOnly]);
 
   const stopStreaming = useCallback(async () => {
     abortRef.current?.abort();
@@ -219,14 +219,15 @@ export function ChatWindow({
 
     let conversationId = activeConversationId;
     if (!conversationId) {
-      if (isAuthenticated) {
+      try {
         const created = normalizeConversation(await createConversation(), [], defaultChatMode);
         upsertConversation(created);
         setActiveConversation(created.id);
         conversationId = created.id;
-      } else {
-        conversationId = useChatStore.getState().newConversation();
-        setActiveConversation(conversationId);
+      } catch (error) {
+        console.error(error);
+        toast.error("Couldn't start a new chat.");
+        return;
       }
 
       window.history.replaceState(null, "", `/c/${conversationId}`);
@@ -248,40 +249,38 @@ export function ChatWindow({
     const fallbackTitle = generateChatTitle(text);
     const shouldGenerateAiTitle = isAuthenticated && previousTitle === "New Chat";
 
-    if (isAuthenticated) {
+    try {
+      await createConversationMessage(conversationId, { id: userMsgId, role: "user", content: text });
+    } catch (error) {
+      console.error(error);
+      toast.error("Your message could not be saved.");
+    }
+
+    if (previousTitle === "New Chat") {
       try {
-        await createConversationMessage(conversationId, { id: userMsgId, role: "user", content: text });
+        await updateConversationRecord(conversationId, { title: fallbackTitle });
       } catch (error) {
         console.error(error);
-        toast.error("Your message could not be saved.");
       }
+    }
 
-      if (previousTitle === "New Chat") {
+    if (isAuthenticated && shouldGenerateAiTitle) {
+      void (async () => {
         try {
-          await updateConversationRecord(conversationId, { title: fallbackTitle });
-        } catch (error) {
-          console.error(error);
-        }
-      }
-
-      if (shouldGenerateAiTitle) {
-        void (async () => {
-          try {
-            const res = await fetch(`/api/conversations/${conversationId}/title`, { method: "POST" });
-            const data = await res.json() as { title: string | null };
-            if (!data.title) return;
-            setTypingTitle(conversationId, "");
-            for (let i = 0; i <= data.title.length; i++) {
-              await new Promise((r) => setTimeout(r, 35));
-              setTypingTitle(conversationId, data.title.slice(0, i));
-            }
-            updateConversation(conversationId, { title: data.title });
-            clearTypingTitle();
-          } catch {
-            clearTypingTitle();
+          const res = await fetch(`/api/conversations/${conversationId}/title`, { method: "POST" });
+          const data = await res.json() as { title: string | null };
+          if (!data.title) return;
+          setTypingTitle(conversationId, "");
+          for (let i = 0; i <= data.title.length; i++) {
+            await new Promise((r) => setTimeout(r, 35));
+            setTypingTitle(conversationId, data.title.slice(0, i));
           }
-        })();
-      }
+          updateConversation(conversationId, { title: data.title });
+          clearTypingTitle();
+        } catch {
+          clearTypingTitle();
+        }
+      })();
     }
 
     startStreaming();
