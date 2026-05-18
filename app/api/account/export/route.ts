@@ -1,6 +1,6 @@
 import { auth } from "@/auth";
 import { DEFAULT_CHAT_MODE } from "@/lib/account-settings";
-import { withSessionDbAccess } from "@/lib/db/access";
+import { withSessionDbAccess, withSystemDbAccess } from "@/lib/db/access";
 import {
   conversations,
   messages,
@@ -31,6 +31,7 @@ export async function GET() {
           preferredName: users.preferredName,
           teamNumber: users.teamNumber,
           onboardedAt: users.onboardedAt,
+          tosAcceptedAt: users.tosAcceptedAt,
         })
         .from(users)
         .where(eq(users.id, session.user.id))
@@ -60,6 +61,7 @@ export async function GET() {
             preferredName: null,
             teamNumber: null,
             onboardedAt: null,
+            tosAcceptedAt: null,
           } : null));
       }
 
@@ -79,7 +81,7 @@ export async function GET() {
       .from(conversations)
       .where(eq(conversations.userId, session.user.id))
       .orderBy(desc(conversations.updatedAt))),
-    withSessionDbAccess(session, (tx) => tx
+    withSystemDbAccess((tx) => tx
       .select()
       .from(supportRequests)
       .where(eq(supportRequests.userId, session.user.id))
@@ -115,6 +117,7 @@ export async function GET() {
       preferredName: user?.preferredName ?? null,
       teamNumber: user?.teamNumber ?? null,
       onboardedAt: user?.onboardedAt ?? null,
+      tosAcceptedAt: user?.tosAcceptedAt ?? null,
     },
     projects: projectRows.map((project) => ({
       id: project.id,

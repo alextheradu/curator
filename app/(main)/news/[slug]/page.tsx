@@ -5,6 +5,7 @@ import { SidebarInset } from "@/components/ui/sidebar";
 import { NewsArticleBody } from "@/components/news/NewsArticleBody";
 import { getCachedPublicBlogPost } from "@/lib/blog";
 import { buildPublicPageMetadata, NO_INDEX_ROBOTS } from "@/lib/seo";
+import { sanitizeReturnHref } from "@/lib/url-safety";
 
 
 export async function generateMetadata({
@@ -47,7 +48,7 @@ export default async function NewsArticlePage({
 
   if (!post) notFound();
 
-  const backHref = from ? decodeURIComponent(from) : "/";
+  const backHref = sanitizeReturnHref(from);
   const backLabel = backHref.startsWith("/c/") ? "Back to chat" : "New chat";
 
   return (

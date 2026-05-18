@@ -5,6 +5,8 @@ import { withDbAccessContext } from "@/lib/db/access";
 import { conversations, messages } from "@/lib/db/schema";
 import { revalidatePublicConversation } from "@/lib/public-conversations";
 import { applyRateLimitHeaders, enforceRequestRateLimit } from "@/lib/rate-limit";
+import { hasValidMutationOrigin } from "@/lib/request-security";
+import { isUuid } from "@/lib/uuid";
 import { eq, asc } from "drizzle-orm";
 
 const OR_URL = "https://openrouter.ai/api/v1/chat/completions";
@@ -13,6 +15,10 @@ const TITLE_MODEL = process.env.OPENROUTER_TITLE_MODEL ?? "openai/gpt-4o-mini";
 type Params = { params: Promise<{ id: string }> };
 
 export async function POST(req: NextRequest, { params }: Params) {
+  if (!hasValidMutationOrigin(req)) {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
+
   const userAuth = await requireAuth();
   if (!userAuth.ok) return userAuth.response;
   const rateLimit = await enforceRequestRateLimit(req, "conversationTitle", userAuth.userId);
@@ -23,6 +29,7 @@ export async function POST(req: NextRequest, { params }: Params) {
   }
 
   const { id } = await params;
+  if (!isUuid(id)) return NextResponse.json({ error: "Invalid conversation id" }, { status: 400, headers });
 
   const [conv] = await withDbAccessContext({ userId: userAuth.userId }, (tx) => tx
     .select({ userId: conversations.userId })

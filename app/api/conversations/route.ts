@@ -1,9 +1,11 @@
 import { auth } from "@/auth";
-import { withSessionDbAccess } from "@/lib/db/access";
-import { db } from "@/lib/db";
+import { withGuestDbAccess, withSessionDbAccess } from "@/lib/db/access";
 import { conversations, messages, projects } from "@/lib/db/schema";
 import { revalidateConversationDerivedCaches } from "@/lib/cache-tags";
 import { applyRateLimitHeaders, enforceRequestRateLimit } from "@/lib/rate-limit";
+import { validateJsonMutationRequest } from "@/lib/request-security";
+import { maybeCleanupExpiredGuestConversations } from "@/lib/retention";
+import { isUuid } from "@/lib/uuid";
 import { DEFAULT_SEASON_YEAR } from "@/lib/seasons";
 import {
   generateGuestSessionId,
@@ -11,7 +13,7 @@ import {
   serializeGuestSessionCookie,
 } from "@/lib/guest-session";
 import { and, asc, desc, eq, inArray } from "drizzle-orm";
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 
 function buildSearchDescription(content: string) {
   return content
@@ -31,9 +33,9 @@ export async function GET() {
     const guestId = await readGuestSessionId();
     if (!guestId) return NextResponse.json([]);
 
-    const rows = await db.select().from(conversations)
+    const rows = await withGuestDbAccess(guestId, (tx) => tx.select().from(conversations)
       .where(eq(conversations.guestId, guestId))
-      .orderBy(desc(conversations.updatedAt));
+      .orderBy(desc(conversations.updatedAt)));
 
     return NextResponse.json(rows);
   }
@@ -80,22 +82,39 @@ export async function GET() {
   );
 }
 
-export async function POST(req: Request) {
+export async function POST(req: NextRequest) {
+  const invalidMutation = validateJsonMutationRequest(req);
+  if (invalidMutation) return invalidMutation;
+
   const session = await auth();
+  const body = await req.json().catch(() => ({}));
 
   if (!session?.user?.id) {
-    const { title = "New Chat", seasonYear = DEFAULT_SEASON_YEAR } = await req.json();
+    const rateLimit = await enforceRequestRateLimit(req, "conversationCreate");
+    const headers = new Headers();
+    applyRateLimitHeaders(headers, rateLimit);
+    if (!rateLimit.ok) {
+      return NextResponse.json({ error: "Too many conversations created. Please slow down." }, { status: 429, headers });
+    }
+
+    const title = typeof body.title === "string" && body.title.trim()
+      ? body.title.trim().slice(0, 120)
+      : "New Chat";
+    const seasonYear = typeof body.seasonYear === "number" && Number.isInteger(body.seasonYear)
+      ? body.seasonYear
+      : DEFAULT_SEASON_YEAR;
 
     let guestId = await readGuestSessionId();
     let isNewGuest = !guestId;
     if (!guestId) {
       guestId = generateGuestSessionId();
     } else {
-      const [existingGuestConversation] = await db
+      const currentGuestId = guestId;
+      const [existingGuestConversation] = await withGuestDbAccess(currentGuestId, (tx) => tx
         .select({ id: conversations.id })
         .from(conversations)
-        .where(eq(conversations.guestId, guestId))
-        .limit(1);
+        .where(eq(conversations.guestId, currentGuestId))
+        .limit(1));
 
       if (!existingGuestConversation) {
         guestId = generateGuestSessionId();
@@ -103,15 +122,16 @@ export async function POST(req: Request) {
       }
     }
 
-    const [conv] = await db.insert(conversations)
+    const [conv] = await withGuestDbAccess(guestId, (tx) => tx.insert(conversations)
       .values({ guestId, title, seasonYear })
-      .returning();
+      .returning());
 
-    const responseHeaders = new Headers();
+    const responseHeaders = headers;
     if (isNewGuest) {
       responseHeaders.set("Set-Cookie", serializeGuestSessionCookie(guestId));
     }
 
+    maybeCleanupExpiredGuestConversations();
     revalidateConversationDerivedCaches();
     return NextResponse.json(conv, { headers: responseHeaders });
   }
@@ -123,7 +143,10 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "Too many conversations created. Please slow down." }, { status: 429, headers });
   }
 
-  const { title = "New Chat", seasonYear = DEFAULT_SEASON_YEAR, projectId = null } = await req.json();
+  const { title = "New Chat", seasonYear = DEFAULT_SEASON_YEAR, projectId = null } = body;
+  if (projectId !== null && (typeof projectId !== "string" || !isUuid(projectId))) {
+    return NextResponse.json({ error: "Invalid project id" }, { status: 400, headers });
+  }
   const [conv] = await withSessionDbAccess(session, async (tx) => {
     if (projectId) {
       const [project] = await tx
