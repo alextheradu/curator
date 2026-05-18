@@ -4,15 +4,11 @@ const SHELL_CACHE = `${CACHE_VERSION}-shell`;
 const RUNTIME_CACHE = `${CACHE_VERSION}-runtime`;
 const OFFLINE_URL = "/offline";
 const SHELL_ASSETS = [
-  "/",
   OFFLINE_URL,
   "/manifest.json",
   "/icon-192.png",
   "/icon-512.png",
   "/apple-icon.png",
-  "/privacy-policy",
-  "/terms-of-service",
-  "/support",
 ];
 
 self.addEventListener("install", (event) => {
@@ -50,22 +46,14 @@ self.addEventListener("fetch", (event) => {
     return;
   }
 
+  if (url.pathname.startsWith("/_next/static/")) {
+    return;
+  }
+
   if (request.mode === "navigate") {
     event.respondWith(
       fetch(request)
-        .then((response) => {
-          const copy = response.clone();
-          void caches.open(RUNTIME_CACHE).then((cache) => cache.put(request, copy));
-          return response;
-        })
-        .catch(async () => {
-          const cached = await caches.match(request);
-          if (cached) {
-            return cached;
-          }
-
-          return caches.match(OFFLINE_URL);
-        }),
+        .catch(() => caches.match(OFFLINE_URL)),
     );
     return;
   }
