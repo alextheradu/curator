@@ -1,7 +1,7 @@
 # Privacy Policy
 
 **Curator — FRC AI Assistant**
-**Last updated: May 17, 2026**
+**Last updated: May 18, 2026**
 
 ---
 
@@ -50,7 +50,7 @@ This Privacy Policy explains how Curator ("the Service", "we", "us") collects, u
 - **Cookie-free performance analytics:** Cloudflare Web Analytics may collect aggregate pageview and performance metrics, including navigation timing and Core Web Vitals-style measurements, using a lightweight browser beacon that does not rely on cookies or advertising identifiers.
 - **Operational logs:** we store application logs for support, abuse prevention, debugging, and reliability work. These logs can include request paths, IP address, account ID, and error details.
 - **Rate-limit metadata:** we store per-scope counters keyed to your account ID or network metadata so we can slow abusive traffic and protect the Service.
-- **Search indexing notifications:** when public Curator pages are added or updated, we may send the affected page URLs to IndexNow-participating search engines so they can recrawl those pages faster.
+- **Search indexing notifications:** when indexable public Curator pages are added or updated, we may send the affected page URLs to IndexNow-participating search engines so they can recrawl those pages faster. News/blog URLs are excluded from these submissions.
 - **Analytics usage data (consent required):** if you explicitly accept analytics cookies through the cookie consent banner, we use Google Analytics 4 to collect aggregated usage data — for example, page views, device/browser information, approximate region, and interaction events — to understand and improve the Service. Google Analytics does not load until you actively accept. If you decline or ignore the banner, no GA cookies are set and no GA data is collected. You can change this choice at any time from the in-app cookie preferences control.
 - **Server logs:** standard web server request logs (IP address, timestamp, user agent) retained for up to 30 days.
 
@@ -94,7 +94,7 @@ The following services receive data as part of operating the Service. None of th
 | Sentry | Error monitoring, performance tracing, logs, and Session Replay | Error context, URLs, device info, account identifiers, session replay data. Sentry processes this only on our behalf under a Data Processing Addendum and does not sell or share this data. | sentry.io/privacy/ |
 | Cloudflare Web Analytics | Cookie-free aggregate site analytics | Aggregate, non-identified performance metrics. No cookies or advertising identifiers used. | cloudflare.com/privacypolicy/ |
 | Google Analytics 4 | Aggregate usage analytics — **only loaded after you explicitly accept analytics cookies** | Page views, device/browser info, approximate region, interaction events. Only active with your consent. | policies.google.com/privacy |
-| IndexNow | Notifies search engines when public pages change | Public page URLs only | indexnow.org/documentation |
+| IndexNow | Notifies search engines when indexable public pages change | Indexable public page URLs only; news/blog URLs are excluded | indexnow.org/documentation |
 | MinIO (self-hosted) | Document storage | PDF documents uploaded by admins | Self-hosted, no third party |
 
 ### A note on Google Analytics and data sharing

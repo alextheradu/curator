@@ -30,6 +30,17 @@ export const NO_INDEX_ROBOTS: NonNullable<Metadata["robots"]> = {
 
 export const NO_INDEX_X_ROBOTS_TAG = "noindex, nofollow, noarchive, nosnippet, noimageindex";
 
+const NON_SEARCH_INDEXED_ROUTE_PREFIXES = ["/admin", "/api", "/c", "/news", "/blog"] as const;
+
+function matchesPathPrefix(pathname: string, prefix: string) {
+  return pathname === prefix || pathname.startsWith(`${prefix}/`);
+}
+
+export function isSearchIndexablePath(pathname: string) {
+  const normalizedPathname = pathname.startsWith("/") ? pathname : `/${pathname}`;
+  return !NON_SEARCH_INDEXED_ROUTE_PREFIXES.some((prefix) => matchesPathPrefix(normalizedPathname, prefix));
+}
+
 export function buildPublicPageMetadata({
   title,
   description,

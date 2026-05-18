@@ -5,14 +5,17 @@ import { SidebarInset } from "@/components/ui/sidebar";
 import { NewsCards } from "@/components/news/NewsCards";
 import { NewsHero } from "@/components/news/NewsHero";
 import { getCachedPublicBlogPosts } from "@/lib/blog";
-import { buildPublicPageMetadata } from "@/lib/seo";
+import { buildPublicPageMetadata, NO_INDEX_ROBOTS } from "@/lib/seo";
 
-export const metadata: Metadata = buildPublicPageMetadata({
-  title: "News",
-  description: "Product updates, release notes, and operator notes from Curator.",
-  path: "/news",
-  keywords: ["Curator news", "Curator updates", "FRC AI updates"],
-});
+export const metadata: Metadata = {
+  ...buildPublicPageMetadata({
+    title: "News",
+    description: "Product updates, release notes, and operator notes from Curator.",
+    path: "/news",
+    keywords: ["Curator news", "Curator updates", "FRC AI updates"],
+  }),
+  robots: NO_INDEX_ROBOTS,
+};
 
 export default async function NewsPage({
   searchParams,
