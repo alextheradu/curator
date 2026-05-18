@@ -1,7 +1,7 @@
 # Privacy Policy
 
 **Curator — FRC AI Assistant**
-**Last updated: May 18, 2026**
+**Last updated: May 17, 2026**
 
 ---
 
@@ -19,10 +19,11 @@ This Privacy Policy explains how Curator ("the Service", "we", "us") collects, u
 
 - A session cookie tracking whether you have accepted the Terms of Service for the current browser session
 - A cookie counting the number of messages sent in the current session (used to enforce the guest message limit)
+- A persistent `guest_session_id` cookie that links your browser to your guest conversations stored in our database (see §7)
 - A cookie recording your cookie-consent choice (`necessary` or `accepted`)
 - Optional sidebar preference cookies recording whether the sidebar is open and what width you chose
 - Browser cache entries created by the app's installable web-app/service-worker layer for offline support and faster reloads
-- Your chat messages (held in browser `localStorage` only — never sent to our servers beyond the API call to generate a response)
+- Your chat messages: stored server-side in our database, linked to your `guest_session_id` cookie, and also cached in your browser's `localStorage` for fast access. If you sign in, your guest conversations are transferred to your account.
 
 ### 2b. Authenticated users (Google or Apple sign-in)
 
@@ -129,7 +130,7 @@ If you do not consent to analytics cookies, Google Analytics never loads and no 
 
 ## 6. Data Retention
 
-- **Guest data:** stored only in your browser's `localStorage`. Cleared when you clear your browser data.
+- **Guest conversations:** stored server-side in our database, linked to your `guest_session_id` cookie, and also cached in your browser's `localStorage`. Guest conversations and their messages are deleted 90 days after creation. If you sign in, your guest conversations are transferred to your account and retained according to the authenticated-user policy above. Clearing your browser data removes the local cache only — the server copy is retained until the 90-day window expires or you sign in and then delete the conversations from your account.
 - **Offline app cache:** stored in your browser until the browser clears site data, the service worker replaces the cache during an update, or you manually remove the site's stored data.
 - **Authenticated user data:** retained for as long as your account exists. This includes saved onboarding profile fields, chat-mode preference, Terms of Service acceptance state, and conversation history. You may delete your account and all associated data at any time from the Settings page.
 - **OpenRouter/upstream model-provider data:** prompts and model outputs sent for inference may be retained by OpenRouter and/or the selected upstream model provider according to their own retention and training policies (which can vary by model tier, including free models).
@@ -152,6 +153,7 @@ If you do not consent to analytics cookies, Google Analytics never loads and no 
 
 - `tos_accepted` — records that a guest browser session has accepted the Terms of Service (session cookie)
 - `guest_message_count` — tracks number of guest messages sent in a session
+- `guest_session_id` — persistent identifier linking your browser to your guest conversations stored on our servers. Set when you start your first guest conversation; expires after 90 days. Automatically deleted when you sign in.
 - `cookie_consent` — records your cookie consent choice
 - `sidebar_state` — stores whether the sidebar is expanded or collapsed
 - `sidebar_width` — stores your chosen sidebar width
