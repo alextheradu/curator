@@ -1,4 +1,5 @@
 import { SITE_URL } from "@/lib/site";
+import { isSearchIndexablePath } from "@/lib/seo";
 
 export const INDEXNOW_ENDPOINT = "https://api.indexnow.org/indexnow";
 export const INDEXNOW_KEY_PATH = "/indexnow-key.txt";
@@ -50,11 +51,7 @@ function isIndexableUrl(url: URL) {
 
   if (url.origin !== site.origin) return false;
 
-  return !(
-    url.pathname.startsWith("/admin") ||
-    url.pathname.startsWith("/api/") ||
-    url.pathname.startsWith("/c/")
-  );
+  return isSearchIndexablePath(url.pathname);
 }
 
 export async function submitIndexNowUrls(urls: string[]): Promise<IndexNowResult> {

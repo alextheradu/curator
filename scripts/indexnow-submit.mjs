@@ -73,6 +73,13 @@ function normalizeUrl(value, siteUrl) {
   }
 }
 
+function isSearchIndexablePath(pathname) {
+  const normalizedPathname = pathname.startsWith("/") ? pathname : `/${pathname}`;
+  return !["/admin", "/api", "/c", "/news", "/blog"].some(
+    (prefix) => normalizedPathname === prefix || normalizedPathname.startsWith(`${prefix}/`),
+  );
+}
+
 const siteUrl = resolveSiteUrl();
 const site = new URL(siteUrl);
 const key = process.env.INDEXNOW_KEY?.trim();
@@ -105,9 +112,7 @@ const urlList = [...new Set((cliUrls.length ? cliUrls : defaultPublicUrls(siteUr
   .map((value) => normalizeUrl(value, siteUrl))
   .filter((value) => value !== null)
   .filter((value) => value.origin === site.origin)
-  .filter((value) => !value.pathname.startsWith("/admin"))
-  .filter((value) => !value.pathname.startsWith("/api/"))
-  .filter((value) => !value.pathname.startsWith("/c/"))
+  .filter((value) => isSearchIndexablePath(value.pathname))
   .map((value) => value.toString()))].slice(0, 10_000);
 
 if (!urlList.length) {
