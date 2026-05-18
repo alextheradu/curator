@@ -3,7 +3,7 @@ import {
   getSentryClientDsn,
   getSentryClientTracesSampleRate,
   getSentryReplayConfig,
-  getSentryTunnelPath,
+  scrubSentryEvent,
 } from "@/lib/sentry";
 
 const dsn = getSentryClientDsn();
@@ -12,13 +12,13 @@ const replay = getSentryReplayConfig();
 Sentry.init({
   dsn,
   enabled: Boolean(dsn),
-  tunnel: dsn ? getSentryTunnelPath() : undefined,
-  sendDefaultPii: true,
+  sendDefaultPii: false,
   tracesSampleRate: getSentryClientTracesSampleRate(),
-  enableLogs: true,
+  enableLogs: false,
+  beforeSend: scrubSentryEvent,
   ...(replay.enabled
     ? {
-        integrations: [Sentry.replayIntegration()],
+        integrations: [Sentry.replayIntegration({ maskAllText: true, blockAllMedia: true })],
         replaysSessionSampleRate: replay.replaysSessionSampleRate,
         replaysOnErrorSampleRate: replay.replaysOnErrorSampleRate,
       }

@@ -6,6 +6,7 @@ import { revalidateBlogDerivedCaches } from "@/lib/cache-tags";
 import { withAdminDbAccess } from "@/lib/db/access";
 import { blogPosts, users } from "@/lib/db/schema";
 import { applyRateLimitHeaders, enforceRequestRateLimit } from "@/lib/rate-limit";
+import { writeAdminAuditLog } from "@/lib/admin-audit";
 import { eq } from "drizzle-orm";
 import { z } from "zod";
 
@@ -95,6 +96,13 @@ export async function POST(req: NextRequest) {
       .returning());
 
     revalidateBlogDerivedCaches(created.slug);
+    await writeAdminAuditLog(req, {
+      actorUserId: adminAuth.userId,
+      action: "create",
+      targetType: "blog_post",
+      targetId: created.id,
+      details: { slug: created.slug, published: created.published },
+    });
     return NextResponse.json(created, { status: 201, headers });
   } catch (error) {
     if (isUniqueViolation(error)) {

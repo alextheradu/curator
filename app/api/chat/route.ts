@@ -17,13 +17,12 @@ import { isTbaMcpEnabled } from "@/lib/tba";
 import { callTbaTool, TBA_TOOLS, type TbaToolName, type OpenAiTool } from "@/lib/tba-mcp-client";
 import { conversations, projects, type Citation } from "@/lib/db/schema";
 import { buildProjectMemoryContext, compactProjectSummaryInput } from "@/lib/project-memory";
-import { GUEST_MESSAGE_COUNT_COOKIE_NAME, GUEST_MESSAGE_LIMIT } from "@/lib/app-cookies";
-import { serializeCookie } from "@/lib/cookies";
+import { GUEST_MESSAGE_LIMIT, GUEST_SESSION_MAX_AGE } from "@/lib/app-cookies";
+import { readGuestSessionId } from "@/lib/guest-session";
 import { captureException, logAppEvent } from "@/lib/logging";
 import { applyRateLimitHeaders, enforceRateLimit } from "@/lib/rate-limit";
 import { getClientIp } from "@/lib/request-context";
 import { NextRequest, NextResponse } from "next/server";
-import { cookies } from "next/headers";
 import { and, eq } from "drizzle-orm";
 
 const OR_URL = "https://openrouter.ai/api/v1/chat/completions";
@@ -764,8 +763,10 @@ export async function POST(request: NextRequest) {
   const userAccountSettings = session?.user?.id
     ? await readUserAccountSettings(session.user.id)
     : null;
-  const cookieStore = await cookies();
   const ip = getClientIp(request);
+  if (!session?.user?.id && ip === "unknown") {
+    return NextResponse.json({ error: "Unable to verify guest request origin." }, { status: 400 });
+  }
   const rateLimit = await enforceRateLimit({
     scope: "chat",
     key: session?.user?.id ? `user:${session.user.id}` : `ip:${ip}`,
@@ -780,9 +781,18 @@ export async function POST(request: NextRequest) {
   }
 
   if (!session?.user?.id) {
-    const count = parseInt(cookieStore.get(GUEST_MESSAGE_COUNT_COOKIE_NAME)?.value ?? "0", 10);
-    if (count >= GUEST_MESSAGE_LIMIT) {
-      return NextResponse.json({ error: "auth_required" }, { status: 401 });
+    const guestId = await readGuestSessionId();
+    const guestQuota = await enforceRateLimit({
+      scope: "guest-message-quota",
+      key: guestId ? `guest:${guestId}` : `ip:${ip}`,
+      limit: GUEST_MESSAGE_LIMIT,
+      windowMs: GUEST_SESSION_MAX_AGE * 1000,
+    });
+
+    if (!guestQuota.ok) {
+      const headers = new Headers();
+      applyRateLimitHeaders(headers, guestQuota);
+      return NextResponse.json({ error: "auth_required" }, { status: 401, headers });
     }
   }
 
@@ -799,6 +809,20 @@ export async function POST(request: NextRequest) {
   const factCheck = searchOptions.factCheck;
   const searchMode = searchOptions.searchMode;
   const searchConfig = buildDeepSearchConfig(searchMode);
+  if (searchMode === "deep") {
+    const deepSearchLimit = await enforceRateLimit({
+      scope: "chat-deep-search",
+      key: session?.user?.id ? `user:${session.user.id}` : `ip:${ip}`,
+      limit: session?.user?.id ? 20 : 5,
+      windowMs: 24 * 60 * 60 * 1000,
+    });
+
+    if (!deepSearchLimit.ok) {
+      const headers = new Headers();
+      applyRateLimitHeaders(headers, deepSearchLimit);
+      return NextResponse.json({ error: "Daily deep-search limit reached." }, { status: 429, headers });
+    }
+  }
   const apiKey = process.env.OPENROUTER_API_KEY!;
 
   let projectMemorySummary = "";
@@ -832,11 +856,6 @@ export async function POST(request: NextRequest) {
     "X-Accel-Buffering": "no",
   });
   applyRateLimitHeaders(responseHeaders, rateLimit);
-
-  if (!session?.user?.id) {
-    const count = parseInt(cookieStore.get(GUEST_MESSAGE_COUNT_COOKIE_NAME)?.value ?? "0", 10);
-    responseHeaders.set("Set-Cookie", serializeCookie(GUEST_MESSAGE_COUNT_COOKIE_NAME, String(count + 1)));
-  }
 
   let streamClosed = false;
   let streamAborted = false;

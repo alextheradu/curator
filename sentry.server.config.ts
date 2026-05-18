@@ -3,6 +3,7 @@ import {
   getSentryServerDsn,
   getSentryServerEnvironment,
   getSentryServerTracesSampleRate,
+  scrubSentryEvent,
 } from "@/lib/sentry";
 
 const dsn = getSentryServerDsn();
@@ -11,8 +12,9 @@ Sentry.init({
   dsn,
   enabled: Boolean(dsn),
   environment: getSentryServerEnvironment(),
-  sendDefaultPii: true,
+  sendDefaultPii: false,
   tracesSampleRate: getSentryServerTracesSampleRate(),
-  includeLocalVariables: true,
-  enableLogs: true,
+  includeLocalVariables: false,
+  enableLogs: false,
+  beforeSend: scrubSentryEvent,
 });

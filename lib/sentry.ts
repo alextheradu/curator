@@ -1,7 +1,6 @@
 const DEFAULT_TRACES_SAMPLE_RATE = 0.1;
-const DEFAULT_REPLAYS_SESSION_SAMPLE_RATE = 1;
-const DEFAULT_REPLAYS_ON_ERROR_SAMPLE_RATE = 1;
-const DEFAULT_SENTRY_TUNNEL_PATH = "/_events";
+const DEFAULT_REPLAYS_SESSION_SAMPLE_RATE = 0;
+const DEFAULT_REPLAYS_ON_ERROR_SAMPLE_RATE = 0;
 
 function readBoolean(...values: Array<string | undefined>) {
   for (const value of values) {
@@ -92,8 +91,39 @@ export function getSentryReplayConfig() {
   };
 }
 
-export function getSentryTunnelPath() {
-  return DEFAULT_SENTRY_TUNNEL_PATH;
+const SENSITIVE_KEY_PATTERN = /authorization|cookie|password|secret|token|api[_-]?key|dsn/i;
+const SECRET_VALUE_PATTERN = /(sk-or-[A-Za-z0-9_-]+|Bearer\s+[A-Za-z0-9._~+/=-]+)/gi;
+
+function redactString(value: string) {
+  return value.replace(SECRET_VALUE_PATTERN, "[REDACTED]");
+}
+
+export function scrubSentryEvent<T>(event: T): T {
+  function scrub(value: unknown, key?: string): unknown {
+    if (key && SENSITIVE_KEY_PATTERN.test(key)) {
+      return "[REDACTED]";
+    }
+
+    if (typeof value === "string") {
+      return redactString(value);
+    }
+
+    if (Array.isArray(value)) {
+      return value.map((entry) => scrub(entry));
+    }
+
+    if (value && typeof value === "object") {
+      const entries = Object.entries(value as Record<string, unknown>).map(([entryKey, entryValue]) => [
+        entryKey,
+        scrub(entryValue, entryKey),
+      ]);
+      return Object.fromEntries(entries);
+    }
+
+    return value;
+  }
+
+  return scrub(event) as T;
 }
 
 export function getSentryReleaseManagementConfig() {

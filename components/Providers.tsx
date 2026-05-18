@@ -190,12 +190,12 @@ function AssetRecovery() {
   return null;
 }
 
-export function Providers({ children }: { children: ReactNode }) {
+export function Providers({ children, nonce }: { children: ReactNode; nonce?: string }) {
   return (
     <SessionProvider>
       <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
         <TooltipProvider>
-          <GoogleAnalytics />
+          <GoogleAnalytics nonce={nonce} />
           <PwaRuntime />
           <SlowConnectionBanner />
           <CapacitorOfflineScreen />

@@ -87,9 +87,20 @@ export async function POST(req: Request) {
     const { title = "New Chat", seasonYear = DEFAULT_SEASON_YEAR } = await req.json();
 
     let guestId = await readGuestSessionId();
-    const isNewGuest = !guestId;
+    let isNewGuest = !guestId;
     if (!guestId) {
       guestId = generateGuestSessionId();
+    } else {
+      const [existingGuestConversation] = await db
+        .select({ id: conversations.id })
+        .from(conversations)
+        .where(eq(conversations.guestId, guestId))
+        .limit(1);
+
+      if (!existingGuestConversation) {
+        guestId = generateGuestSessionId();
+        isNewGuest = true;
+      }
     }
 
     const [conv] = await db.insert(conversations)

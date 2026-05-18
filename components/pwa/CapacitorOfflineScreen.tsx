@@ -10,8 +10,10 @@ export function CapacitorOfflineScreen() {
   useEffect(() => {
     if (!Capacitor.isNativePlatform()) return;
 
-    setIsNative(true);
-    setOffline(!navigator.onLine);
+    queueMicrotask(() => {
+      setIsNative(true);
+      setOffline(!navigator.onLine);
+    });
 
     const handleOffline = () => setOffline(true);
     const handleOnline = () => setOffline(false);
@@ -36,7 +38,7 @@ export function CapacitorOfflineScreen() {
           Curator needs a connection for live answers
         </h1>
         <p className="mt-4 text-sm leading-6 text-muted-foreground">
-          You're not connected to the internet. Chat, sign-in, and live FRC lookups need the
+          You&apos;re not connected to the internet. Chat, sign-in, and live FRC lookups need the
           network.
         </p>
         <p className="mt-2 text-xs text-muted-foreground/70">

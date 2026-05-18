@@ -111,9 +111,10 @@ cp .env.example .env
 If you use the included Docker services, make sure your DB settings match the compose port:
 
 ```bash
-DATABASE_URL=postgresql://curator:curatordevpw@localhost:5437/curator
-POSTGRES_PASSWORD=curatordevpw
+DATABASE_URL=postgresql://curator:<your-local-postgres-password>@localhost:5437/curator
+POSTGRES_PASSWORD=<your-local-postgres-password>
 QDRANT_URL=http://localhost:6333
+QDRANT_API_KEY=<your-local-qdrant-api-key>
 ```
 
 Start local infrastructure:
@@ -261,7 +262,7 @@ Google Analytics stays off until the visitor accepts analytics cookies:
 NEXT_PUBLIC_GOOGLE_ANALYTICS_ID=G-XXXXXXXXXX
 ```
 
-Sentry supports browser and server errors, tracing, logs, and replay sampling:
+Sentry supports browser and server errors, tracing, and optional replay sampling:
 
 ```bash
 NEXT_PUBLIC_SENTRY_DSN=https://...
@@ -270,10 +271,10 @@ SENTRY_ENVIRONMENT=production
 SENTRY_TRACES_SAMPLE_RATE=0.1
 NEXT_PUBLIC_SENTRY_TRACES_SAMPLE_RATE=0.1
 NEXT_PUBLIC_SENTRY_REPLAY_SESSION_SAMPLE_RATE=0
-NEXT_PUBLIC_SENTRY_REPLAY_ON_ERROR_SAMPLE_RATE=1
+NEXT_PUBLIC_SENTRY_REPLAY_ON_ERROR_SAMPLE_RATE=0
 ```
 
-When `NEXT_PUBLIC_SENTRY_DSN` is configured, browser events are tunneled through `/_events`. Source map upload only runs when release management is enabled and Sentry build credentials are present:
+Source map upload only runs when release management is enabled and Sentry build credentials are present:
 
 ```bash
 SENTRY_RELEASE_MANAGEMENT_ENABLED=true

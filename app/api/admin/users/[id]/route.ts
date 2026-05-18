@@ -5,9 +5,9 @@ import {
   revalidateReportDerivedCaches,
   revalidateUserDerivedCaches,
 } from "@/lib/cache-tags";
-import { isAdminEmail } from "@/lib/admin-emails";
+import { validateAdminUserMutation } from "@/lib/admin-user-mutations";
+import { writeAdminAuditLog } from "@/lib/admin-audit";
 import { withAdminDbAccess } from "@/lib/db/access";
-import { db } from "@/lib/db";
 import { users, bannedEmails } from "@/lib/db/schema";
 import { applyRateLimitHeaders, enforceRequestRateLimit } from "@/lib/rate-limit";
 import { eq } from "drizzle-orm";
@@ -30,26 +30,32 @@ export async function PATCH(req: NextRequest, { params }: Params) {
     reason?: string;
   };
 
-  const [target] = await db.select().from(users).where(eq(users.id, id)).limit(1);
+  const [target] = await withAdminDbAccess(adminAuth.userId, (tx) => tx.select().from(users).where(eq(users.id, id)).limit(1));
   if (!target) return NextResponse.json({ error: "User not found" }, { status: 404, headers });
 
-  if (isAdminEmail(target.email)) {
-    return NextResponse.json({ error: "Cannot modify a superadmin" }, { status: 403, headers });
+  const validation = validateAdminUserMutation({
+    action: body.action,
+    actorUserId: adminAuth.userId,
+    actorIsSuperAdmin: adminAuth.isSuperAdmin,
+    targetUser: target,
+  });
+  if (!validation.ok) {
+    return NextResponse.json({ error: validation.error }, { status: validation.status, headers });
   }
 
   switch (body.action) {
     case "promote":
-      await db.update(users).set({ isAdmin: true }).where(eq(users.id, id));
+      await withAdminDbAccess(adminAuth.userId, (tx) => tx.update(users).set({ isAdmin: true }).where(eq(users.id, id)));
       break;
     case "demote":
-      if (!adminAuth.isSuperAdmin) {
-        return NextResponse.json({ error: "Only superadmins can demote admins" }, { status: 403, headers });
-      }
-      await db.update(users).set({ isAdmin: false }).where(eq(users.id, id));
+      await withAdminDbAccess(adminAuth.userId, (tx) => tx.update(users).set({ isAdmin: false }).where(eq(users.id, id)));
       break;
     case "ban": {
       const email = target.email.toLowerCase();
-      await db.update(users).set({ emailBanned: true, bannedEmail: email }).where(eq(users.id, id));
+      await withAdminDbAccess(adminAuth.userId, (tx) => tx
+        .update(users)
+        .set({ emailBanned: true, bannedEmail: email })
+        .where(eq(users.id, id)));
       await withAdminDbAccess(adminAuth.userId, (tx) => tx
         .insert(bannedEmails)
         .values({ email, reason: body.reason?.trim() || null, bannedById: adminAuth.userId })
@@ -70,13 +76,23 @@ export async function PATCH(req: NextRequest, { params }: Params) {
           .delete(bannedEmails)
           .where(eq(bannedEmails.email, bannedEmail)));
       }
-      await db.update(users).set({ emailBanned: false, bannedEmail: null }).where(eq(users.id, id));
+      await withAdminDbAccess(adminAuth.userId, (tx) => tx
+        .update(users)
+        .set({ emailBanned: false, bannedEmail: null })
+        .where(eq(users.id, id)));
       break;
     default:
       return NextResponse.json({ error: "Unknown action" }, { status: 400, headers });
   }
 
   revalidateUserDerivedCaches();
+  await writeAdminAuditLog(req, {
+    actorUserId: adminAuth.userId,
+    action: body.action,
+    targetType: "user",
+    targetId: id,
+    details: { targetEmail: target.email },
+  });
   return NextResponse.json({ ok: true }, { headers });
 }
 
@@ -91,16 +107,33 @@ export async function DELETE(req: NextRequest, { params }: Params) {
   }
 
   const { id } = await params;
-  const [target] = await db.select({ email: users.email }).from(users).where(eq(users.id, id)).limit(1);
+  const [target] = await withAdminDbAccess(adminAuth.userId, (tx) => tx
+    .select({ id: users.id, email: users.email, isAdmin: users.isAdmin })
+    .from(users)
+    .where(eq(users.id, id))
+    .limit(1));
   if (!target) return NextResponse.json({ error: "Not found" }, { status: 404, headers });
 
-  if (isAdminEmail(target.email)) {
-    return NextResponse.json({ error: "Cannot delete a superadmin" }, { status: 403, headers });
+  const validation = validateAdminUserMutation({
+    action: "delete",
+    actorUserId: adminAuth.userId,
+    actorIsSuperAdmin: adminAuth.isSuperAdmin,
+    targetUser: target,
+  });
+  if (!validation.ok) {
+    return NextResponse.json({ error: validation.error }, { status: validation.status, headers });
   }
 
-  await db.delete(users).where(eq(users.id, id));
+  await withAdminDbAccess(adminAuth.userId, (tx) => tx.delete(users).where(eq(users.id, id)));
   revalidateUserDerivedCaches();
   revalidateConversationDerivedCaches();
   revalidateReportDerivedCaches();
+  await writeAdminAuditLog(req, {
+    actorUserId: adminAuth.userId,
+    action: "delete",
+    targetType: "user",
+    targetId: id,
+    details: { targetEmail: target.email },
+  });
   return NextResponse.json({ ok: true }, { headers });
 }
