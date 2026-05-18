@@ -112,6 +112,13 @@ export async function createConversationMessage(
   return readJson<MessageRecord>(response);
 }
 
+export async function claimGuestConversations(): Promise<string[]> {
+  const response = await fetch("/api/conversations/claim", { method: "POST" });
+  if (!response.ok) return [];
+  const data = await response.json() as { conversationIds?: string[] };
+  return data.conversationIds ?? [];
+}
+
 export async function transferGuestConversation(conversation: Conversation) {
   const created = await createConversation({
     title: conversation.title,
