@@ -8,3 +8,6 @@ export const SIDEBAR_COOKIE_MAX_AGE = 60 * 60 * 24 * 7;
 export const TOS_ACCEPTED_COOKIE_NAME = "tos_accepted";
 export const GUEST_MESSAGE_COUNT_COOKIE_NAME = "guest_message_count";
 export const GUEST_MESSAGE_LIMIT = 3;
+
+export const GUEST_SESSION_ID_COOKIE_NAME = "guest_session_id";
+export const GUEST_SESSION_MAX_AGE = 60 * 60 * 24 * 90; // 90 days
