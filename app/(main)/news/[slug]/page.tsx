@@ -4,7 +4,7 @@ import { notFound } from "next/navigation";
 import { SidebarInset } from "@/components/ui/sidebar";
 import { NewsArticleBody } from "@/components/news/NewsArticleBody";
 import { getCachedPublicBlogPost } from "@/lib/blog";
-import { buildPublicPageMetadata } from "@/lib/seo";
+import { buildPublicPageMetadata, NO_INDEX_ROBOTS } from "@/lib/seo";
 
 
 export async function generateMetadata({
@@ -15,17 +15,23 @@ export async function generateMetadata({
   const { slug } = await params;
   const post = await getCachedPublicBlogPost(slug);
   if (!post) {
-    return buildPublicPageMetadata({
-      title: "News",
-      description: "Product updates and release notes from Curator.",
-      path: "/news",
-    });
+    return {
+      ...buildPublicPageMetadata({
+        title: "News",
+        description: "Product updates and release notes from Curator.",
+        path: "/news",
+      }),
+      robots: NO_INDEX_ROBOTS,
+    };
   }
-  return buildPublicPageMetadata({
-    title: post.title,
-    description: post.summary,
-    path: `/news/${post.slug}` as `/news/${string}`,
-  });
+  return {
+    ...buildPublicPageMetadata({
+      title: post.title,
+      description: post.summary,
+      path: `/news/${post.slug}` as `/news/${string}`,
+    }),
+    robots: NO_INDEX_ROBOTS,
+  };
 }
 
 export default async function NewsArticlePage({

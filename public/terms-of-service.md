@@ -1,7 +1,7 @@
 # Terms of Service
 
 **Curator — FRC AI Assistant**
-**Last updated: May 17, 2026**
+**Last updated: May 18, 2026**
 
 ---
 
@@ -22,7 +22,7 @@ The Service also includes:
 - Optional response feedback controls that let users flag helpful or unhelpful answers, bad citations, or missed sources for quality review
 - A public blog where Curator admins may publish product updates, release notes, and operator announcements. Published blog posts may show the author's preferred name when available.
 - An installable web app (PWA) that may be added to your device home screen. Installed/offline behavior is subject to browser support and the limits described in the Privacy Policy.
-- Public page notifications to participating search engines via IndexNow when public URLs are added, updated, or removed
+- Public page notifications to participating search engines via IndexNow when indexable public URLs are added, updated, or removed; news/blog URLs are not submitted for search indexing
 - Personal projects, which let signed-in users organize saved chats into named collections. Project chats may use hidden, AI-generated context summaries derived only from chats in that project to keep future project chats focused.
 
 ---
