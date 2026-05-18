@@ -21,7 +21,7 @@ The Service also includes:
 - Operational monitoring tools including error/performance telemetry and cookie-free performance analytics to detect errors, measure performance, and diagnose failures. Browser Session Replay is disabled by default and, if enabled for debugging, masks text and blocks media.
 - Optional response feedback controls that let users flag helpful or unhelpful answers, bad citations, or missed sources for quality review
 - A public blog where Curator admins may publish product updates, release notes, and operator announcements. Published blog posts may show the author's preferred name when available.
-- An installable web app (PWA) that may be added to your device home screen. Installed/offline behavior is subject to browser support and the limits described in the Privacy Policy.
+- An installable web app (PWA) that may be added to your device home screen. Installed/offline behavior is limited to a small offline fallback cache and is subject to browser support and the limits described in the Privacy Policy.
 - Public page notifications to participating search engines via IndexNow when indexable public URLs are added, updated, or removed; news/blog URLs are not submitted for search indexing
 - Personal projects, which let signed-in users organize saved chats into named collections. Project chats may use hidden, AI-generated context summaries derived only from chats in that project to keep future project chats focused.
 
