@@ -3,8 +3,9 @@ import { withSessionDbAccess } from "@/lib/db/access";
 import { projects } from "@/lib/db/schema";
 import { sanitizeProjectInput } from "@/lib/projects";
 import { applyRateLimitHeaders, enforceRequestRateLimit } from "@/lib/rate-limit";
+import { validateJsonMutationRequest } from "@/lib/request-security";
 import { desc, eq } from "drizzle-orm";
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 
 const projectFields = {
   id: projects.id,
@@ -28,7 +29,10 @@ export async function GET() {
   return NextResponse.json(rows);
 }
 
-export async function POST(req: Request) {
+export async function POST(req: NextRequest) {
+  const invalidMutation = validateJsonMutationRequest(req);
+  if (invalidMutation) return invalidMutation;
+
   const session = await auth();
   if (!session?.user?.id) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 

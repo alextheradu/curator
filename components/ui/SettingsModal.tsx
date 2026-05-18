@@ -17,10 +17,22 @@ import {
   RefreshCcwIcon,
   Settings2Icon,
   ShieldCheckIcon,
+  Trash2Icon,
 } from "lucide-react";
 import { toast } from "sonner";
 import { SupportForm } from "@/components/support/SupportForm";
 import { Button } from "@/components/ui/button";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 import {
   Dialog,
   DialogContent,
@@ -207,6 +219,7 @@ export function SettingsModal() {
   const [isSavingChatMode, setIsSavingChatMode] = useState(false);
   const [isExporting, setIsExporting] = useState(false);
   const [isResetting, setIsResetting] = useState(false);
+  const [isDeletingAccount, setIsDeletingAccount] = useState(false);
 
   const hydrated = useSyncExternalStore(
     () => () => {},
@@ -326,6 +339,32 @@ export function SettingsModal() {
   const handleRedoOnboarding = () => {
     setSettingsOpen(false);
     window.dispatchEvent(new Event(REOPEN_ONBOARDING_EVENT));
+  };
+
+  const handleDeleteAccount = async () => {
+    if (!session?.user?.id) return;
+
+    setIsDeletingAccount(true);
+    try {
+      const response = await fetch("/api/account/delete", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ confirmation: "DELETE" }),
+      });
+      const payload = await response.json().catch(() => ({}));
+      if (!response.ok) throw new Error(payload.error ?? "Unable to delete account.");
+
+      await fetch("/api/session/end", { method: "POST" }).catch(() => {});
+      await signOut({ redirect: false });
+      resetSettings();
+      setSettingsOpen(false);
+      router.push("/");
+      toast.success("Account deleted.");
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Unable to delete account.");
+    } finally {
+      setIsDeletingAccount(false);
+    }
   };
 
   const saveDefaultSearchMode = (mode: SearchMode) => {
@@ -654,6 +693,44 @@ export function SettingsModal() {
                         >
                           Admin Panel
                         </Button>
+                      </SettingRow>
+                    ) : null}
+                    {session?.user?.id ? (
+                      <SettingRow label="Delete account" description="Permanently remove your account, chats, projects, and saved settings.">
+                        <AlertDialog>
+                          <AlertDialogTrigger asChild>
+                            <Button
+                              type="button"
+                              variant="destructive"
+                              size="sm"
+                              className="rounded-lg"
+                              disabled={isDeletingAccount}
+                            >
+                              <Trash2Icon className="size-3.5" />
+                              Delete
+                            </Button>
+                          </AlertDialogTrigger>
+                          <AlertDialogContent>
+                            <AlertDialogHeader>
+                              <AlertDialogTitle>Delete account?</AlertDialogTitle>
+                              <AlertDialogDescription>
+                                This permanently deletes your account, saved chats, projects, and settings. Support and operational records are redacted where they must be retained for security or support history.
+                              </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                              <AlertDialogCancel disabled={isDeletingAccount}>Cancel</AlertDialogCancel>
+                              <AlertDialogAction
+                                onClick={(event) => {
+                                  event.preventDefault();
+                                  void handleDeleteAccount();
+                                }}
+                                disabled={isDeletingAccount}
+                              >
+                                {isDeletingAccount ? "Deleting..." : "Delete account"}
+                              </AlertDialogAction>
+                            </AlertDialogFooter>
+                          </AlertDialogContent>
+                        </AlertDialog>
                       </SettingRow>
                     ) : null}
                   </div>

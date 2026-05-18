@@ -18,11 +18,33 @@ const chipClass = cn(
   "transition-colors hover:bg-[#0066B3]/15 cursor-pointer select-none"
 );
 
+function safeHttpHref(value: string | undefined) {
+  if (!value) return undefined;
+  try {
+    const url = new URL(value);
+    return url.protocol === "http:" || url.protocol === "https:" ? value : undefined;
+  } catch {
+    return undefined;
+  }
+}
+
+function safeDocumentHref(value: string | undefined) {
+  if (!value) return undefined;
+  try {
+    const url = new URL(value, "https://curator.local");
+    if (url.origin !== "https://curator.local" || url.pathname !== "/api/documents/view") return undefined;
+    return `${url.pathname}${url.search}`;
+  } catch {
+    return undefined;
+  }
+}
+
 export function CitationBadge({ citation, index, onOpen }: Props) {
   const isWeb = citation.type === "web";
   const documentHref = !isWeb && citation.minioKey
-    ? citation.url ?? buildDocumentViewHref(citation.minioKey, citation.pageNumber)
-    : citation.url;
+    ? buildDocumentViewHref(citation.minioKey, citation.pageNumber)
+    : safeDocumentHref(citation.url);
+  const webHref = isWeb ? safeHttpHref(citation.url) : undefined;
 
   const tooltipLabel = (
     <span className="flex items-center gap-1.5">
@@ -45,7 +67,7 @@ export function CitationBadge({ citation, index, onOpen }: Props) {
       <TooltipTrigger
         render={
           isWeb
-            ? <a href={citation.url || undefined} target="_blank" rel="noopener noreferrer" />
+            ? <a href={webHref} target="_blank" rel="noopener noreferrer" />
             : onOpen
               ? <button type="button" onClick={() => onOpen(citation)} />
               : documentHref

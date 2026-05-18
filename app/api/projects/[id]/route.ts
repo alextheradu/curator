@@ -3,8 +3,10 @@ import { withSessionDbAccess } from "@/lib/db/access";
 import { projects } from "@/lib/db/schema";
 import { sanitizeProjectInput } from "@/lib/projects";
 import { applyRateLimitHeaders, enforceRequestRateLimit } from "@/lib/rate-limit";
+import { hasValidMutationOrigin, validateJsonMutationRequest } from "@/lib/request-security";
+import { isUuid } from "@/lib/uuid";
 import { and, eq } from "drizzle-orm";
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 
 const projectFields = {
   id: projects.id,
@@ -15,7 +17,10 @@ const projectFields = {
   updatedAt: projects.updatedAt,
 };
 
-export async function PATCH(req: Request, { params }: { params: Promise<{ id: string }> }) {
+export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  const invalidMutation = validateJsonMutationRequest(req);
+  if (invalidMutation) return invalidMutation;
+
   const session = await auth();
   if (!session?.user?.id) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
@@ -27,6 +32,7 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
   }
 
   const { id } = await params;
+  if (!isUuid(id)) return NextResponse.json({ error: "Invalid project id" }, { status: 400, headers });
   const input = sanitizeProjectInput(await req.json().catch(() => ({})));
   const [project] = await withSessionDbAccess(session, (tx) => tx
     .update(projects)
@@ -38,7 +44,11 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
   return NextResponse.json(project, { headers });
 }
 
-export async function DELETE(req: Request, { params }: { params: Promise<{ id: string }> }) {
+export async function DELETE(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  if (!hasValidMutationOrigin(req)) {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
+
   const session = await auth();
   if (!session?.user?.id) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
@@ -50,6 +60,7 @@ export async function DELETE(req: Request, { params }: { params: Promise<{ id: s
   }
 
   const { id } = await params;
+  if (!isUuid(id)) return NextResponse.json({ error: "Invalid project id" }, { status: 400, headers });
   await withSessionDbAccess(session, (tx) => tx
     .delete(projects)
     .where(and(eq(projects.id, id), eq(projects.userId, session.user.id))));

@@ -132,14 +132,14 @@ If you do not consent to analytics cookies, Google Analytics never loads and no 
 
 - **Guest conversations:** stored server-side in our database, linked to your `guest_session_id` cookie, and also cached in your browser's `localStorage`. Guest conversations and their messages are deleted 90 days after creation. If you sign in, your guest conversations are transferred to your account and retained according to the authenticated-user policy above. Clearing your browser data removes the local cache only — the server copy is retained until the 90-day window expires or you sign in and then delete the conversations from your account.
 - **Offline app cache:** limited to the offline fallback page, manifest, and app icons; stored in your browser until the browser clears site data, the service worker replaces the cache during an update, or you manually remove the site's stored data.
-- **Authenticated user data:** retained for as long as your account exists. This includes saved onboarding profile fields, chat-mode preference, Terms of Service acceptance state, and conversation history. You may delete your account and all associated data at any time from the Settings page.
+- **Authenticated user data:** retained for as long as your account exists. This includes saved onboarding profile fields, chat-mode preference, Terms of Service acceptance state, project metadata, hidden project summaries, and conversation history. You may delete your account from the Settings page. Account deletion removes your account, saved chats, projects, settings, sessions, linked sign-in records, user reports tied to deleted chats, and other rows that cascade from the account record. Support requests and operational logs linked to the deleted account are redacted where retained for support, security, accountability, or abuse-prevention needs.
 - **OpenRouter/upstream model-provider data:** prompts and model outputs sent for inference may be retained by OpenRouter and/or the selected upstream model provider according to their own retention and training policies (which can vary by model tier, including free models).
 - **Projects:** retained for as long as your account exists unless you delete a project. Deleting a project removes its project metadata and hidden summary while returning its chats to normal history.
 - **Moderation data:** moderation reports and banned-email records are retained until they are manually cleared, no longer needed for safety or abuse review, or your account and related moderation history are deleted.
 - **Account export packages:** generated on demand from your current account data when you request an export from Settings and not stored by the Service after the response is delivered.
 - **Public shared chats:** remain publicly accessible until you make the chat private again or delete it.
 - **Admin-authored blog posts:** retained until they are deleted or unpublished by an admin; published posts remain publicly accessible until removed or replaced.
-- **Support requests, application logs, and admin audit logs:** retained until they are manually deleted or no longer needed for support, security, accountability, or operational debugging.
+- **Support requests, application logs, and admin audit logs:** retained until they are manually deleted or no longer needed for support, security, accountability, or operational debugging. If you delete your account, support requests and application logs linked to that account are redacted; admin audit logs may retain limited action metadata needed for accountability.
 - **Response feedback:** retained until it is manually deleted or no longer needed for product quality review.
 - **Rate-limit counters:** retained for up to 7 days before cleanup.
 - **Server logs:** retained for 30 days, then deleted.
@@ -177,7 +177,7 @@ You can change your analytics cookie choice at any time from the in-app cookie p
 Depending on where you live, you may have rights under laws such as the California Consumer Privacy Act (CCPA/CPRA), the General Data Protection Regulation (GDPR), or other applicable privacy laws. Regardless of where you are located, we extend the following rights to all users:
 
 - **Access:** request a copy of the data we hold about you
-- **Deletion:** delete your account and all associated data at any time from Settings
+- **Deletion:** delete your account and associated account data at any time from Settings, subject to limited redaction-based retention for support, security, accountability, and abuse-prevention records
 - **Portability:** export your account data, including chats, project metadata, hidden project summaries, saved account settings, and support requests
 - **Correction:** update your preferred name, team number, or other profile fields from Settings
 - **Opt-out of analytics:** withdraw analytics consent at any time via the in-app cookie preferences control

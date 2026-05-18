@@ -3,6 +3,7 @@ import { auth } from "@/auth";
 import { logAppEvent } from "@/lib/logging";
 import { applyRateLimitHeaders, enforceRequestRateLimit } from "@/lib/rate-limit";
 import { getClientIp } from "@/lib/request-context";
+import { sanitizeClientLogUrl } from "@/lib/url-safety";
 
 export async function POST(request: NextRequest) {
   const session = await auth();
@@ -31,7 +32,7 @@ export async function POST(request: NextRequest) {
     level: "error",
     source: "client",
     message: body.message.trim(),
-    path: body.url ?? null,
+    path: sanitizeClientLogUrl(body.url),
     userId: session?.user?.id ?? null,
     ip,
     details: {

@@ -6,8 +6,13 @@ import { logAppEvent, captureException } from "@/lib/logging";
 import { applyRateLimitHeaders, enforceRequestRateLimit } from "@/lib/rate-limit";
 import { getClientIp, getUserAgent } from "@/lib/request-context";
 import { revalidateAdminStatsCache } from "@/lib/cache-tags";
+import { validateJsonMutationRequest } from "@/lib/request-security";
+import { validateSupportRequestInput } from "@/lib/user-input-limits";
 
 export async function POST(request: NextRequest) {
+  const invalidMutation = validateJsonMutationRequest(request);
+  if (invalidMutation) return invalidMutation;
+
   const session = await auth();
   const ip = getClientIp(request);
   const rateLimit = await enforceRequestRateLimit(request, "support", session?.user?.id);
@@ -27,18 +32,17 @@ export async function POST(request: NextRequest) {
     pagePath?: string;
   } | null;
 
-  const subject = body?.subject?.trim() ?? "";
-  const message = body?.message?.trim() ?? "";
-  const email = body?.email?.trim() ?? session?.user?.email ?? "";
-  const name = body?.name?.trim() ?? session?.user?.name ?? "";
-
-  if (!subject || !message) {
-    return NextResponse.json({ error: "Subject and message are required." }, { status: 400, headers });
+  const validation = validateSupportRequestInput({
+    name: body?.name ?? session?.user?.name,
+    email: body?.email ?? session?.user?.email,
+    subject: body?.subject,
+    message: body?.message,
+    pagePath: body?.pagePath,
+  });
+  if (!validation.ok) {
+    return NextResponse.json({ error: validation.error }, { status: 400, headers });
   }
-
-  if (message.length < 20) {
-    return NextResponse.json({ error: "Please provide at least 20 characters of detail." }, { status: 400, headers });
-  }
+  const { subject, message, email, name, pagePath } = validation.value;
 
   try {
     const [created] = await withDbAccessContext({ userId: session?.user?.id ?? null }, (tx) => tx
@@ -49,7 +53,7 @@ export async function POST(request: NextRequest) {
         email: email || null,
         subject,
         message,
-        pagePath: body?.pagePath?.trim() || null,
+        pagePath: pagePath || null,
         userAgent: getUserAgent(request),
         ip,
       })
@@ -59,7 +63,7 @@ export async function POST(request: NextRequest) {
       level: "info",
       source: "support",
       message: `Support request created: ${subject}`,
-      path: body?.pagePath ?? "/support",
+      path: pagePath || "/support",
       userId: session?.user?.id ?? null,
       ip,
       details: { supportRequestId: created.id },
@@ -70,7 +74,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ ok: true, id: created.id }, { headers });
   } catch (error) {
     await captureException("support", error, {
-      path: body?.pagePath ?? "/support",
+      path: pagePath || "/support",
       userId: session?.user?.id ?? null,
       ip,
       details: { subject },

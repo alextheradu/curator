@@ -37,7 +37,14 @@ function matchesPathPrefix(pathname: string, prefix: string) {
 }
 
 export function isSearchIndexablePath(pathname: string) {
-  const normalizedPathname = pathname.startsWith("/") ? pathname : `/${pathname}`;
+  const rawPathname = pathname.startsWith("/") ? pathname : `/${pathname}`;
+  let normalizedPathname: string;
+  try {
+    normalizedPathname = decodeURIComponent(rawPathname);
+  } catch {
+    return false;
+  }
+
   return !NON_SEARCH_INDEXED_ROUTE_PREFIXES.some((prefix) => matchesPathPrefix(normalizedPathname, prefix));
 }
 

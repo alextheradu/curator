@@ -11,6 +11,7 @@ import { CapacitorOfflineScreen } from "@/components/pwa/CapacitorOfflineScreen"
 import { Toaster } from "@/components/ui/sonner";
 import { ErrorToastListener } from "@/components/ui/ErrorToast";
 import { TooltipProvider } from "@/components/ui/tooltip";
+import { sanitizeClientLogUrl } from "@/lib/url-safety";
 
 function CapacitorShell() {
   useEffect(() => {
@@ -155,7 +156,7 @@ function AssetRecovery() {
         sendClientError({
           kind: "asset_failure",
           message,
-          url: window.location.href,
+          url: sanitizeClientLogUrl(window.location.href),
         });
       }
     };
@@ -171,7 +172,7 @@ function AssetRecovery() {
         sendClientError({
           kind: "asset_failure",
           message,
-          url: window.location.href,
+          url: sanitizeClientLogUrl(window.location.href),
         });
         return;
       }
@@ -180,7 +181,7 @@ function AssetRecovery() {
         kind: "unhandled_rejection",
         message,
         stack: reason instanceof Error ? reason.stack : undefined,
-        url: window.location.href,
+        url: sanitizeClientLogUrl(window.location.href),
       });
     };
 

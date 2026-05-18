@@ -18,12 +18,17 @@ export function DocumentViewerModal({ citation, open, onOpenChange }: Props) {
       return null;
     }
 
-    if (citation.url) {
-      return citation.url;
-    }
-
     if (citation.minioKey) {
       return buildDocumentViewHref(citation.minioKey, citation.pageNumber);
+    }
+
+    if (citation.url) {
+      try {
+        const url = new URL(citation.url, "https://curator.local");
+        if (url.origin === "https://curator.local" && url.pathname === "/api/documents/view") {
+          return `${url.pathname}${url.search}`;
+        }
+      } catch {}
     }
 
     return null;
@@ -73,6 +78,7 @@ export function DocumentViewerModal({ citation, open, onOpenChange }: Props) {
                 src={viewerUrl}
                 title={citation?.documentName ?? citation?.label ?? "Document preview"}
                 className="h-full w-full bg-background"
+                sandbox="allow-scripts allow-same-origin"
               />
             ) : (
               <div className="flex h-full items-center justify-center text-sm text-muted-foreground">

@@ -1,13 +1,16 @@
 import { auth } from "@/auth";
-import { withDbAccessContext } from "@/lib/db/access";
-import { appLogs } from "@/lib/db/schema";
+import { logAppEvent } from "@/lib/logging";
 import { applyRateLimitHeaders, enforceRateLimit } from "@/lib/rate-limit";
 import { getClientIp } from "@/lib/request-context";
+import { validateJsonMutationRequest } from "@/lib/request-security";
 import { NextRequest, NextResponse } from "next/server";
 
 const FEEDBACK_KINDS = new Set(["helpful", "not_helpful", "bad_citation", "missed_source"]);
 
 export async function POST(req: NextRequest) {
+  const invalidMutation = validateJsonMutationRequest(req);
+  if (invalidMutation) return invalidMutation;
+
   const session = await auth();
   const ip = getClientIp(req);
   const rateLimit = await enforceRateLimit({
@@ -29,17 +32,15 @@ export async function POST(req: NextRequest) {
   }
   const kind = body.kind;
 
-  await withDbAccessContext({ userId: session?.user?.id ?? "anonymous-feedback", isAdmin: true }, (tx) => tx
-    .insert(appLogs)
-    .values({
-      level: "info",
-      source: "feedback",
-      message: kind,
-      path: req.nextUrl.pathname,
-      userId: session?.user?.id ?? null,
-      ip,
-      details: { messageId: body.messageId },
-    }));
+  await logAppEvent({
+    level: "info",
+    source: "feedback",
+    message: kind,
+    path: req.nextUrl.pathname,
+    userId: session?.user?.id ?? null,
+    ip,
+    details: { messageId: body.messageId },
+  });
 
   return NextResponse.json({ ok: true }, { headers });
 }
