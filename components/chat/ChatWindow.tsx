@@ -498,11 +498,11 @@ export function ChatWindow({
   }, [readOnly]);
 
   useEffect(() => {
-    if (!isCapacitorIOS || readOnly) return;
+    if (!isCapacitorIOS || readOnly || !nativeBarReady) return;
     void import('@/lib/plugins/liquid-glass-composer').then(({ LiquidGlassComposer }) => {
-      void LiquidGlassComposer.setStreaming({ value: isStreaming });
+      void LiquidGlassComposer.setStreaming({ value: isStreaming }).catch(() => {});
     });
-  }, [isStreaming, readOnly]);
+  }, [isStreaming, readOnly, nativeBarReady]);
 
   const messages = conversation?.messages ?? [];
   const firstUserPrompt = messages.find((message) => message.role === "user")?.content;
