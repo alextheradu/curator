@@ -1,7 +1,7 @@
 # Privacy Policy
 
 **Curator — FRC AI Assistant**
-**Last updated: May 17, 2026**
+**Last updated: May 18, 2026**
 
 ---
 
@@ -18,7 +18,7 @@ This Privacy Policy explains how Curator ("the Service", "we", "us") collects, u
 ### 2a. Guests (unauthenticated users)
 
 - A session cookie tracking whether you have accepted the Terms of Service for the current browser session
-- A cookie counting the number of messages sent in the current session (used to enforce the guest message limit)
+- Server-side counters used to enforce the guest message limit
 - A persistent `guest_session_id` cookie that links your browser to your guest conversations stored in our database (see §7)
 - A cookie recording your cookie-consent choice (`necessary` or `accepted`)
 - Optional sidebar preference cookies recording whether the sidebar is open and what width you chose
@@ -47,9 +47,9 @@ This Privacy Policy explains how Curator ("the Service", "we", "us") collects, u
 - **Response feedback:** if you use response feedback controls, we store the feedback type, message ID, account ID if signed in, IP address, and timestamp in operational logs so admins can improve retrieval and answer quality.
 - **Support requests:** if you use the support form, we collect the details you submit, which may include your name, email address, subject, message, current page path, browser user agent, IP address, and your account ID if signed in.
 - **Moderation flags:** authenticated user messages may be automatically scanned for profanity, harassment, threats, sexual content, or similarly inappropriate language. Matching messages can create an internal moderation report containing the message ID, conversation ID, account ID, matched terms, and flag reason for admin review.
-- **Error and performance telemetry:** we use Sentry to capture application errors, request context, performance traces, diagnostic metadata such as URLs, browser/device information, and account identifiers when available, and browser Session Replay data for debugging. Replay traffic is tunneled through our own app domain. Sentry acts as a data processor on our behalf and does not sell or share your personal data. See Section 4 for details.
+- **Error and performance telemetry:** we use Sentry to capture application errors, request context, performance traces, and diagnostic metadata such as URLs and browser/device information. We do not intentionally send cookies, authorization headers, provider API keys, or full request bodies to Sentry. Browser Session Replay is disabled by default and, if enabled for debugging, is configured to mask text and block media. Sentry acts as a data processor on our behalf and does not sell or share your personal data. See Section 4 for details.
 - **Cookie-free performance analytics:** Cloudflare Web Analytics may collect aggregate pageview and performance metrics, including navigation timing and Core Web Vitals-style measurements, using a lightweight browser beacon that does not rely on cookies or advertising identifiers.
-- **Operational logs:** we store application logs for support, abuse prevention, debugging, and reliability work. These logs can include request paths, IP address, account ID, and error details.
+- **Operational logs:** we store application logs for support, abuse prevention, debugging, security auditing, and reliability work. These logs can include request paths, IP address, account ID, admin actions, and error details. When admins view user chat transcripts through the admin panel, we log that access for accountability.
 - **Rate-limit metadata:** we store per-scope counters keyed to your account ID or network metadata so we can slow abusive traffic and protect the Service.
 - **Search indexing notifications:** when indexable public Curator pages are added or updated, we may send the affected page URLs to IndexNow-participating search engines so they can recrawl those pages faster. News/blog URLs are excluded from these submissions.
 - **Analytics usage data (consent required):** if you explicitly accept analytics cookies through the cookie consent banner, we use Google Analytics 4 to collect aggregated usage data — for example, page views, device/browser information, approximate region, and interaction events — to understand and improve the Service. Google Analytics does not load until you actively accept. If you decline or ignore the banner, no GA cookies are set and no GA data is collected. You can change this choice at any time from the in-app cookie preferences control.
@@ -92,7 +92,7 @@ The following services receive data as part of operating the Service. None of th
 | OpenRouter | LLM routing and inference | Chat message content; upstream model providers may process and retain prompts under their own terms | openrouter.ai/privacy |
 | The Blue Alliance | Live team, event, and match context | Team number, query context | thebluealliance.com/privacy |
 | LangSearch | Web search for grounding AI responses | Search query text | (see LangSearch docs) |
-| Sentry | Error monitoring, performance tracing, logs, and Session Replay | Error context, URLs, device info, account identifiers, session replay data. Sentry processes this only on our behalf under a Data Processing Addendum and does not sell or share this data. | sentry.io/privacy/ |
+| Sentry | Error monitoring and performance tracing | Error context, URLs, and device info. Session Replay is disabled by default and, if enabled, masks text and blocks media. Sentry processes this only on our behalf under a Data Processing Addendum and does not sell or share this data. | sentry.io/privacy/ |
 | Cloudflare Web Analytics | Cookie-free aggregate site analytics | Aggregate, non-identified performance metrics. No cookies or advertising identifiers used. | cloudflare.com/privacypolicy/ |
 | Google Analytics 4 | Aggregate usage analytics — **only loaded after you explicitly accept analytics cookies** | Page views, device/browser info, approximate region, interaction events. Only active with your consent. | policies.google.com/privacy |
 | IndexNow | Notifies search engines when indexable public pages change | Indexable public page URLs only; news/blog URLs are excluded | indexnow.org/documentation |
@@ -118,7 +118,7 @@ If you do not consent to analytics cookies, Google Analytics never loads and no 
 - Public/private sharing status for authenticated conversations is stored alongside the conversation record in PostgreSQL.
 - Admin-authored blog posts, publication timestamps, and the associated author account reference are stored in PostgreSQL.
 - Moderation reports, matched-term metadata, and banned-email records are stored in PostgreSQL.
-- Support requests, application logs, and rate-limit counters are stored in PostgreSQL.
+- Support requests, application logs, admin audit logs, and rate-limit counters are stored in PostgreSQL.
 - Response feedback is stored in PostgreSQL as an operational log entry.
 - The installable web app stores a browser-managed offline cache of selected app shell files, icons, and a small set of public pages on your device.
 - PDF documents, including season-specific references and general team reference files, are stored in a self-hosted MinIO instance.
@@ -139,7 +139,7 @@ If you do not consent to analytics cookies, Google Analytics never loads and no 
 - **Account export packages:** generated on demand from your current account data when you request an export from Settings and not stored by the Service after the response is delivered.
 - **Public shared chats:** remain publicly accessible until you make the chat private again or delete it.
 - **Admin-authored blog posts:** retained until they are deleted or unpublished by an admin; published posts remain publicly accessible until removed or replaced.
-- **Support requests and application logs:** retained until they are manually deleted or no longer needed for support, security, or operational debugging.
+- **Support requests, application logs, and admin audit logs:** retained until they are manually deleted or no longer needed for support, security, accountability, or operational debugging.
 - **Response feedback:** retained until it is manually deleted or no longer needed for product quality review.
 - **Rate-limit counters:** retained for up to 7 days before cleanup.
 - **Server logs:** retained for 30 days, then deleted.
@@ -152,8 +152,7 @@ If you do not consent to analytics cookies, Google Analytics never loads and no 
 **Necessary cookies (always active):**
 
 - `tos_accepted` — records that a guest browser session has accepted the Terms of Service (session cookie)
-- `guest_message_count` — tracks number of guest messages sent in a session
-- `guest_session_id` — persistent identifier linking your browser to your guest conversations stored on our servers. Set when you start your first guest conversation; expires after 90 days. Automatically deleted when you sign in.
+- `guest_session_id` — persistent identifier linking your browser to your guest conversations stored on our servers. Set when you start your first guest conversation; expires after 90 days. Automatically deleted when you sign in or sign out. This cookie is set as HttpOnly.
 - `cookie_consent` — records your cookie consent choice
 - `sidebar_state` — stores whether the sidebar is expanded or collapsed
 - `sidebar_width` — stores your chosen sidebar width
@@ -167,7 +166,7 @@ If you do not consent to analytics cookies, Google Analytics never loads and no 
 
 We do not use advertising cookies. We do not use cookies for cross-site tracking.
 
-Curator also stores local browser values for app preferences, including `curator:cookie-consent`, `curator:factCheck`, `curator:searchMode`, and the legacy `curator:deepSearch` value. These are stored in `localStorage`, not cookies, and are never shared with any third party.
+Curator also stores local browser values for app preferences and guest UI state, including `curator:cookie-consent`, `curator:guest-message-count`, `curator:factCheck`, `curator:searchMode`, and the legacy `curator:deepSearch` value. These are stored in `localStorage`, not cookies, and are never shared with any third party.
 
 You can change your analytics cookie choice at any time from the in-app cookie preferences control.
 

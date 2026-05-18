@@ -3,7 +3,7 @@ services:
     image: postgres:16-alpine
     restart: unless-stopped
     ports:
-      - "5437:5432"
+      - "127.0.0.1:5437:5432"
     environment:
       POSTGRES_DB: curator
       POSTGRES_USER: curator
@@ -20,12 +20,14 @@ services:
     image: qdrant/qdrant:v1.13.6
     restart: unless-stopped
     ports:
-      - "6333:6333"
-      - "6334:6334"
+      - "127.0.0.1:6333:6333"
+      - "127.0.0.1:6334:6334"
+    environment:
+      QDRANT__SERVICE__API_KEY: ${QDRANT_API_KEY}
     volumes:
       - curator_qdrant_data:/qdrant/storage
     healthcheck:
-      test: ["CMD-SHELL", "curl -sf http://localhost:6333/healthz || exit 1"]
+      test: ["CMD-SHELL", "curl -sf -H \"api-key: $$QDRANT__SERVICE__API_KEY\" http://localhost:6333/healthz || exit 1"]
       interval: 10s
       timeout: 5s
       retries: 3

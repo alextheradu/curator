@@ -4,8 +4,17 @@ const COLLECTION = process.env.QDRANT_COLLECTION ?? "frc_docs";
 const VECTOR_SIZE = 1536;
 
 let _client: QdrantClient | null = null;
+
+export function buildQdrantClientConfig() {
+  const apiKey = process.env.QDRANT_API_KEY?.trim();
+  return {
+    url: process.env.QDRANT_URL ?? "http://localhost:6333",
+    ...(apiKey ? { apiKey } : {}),
+  };
+}
+
 function getClient() {
-  if (!_client) _client = new QdrantClient({ url: process.env.QDRANT_URL ?? "http://localhost:6333" });
+  if (!_client) _client = new QdrantClient(buildQdrantClientConfig());
   return _client;
 }
 

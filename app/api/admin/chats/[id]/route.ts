@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { requireAdmin } from "@/lib/admin-auth";
 import { withAdminDbAccess } from "@/lib/db/access";
 import { conversations, messages, users } from "@/lib/db/schema";
+import { writeAdminAuditLog } from "@/lib/admin-audit";
 import { eq, asc } from "drizzle-orm";
 
 type Params = { params: Promise<{ id: string }> };
@@ -32,6 +33,14 @@ export async function GET(req: NextRequest, { params }: Params) {
     .from(messages)
     .where(eq(messages.conversationId, id))
     .orderBy(asc(messages.createdAt)));
+
+  await writeAdminAuditLog(req, {
+    actorUserId: adminAuth.userId,
+    action: "view",
+    targetType: "conversation",
+    targetId: id,
+    details: { userId: conv.userId },
+  });
 
   return NextResponse.json({ ...conv, messages: msgs });
 }

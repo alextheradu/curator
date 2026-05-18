@@ -1,11 +1,15 @@
+function normalizeAdminEmail(email: string) {
+  return email.trim().normalize("NFKC").toLowerCase();
+}
+
 export function getAdminEmails() {
   return (process.env.ADMIN_EMAILS ?? "")
     .split(",")
-    .map((email) => email.trim().toLowerCase())
+    .map(normalizeAdminEmail)
     .filter(Boolean);
 }
 
 export function isAdminEmail(email?: string | null) {
   if (!email) return false;
-  return getAdminEmails().includes(email.toLowerCase());
+  return getAdminEmails().includes(normalizeAdminEmail(email));
 }

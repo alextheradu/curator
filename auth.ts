@@ -83,7 +83,14 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
           process.env.AUTH_GOOGLE_IOS_CLIENT_ID,
         ].filter(Boolean);
 
-        if (!payload.sub || !payload.email || !validAuds.includes(payload.aud)) return null;
+        if (
+          !payload.sub
+          || !payload.email
+          || payload.email_verified !== "true"
+          || !validAuds.includes(payload.aud)
+        ) {
+          return null;
+        }
 
         const email = payload.email.toLowerCase();
 
@@ -109,12 +116,24 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         } else {
           // Find by email or create user
           const [existingUser] = await db
-            .select({ id: users.id })
+            .select({ id: users.id, emailVerified: users.emailVerified })
             .from(users)
             .where(eq(users.email, email))
             .limit(1);
 
           if (existingUser) {
+            if (!existingUser.emailVerified) {
+              const [linkedGoogleAccount] = await db
+                .select({ userId: accounts.userId })
+                .from(accounts)
+                .where(and(eq(accounts.userId, existingUser.id), eq(accounts.provider, "google")))
+                .limit(1);
+
+              if (!linkedGoogleAccount) {
+                return null;
+              }
+            }
+
             userId = existingUser.id;
           } else {
             userId = crypto.randomUUID();

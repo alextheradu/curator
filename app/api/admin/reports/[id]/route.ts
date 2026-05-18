@@ -5,6 +5,7 @@ import { withAdminDbAccess } from "@/lib/db/access";
 import { reports, messages } from "@/lib/db/schema";
 import { revalidatePublicConversation } from "@/lib/public-conversations";
 import { applyRateLimitHeaders, enforceRequestRateLimit } from "@/lib/rate-limit";
+import { writeAdminAuditLog } from "@/lib/admin-audit";
 import { eq } from "drizzle-orm";
 
 type Params = { params: Promise<{ id: string }> };
@@ -51,5 +52,12 @@ export async function PATCH(req: NextRequest, { params }: Params) {
   }
 
   revalidateReportDerivedCaches();
+  await writeAdminAuditLog(req, {
+    actorUserId: adminAuth.userId,
+    action,
+    targetType: "report",
+    targetId: id,
+    details: { messageId: report.messageId, conversationId: report.conversationId },
+  });
   return NextResponse.json({ ok: true }, { headers });
 }

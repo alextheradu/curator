@@ -2,18 +2,20 @@
 
 import { useState, useCallback } from "react";
 import {
-  GUEST_MESSAGE_COUNT_COOKIE_NAME,
   GUEST_MESSAGE_LIMIT,
   TOS_ACCEPTED_COOKIE_NAME,
 } from "@/lib/app-cookies";
 import { readBrowserCookie, serializeCookie } from "@/lib/cookies";
+
+const GUEST_MESSAGE_COUNT_STORAGE_KEY = "curator:guest-message-count";
 
 function initializeTosState(): boolean {
   return readBrowserCookie(TOS_ACCEPTED_COOKIE_NAME) === "true";
 }
 
 function initializeGuestCount(): number {
-  const parsed = Number.parseInt(readBrowserCookie(GUEST_MESSAGE_COUNT_COOKIE_NAME) ?? "0", 10);
+  if (typeof localStorage === "undefined") return 0;
+  const parsed = Number.parseInt(localStorage.getItem(GUEST_MESSAGE_COUNT_STORAGE_KEY) ?? "0", 10);
   return Number.isFinite(parsed) ? parsed : 0;
 }
 
@@ -38,6 +40,7 @@ export function useGuestLimit(isAuthenticated: boolean, accountTosAccepted: bool
     }
 
     const next = guestCount + 1;
+    localStorage.setItem(GUEST_MESSAGE_COUNT_STORAGE_KEY, String(next));
     setGuestCount(next);
     return true;
   }, [guestCount, isAuthenticated]);

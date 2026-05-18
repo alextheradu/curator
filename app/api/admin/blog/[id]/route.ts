@@ -6,6 +6,7 @@ import { revalidateBlogDerivedCaches } from "@/lib/cache-tags";
 import { withAdminDbAccess } from "@/lib/db/access";
 import { blogPosts, users } from "@/lib/db/schema";
 import { applyRateLimitHeaders, enforceRequestRateLimit } from "@/lib/rate-limit";
+import { writeAdminAuditLog } from "@/lib/admin-audit";
 import { z } from "zod";
 
 type Params = { params: Promise<{ id: string }> };
@@ -126,6 +127,13 @@ export async function PUT(req: NextRequest, { params }: Params) {
       .returning());
 
     revalidateBlogDerivedCaches(updated.slug, existing.slug);
+    await writeAdminAuditLog(req, {
+      actorUserId: adminAuth.userId,
+      action: "update",
+      targetType: "blog_post",
+      targetId: id,
+      details: { previousSlug: existing.slug, slug: updated.slug, published: updated.published },
+    });
     return NextResponse.json(updated, { headers });
   } catch (error) {
     if (isUniqueViolation(error)) {
@@ -163,5 +171,12 @@ export async function DELETE(req: NextRequest, { params }: Params) {
     .where(eq(blogPosts.id, id)));
 
   revalidateBlogDerivedCaches(existing.slug, existing.slug);
+  await writeAdminAuditLog(req, {
+    actorUserId: adminAuth.userId,
+    action: "delete",
+    targetType: "blog_post",
+    targetId: id,
+    details: { slug: existing.slug },
+  });
   return NextResponse.json({ ok: true }, { headers });
 }

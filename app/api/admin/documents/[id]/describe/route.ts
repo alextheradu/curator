@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requireAdmin } from "@/lib/admin-auth";
-import { revalidateDocumentDerivedCaches } from "@/lib/cache-tags";
 import { withAdminDbAccess } from "@/lib/db/access";
 import { documents, docChunks } from "@/lib/db/schema";
 import { applyRateLimitHeaders, enforceRequestRateLimit } from "@/lib/rate-limit";
@@ -133,6 +132,5 @@ export async function POST(
     description = buildFallbackDescription(doc.name, excerpts);
   }
 
-  revalidateDocumentDerivedCaches();
   return NextResponse.json({ description }, { headers });
 }

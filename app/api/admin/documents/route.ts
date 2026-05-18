@@ -8,6 +8,13 @@ import { applyRateLimitHeaders, enforceRequestRateLimit } from "@/lib/rate-limit
 import { eq } from "drizzle-orm";
 import { deletePdf } from "@/lib/minio";
 import { deleteChunksByDocId } from "@/lib/qdrant";
+import { writeAdminAuditLog } from "@/lib/admin-audit";
+import { z } from "zod";
+
+const DocumentPatchSchema = z.object({
+  id: z.string().uuid(),
+  description: z.string().trim().max(2000).nullable(),
+});
 
 export async function GET(req: NextRequest) {
   const adminAuth = await requireAdmin(req);
@@ -25,10 +32,19 @@ export async function PATCH(req: NextRequest) {
   if (!rateLimit.ok) {
     return NextResponse.json({ error: "Too many document updates. Please slow down." }, { status: 429, headers });
   }
-  const { id, description } = await req.json();
-  if (!id) return NextResponse.json({ error: "id required" }, { status: 400, headers });
+  const parsed = DocumentPatchSchema.safeParse(await req.json());
+  if (!parsed.success) {
+    return NextResponse.json({ error: "Invalid document update payload." }, { status: 400, headers });
+  }
+  const { id, description } = parsed.data;
   await withAdminDbAccess(adminAuth.userId, (tx) => tx.update(documents).set({ description }).where(eq(documents.id, id)));
   revalidateDocumentDerivedCaches();
+  await writeAdminAuditLog(req, {
+    actorUserId: adminAuth.userId,
+    action: "update_description",
+    targetType: "document",
+    targetId: id,
+  });
   return NextResponse.json({ ok: true }, { headers });
 }
 
@@ -50,5 +66,12 @@ export async function DELETE(req: NextRequest) {
   await withAdminDbAccess(adminAuth.userId, (tx) => tx.delete(docChunks).where(eq(docChunks.documentId, id)));
   await withAdminDbAccess(adminAuth.userId, (tx) => tx.delete(documents).where(eq(documents.id, id)));
   revalidateDocumentDerivedCaches();
+  await writeAdminAuditLog(req, {
+    actorUserId: adminAuth.userId,
+    action: "delete",
+    targetType: "document",
+    targetId: id,
+    details: { minioKey: doc.minioKey },
+  });
   return NextResponse.json({ ok: true }, { headers });
 }
