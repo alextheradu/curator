@@ -26,6 +26,8 @@ function CapacitorShell() {
 function CapacitorKeyboard() {
   useEffect(() => {
     if (typeof window === "undefined" || !("Capacitor" in window)) return;
+    const platform = (window as { Capacitor?: { getPlatform?: () => string } }).Capacitor?.getPlatform?.();
+    if (platform !== "ios" && platform !== "android") return;
 
     const setHeight = (px: number) => {
       document.documentElement.style.setProperty("--keyboard-height", `${px}px`);
@@ -43,8 +45,8 @@ function CapacitorKeyboard() {
     // Keyboard plugin events (more reliable — fires after npx cap sync + rebuild).
     void import("@capacitor/keyboard").then(({ Keyboard }) => {
       void Keyboard.setAccessoryBarVisible({ isVisible: false }).catch(() => {});
-      void Keyboard.addListener("keyboardWillShow", (info) => setHeight(info.keyboardHeight));
-      void Keyboard.addListener("keyboardWillHide", () => setHeight(0));
+      void Keyboard.addListener("keyboardWillShow", (info) => setHeight(info.keyboardHeight)).catch(() => {});
+      void Keyboard.addListener("keyboardWillHide", () => setHeight(0)).catch(() => {});
     }).catch(() => {});
 
     return () => {
