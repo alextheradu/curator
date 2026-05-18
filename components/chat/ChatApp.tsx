@@ -8,6 +8,7 @@ import { toast } from "sonner";
 import { OnboardingModal } from "@/components/auth/OnboardingModal";
 import { ChatWindow } from "@/components/chat/ChatWindow";
 import {
+  claimGuestConversations,
   fetchConversation,
   fetchConversationList,
   fetchConversationMessages,
@@ -196,14 +197,21 @@ export function ChatApp({ requestedConversationId, initialPrompt }: ChatAppProps
             const activeConversationId = useChatStore.getState().activeConversationId;
             const activeGuestConversation = guestConversations.find((conversation) => conversation.id === activeConversationId);
 
-            if (activeGuestConversation && activeGuestConversation.messages.length > 0) {
-              try {
+            try {
+              // Claim all DB-stored guest conversations for this user account
+              const claimedIds = await claimGuestConversations();
+
+              if (claimedIds.includes(activeConversationId ?? "")) {
+                // Active conversation was already persisted as a guest chat — keep its ID
+                transferredConversationId = activeConversationId;
+              } else if (activeGuestConversation && activeGuestConversation.messages.length > 0) {
+                // Pre-feature localStorage-only conversation — migrate the old way
                 const transferred = await transferGuestConversation(activeGuestConversation);
                 transferredConversationId = transferred.id;
-              } catch (error) {
-                console.error(error);
-                toast.error("Couldn't transfer your guest chat.");
               }
+            } catch (error) {
+              console.error(error);
+              toast.error("Couldn't transfer your guest chat.");
             }
           }
 
@@ -281,6 +289,22 @@ export function ChatApp({ requestedConversationId, initialPrompt }: ChatAppProps
           return;
         }
       }
+
+      // Guest: load conversations from DB (guest_session_id cookie is sent automatically)
+      try {
+        const rows = await fetchConversationList();
+        if (!cancelled) {
+          replaceConversations(
+            rows.map((conversation) =>
+              normalizeConversation(conversation, [], useChatStore.getState().defaultChatMode),
+            ),
+          );
+        }
+      } catch {
+        // Network error or no guest session — localStorage fallback is already in the store
+      }
+
+      if (cancelled) return;
 
       if (requestedConversationId) {
         const localConversation = useChatStore
