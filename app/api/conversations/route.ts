@@ -1,9 +1,15 @@
 import { auth } from "@/auth";
 import { withSessionDbAccess } from "@/lib/db/access";
+import { db } from "@/lib/db";
 import { conversations, messages, projects } from "@/lib/db/schema";
 import { revalidateConversationDerivedCaches } from "@/lib/cache-tags";
 import { applyRateLimitHeaders, enforceRequestRateLimit } from "@/lib/rate-limit";
 import { DEFAULT_SEASON_YEAR } from "@/lib/seasons";
+import {
+  generateGuestSessionId,
+  readGuestSessionId,
+  serializeGuestSessionCookie,
+} from "@/lib/guest-session";
 import { and, asc, desc, eq, inArray } from "drizzle-orm";
 import { NextResponse } from "next/server";
 
@@ -20,7 +26,17 @@ function buildSearchDescription(content: string) {
 
 export async function GET() {
   const session = await auth();
-  if (!session?.user?.id) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
+  if (!session?.user?.id) {
+    const guestId = await readGuestSessionId();
+    if (!guestId) return NextResponse.json([]);
+
+    const rows = await db.select().from(conversations)
+      .where(eq(conversations.guestId, guestId))
+      .orderBy(desc(conversations.updatedAt));
+
+    return NextResponse.json(rows);
+  }
 
   const rows = await withSessionDbAccess(session, (tx) => tx
     .select()
@@ -66,7 +82,29 @@ export async function GET() {
 
 export async function POST(req: Request) {
   const session = await auth();
-  if (!session?.user?.id) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
+  if (!session?.user?.id) {
+    const { title = "New Chat", seasonYear = DEFAULT_SEASON_YEAR } = await req.json();
+
+    let guestId = await readGuestSessionId();
+    const isNewGuest = !guestId;
+    if (!guestId) {
+      guestId = generateGuestSessionId();
+    }
+
+    const [conv] = await db.insert(conversations)
+      .values({ guestId, title, seasonYear })
+      .returning();
+
+    const responseHeaders = new Headers();
+    if (isNewGuest) {
+      responseHeaders.set("Set-Cookie", serializeGuestSessionCookie(guestId));
+    }
+
+    revalidateConversationDerivedCaches();
+    return NextResponse.json(conv, { headers: responseHeaders });
+  }
+
   const rateLimit = await enforceRequestRateLimit(req, "conversationCreate", session.user.id);
   const headers = new Headers();
   applyRateLimitHeaders(headers, rateLimit);
