@@ -1,7 +1,7 @@
 # Terms of Service
 
 **Curator — FRC AI Assistant**
-**Last updated: May 18, 2026**
+**Last updated: May 17, 2026**
 
 ---
 
@@ -56,7 +56,7 @@ The Service uses automated moderation to detect violations of these rules. Messa
 
 ## 5. User Accounts
 
-You may use the Service as a guest for a limited number of messages. Creating an account via Google or Apple sign-in is required for continued use, to persist conversation history, to save account-level defaults such as your preferred name, optional team number, preferred chat style, and accepted-terms status, to create projects, and to use public chat sharing.
+You may use the Service as a guest for a limited number of messages. Guest conversations are saved to our servers during your session and transferred to your account if you sign in (see Privacy Policy §2a and §6 for details). A `guest_session_id` cookie is used to link your browser to your guest conversations. Creating an account via Google or Apple sign-in is required for continued use beyond the guest limit, to persist conversation history across devices, to save account-level defaults such as your preferred name, optional team number, preferred chat style, and accepted-terms status, to create projects, and to use public chat sharing.
 
 If you choose to make a chat public, anyone with that link may view the conversation until you disable sharing or delete the chat. You are responsible for maintaining the security of your account and for any names, chat content, or other information you choose to place in projects or share publicly.
 
