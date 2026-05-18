@@ -60,7 +60,8 @@ export const projects = pgTable("projects", {
 
 export const conversations = pgTable("conversations", {
   id: uuid("id").primaryKey().defaultRandom(),
-  userId: text("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  userId: text("user_id").references(() => users.id, { onDelete: "cascade" }),
+  guestId: text("guest_id"),
   projectId: uuid("project_id").references(() => projects.id, { onDelete: "set null" }),
   title: text("title").notNull().default("New Chat"),
   seasonYear: integer("season_year").notNull().default(2026),
@@ -69,6 +70,7 @@ export const conversations = pgTable("conversations", {
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 }, (table) => [
   index("conversations_project_id_idx").on(table.projectId),
+  index("conversations_guest_id_idx").on(table.guestId),
 ]);
 
 export const messages = pgTable("messages", {
