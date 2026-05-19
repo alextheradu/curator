@@ -18,7 +18,6 @@ const config: CapacitorConfig = {
   plugins: {
     Keyboard: {
       resize: KeyboardResize.None,
-      hideFormAccessoryBar: true,
     },
   },
 };
