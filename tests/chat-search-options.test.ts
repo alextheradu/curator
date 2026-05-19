@@ -46,8 +46,8 @@ describe("chat search options", () => {
 
   it("uses a larger but finite deep-search agent budget", () => {
     expect(buildDeepSearchConfig(false)).toEqual({
-      maxIterations: 0,
-      maxToolDurationMs: 0,
+      maxIterations: 3,
+      maxToolDurationMs: 15_000,
       documentLimit: 6,
       webResultsPerCall: 0,
     });

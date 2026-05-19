@@ -14,6 +14,8 @@ export type DeepSearchConfig = {
 
 const FAST_DOCUMENT_LIMIT = 6;
 const FAST_DOCUMENT_LIMIT_MAX = 20;
+const FAST_SEARCH_MAX_ITERATIONS = 3;
+const FAST_SEARCH_MAX_TOOL_DURATION_MS = 15_000;
 const BALANCED_DOCUMENT_LIMIT = 8;
 const BALANCED_SEARCH_MAX_ITERATIONS = 4;
 const BALANCED_SEARCH_MAX_TOOL_DURATION_MS = 30_000;
@@ -60,8 +62,8 @@ export function buildDeepSearchConfig(searchMode: SearchMode | boolean): DeepSea
 
   if (normalizedMode === "fast") {
     return {
-      maxIterations: 0,
-      maxToolDurationMs: 0,
+      maxIterations: FAST_SEARCH_MAX_ITERATIONS,
+      maxToolDurationMs: FAST_SEARCH_MAX_TOOL_DURATION_MS,
       documentLimit: FAST_DOCUMENT_LIMIT,
       webResultsPerCall: 0,
     };
