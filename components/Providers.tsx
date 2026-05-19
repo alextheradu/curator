@@ -53,7 +53,9 @@ function CapacitorKeyboard() {
     void import("@capacitor/keyboard").then(({ Keyboard }) => {
       void Keyboard.setAccessoryBarVisible({ isVisible: false }).catch(() => {});
       void Keyboard.addListener("keyboardWillShow", (info) => setHeight(info.keyboardHeight)).catch(() => {});
+      void Keyboard.addListener("keyboardDidShow", (info) => setHeight(info.keyboardHeight)).catch(() => {});
       void Keyboard.addListener("keyboardWillHide", () => setHeight(0)).catch(() => {});
+      void Keyboard.addListener("keyboardDidHide", () => setHeight(0)).catch(() => {});
     }).catch(() => {});
 
     return () => {
