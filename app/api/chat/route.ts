@@ -218,7 +218,7 @@ async function runToolLoop({
   messages: ChatMessage[];
   tools: OpenAiTool[];
   seasonYear: number;
-  searchMode: Exclude<SearchMode, "fast">;
+  searchMode: SearchMode;
   config: DeepSearchConfig;
   sendEvent: (payload: unknown) => void;
   signal?: AbortSignal;
@@ -497,6 +497,14 @@ async function streamChatCompletion({
       ? AbortSignal.any([signal, timeoutSignal])
       : timeoutSignal;
 
+    let heartbeatInterval: ReturnType<typeof setInterval> | null = null;
+    const clearHeartbeat = () => {
+      if (heartbeatInterval) {
+        clearInterval(heartbeatInterval);
+        heartbeatInterval = null;
+      }
+    };
+
     try {
       sendEvent({
         type: "status",
@@ -536,10 +544,18 @@ async function streamChatCompletion({
         continue;
       }
 
-      sendEvent({
-        type: "status",
-        message: "Waiting for the model to start responding...",
-      });
+      const waitStartedAt = Date.now();
+      const makeWaitMessage = (elapsedSec: number) => {
+        if (elapsedSec < 5) return "Waiting for the model to start responding...";
+        if (elapsedSec < 12) return `Still waiting on the model... (${elapsedSec}s)`;
+        if (elapsedSec < 25) return `Model is taking longer than usual — hang tight (${elapsedSec}s)`;
+        return `Model queue is slow today; still trying (${elapsedSec}s)`;
+      };
+      sendEvent({ type: "status", message: makeWaitMessage(0) });
+      heartbeatInterval = setInterval(() => {
+        const elapsed = Math.floor((Date.now() - waitStartedAt) / 1000);
+        sendEvent({ type: "status", message: makeWaitMessage(elapsed) });
+      }, 3000);
 
       const decoder = new TextDecoder();
       let buffer = "";
@@ -566,6 +582,7 @@ async function streamChatCompletion({
           const token = parsed.choices?.[0]?.delta?.content;
 
           if (token) {
+            if (tokenCount === 0) clearHeartbeat();
             tokenCount++;
             fullText += token;
             sendEvent({ type: "token", token });
@@ -605,9 +622,11 @@ async function streamChatCompletion({
       }
 
       if (tokenCount > 0) {
+        clearHeartbeat();
         return fullText;
       }
 
+      clearHeartbeat();
       errors.push(`${model}: ${streamDone ? "stream completed without content" : "stream ended before any content arrived"}`);
       if (index < CHAT_MODELS.length - 1) {
         sendEvent({
@@ -616,6 +635,7 @@ async function streamChatCompletion({
         });
       }
     } catch (error) {
+      clearHeartbeat();
       if (signal?.aborted || isAbortError(error)) {
         throw createAbortError();
       }
@@ -965,12 +985,20 @@ export async function POST(request: NextRequest) {
             ...(messages as ChatMessage[]),
           ];
 
-          if (lastUser && searchMode !== "fast") {
+          const fastToolsAvailable = searchMode === "fast" && isTbaMcpEnabled();
+          if (lastUser && (searchMode !== "fast" || fastToolsAvailable)) {
             throwIfStreamAborted();
-            sendEvent({ type: "status", message: `${searchMode === "deep" ? "Deep search" : "Balanced search"} is reading your question...` });
-            const tools = isTbaMcpEnabled()
-              ? [...TBA_TOOLS, WEB_SEARCH_TOOL, RAG_SEARCH_TOOL]
-              : [WEB_SEARCH_TOOL, RAG_SEARCH_TOOL];
+            const modeLabel = searchMode === "deep"
+              ? "Deep search"
+              : searchMode === "balanced"
+                ? "Balanced search"
+                : "Live data lookup";
+            sendEvent({ type: "status", message: `${modeLabel} is reading your question...` });
+            const tools = searchMode === "fast"
+              ? TBA_TOOLS
+              : isTbaMcpEnabled()
+                ? [...TBA_TOOLS, WEB_SEARCH_TOOL, RAG_SEARCH_TOOL]
+                : [WEB_SEARCH_TOOL, RAG_SEARCH_TOOL];
 
             try {
               const toolResult = await runToolLoop({
