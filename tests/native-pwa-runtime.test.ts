@@ -33,4 +33,14 @@ describe("native and PWA runtime guards", () => {
 
     expect(worker).toContain('url.pathname.startsWith("/_next/static/")');
   });
+
+  it("moves the native empty-state brand above the raised chat bar while the keyboard is open", () => {
+    const emptyState = readFileSync(path.join(root, "components/chat/EmptyState.tsx"), "utf8");
+    const styles = readFileSync(path.join(root, "app/globals.css"), "utf8");
+
+    expect(emptyState).toContain("data-native-empty");
+    expect(styles).toContain("html.capacitor.keyboard-open [data-native-empty]");
+    expect(styles).toContain("justify-content: flex-end");
+    expect(styles).toContain("padding-bottom: clamp");
+  });
 });

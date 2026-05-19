@@ -112,7 +112,7 @@ function NativeEmptyState() {
       : "What can I help you with this evening?";
 
   return (
-    <div data-native-empty className="flex w-full flex-1 flex-col items-center justify-start gap-5 px-8 pt-[12svh] text-center">
+    <div data-native-empty className="flex w-full flex-1 flex-col items-center justify-center gap-5 px-8 text-center">
       <motion.div
         initial={{ opacity: 0, scale: 0.8 }}
         animate={{ opacity: 1, scale: 1 }}

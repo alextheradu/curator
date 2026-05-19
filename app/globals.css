@@ -276,15 +276,22 @@ html.capacitor body {
   overscroll-behavior: none;
 }
 
-/* Pin layout to viewport. Shrink bottom by keyboard height so content
-   and input bar stay in the visible area above the keyboard.
-   height:auto is required — without it the explicit h-svh wins and bottom is ignored. */
+/* Pin layout to viewport. Two independent keyboard-height signals race:
+   1. dvh: calc(100vh - 100dvh) — pure CSS, no JS needed (iOS 16+, WKWebView)
+   2. --keyboard-height: set by CapacitorKeyboard component via plugin events
+   max() picks whichever fires. On desktop dvh=vh so the calc is 0 or negative,
+   clamped away by max(0px, ...). height:auto required — overrides the h-svh Tailwind class. */
 html.capacitor [data-capacitor-root] {
   position: fixed;
   top: 0;
   left: 0;
   right: 0;
-  bottom: var(--keyboard-height, 0px);
+  bottom: max(0px, var(--keyboard-height, 0px), calc(100vh - 100dvh));
   height: auto;
 }
 
+/* When keyboard detected via JS events: push logo/text toward input bar */
+html.capacitor.keyboard-open [data-native-empty] {
+  justify-content: flex-end;
+  padding-bottom: clamp(0.5rem, 2svh, 1.5rem);
+}
