@@ -808,7 +808,7 @@ export function ChatWindow({
                 <Link href="/" className="font-medium text-foreground underline-offset-4 hover:underline">Open Curator</Link>
               </div>
             </div>
-          ) : nativeBarState !== 'ready' ? (
+          ) : nativeBarState === 'fallback' ? (
             <InputBar
               onSend={handleSend}
               onStop={() => void stopStreaming()}

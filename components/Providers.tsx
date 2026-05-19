@@ -46,8 +46,19 @@ function CapacitorKeyboard() {
 
     // Visual viewport (always available, fires if WKWebView doesn't suppress it).
     const vv = window.visualViewport;
-    const sync = vv ? () => setHeight(Math.max(0, window.innerHeight - vv.height)) : null;
-    if (vv && sync) vv.addEventListener("resize", sync);
+    let baseline = Math.max(window.innerHeight, vv?.height ?? 0);
+    const updateBaseline = () => {
+      baseline = Math.max(baseline, window.innerHeight, vv?.height ?? 0);
+    };
+    window.addEventListener("resize", updateBaseline, { passive: true });
+    const sync = vv ? () => {
+      const current = vv.height;
+      setHeight(Math.max(0, baseline - current));
+    } : null;
+    if (vv && sync) {
+      vv.addEventListener("resize", sync);
+      vv.addEventListener("scroll", sync);
+    }
 
     // Keyboard plugin events (more reliable — fires after npx cap sync + rebuild).
     void import("@capacitor/keyboard").then(({ Keyboard }) => {
@@ -59,7 +70,11 @@ function CapacitorKeyboard() {
     }).catch(() => {});
 
     return () => {
-      if (vv && sync) vv.removeEventListener("resize", sync);
+      if (vv && sync) {
+        vv.removeEventListener("resize", sync);
+        vv.removeEventListener("scroll", sync);
+      }
+      window.removeEventListener("resize", updateBaseline);
       window.removeEventListener("scroll", resetScroll);
       document.documentElement.style.removeProperty("--keyboard-height");
       void import("@capacitor/keyboard").then(({ Keyboard }) => void Keyboard.removeAllListeners()).catch(() => {});
