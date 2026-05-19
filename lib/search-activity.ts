@@ -11,7 +11,7 @@ export type SearchActivityStep = {
 };
 
 export type SearchActivity = {
-  mode: Exclude<SearchMode, "fast">;
+  mode: SearchMode;
   steps: SearchActivityStep[];
   durationMs: number;
 };
