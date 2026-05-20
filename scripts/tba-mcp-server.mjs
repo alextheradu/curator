@@ -239,9 +239,30 @@ server.registerTool(
 );
 
 server.registerTool(
+  "get_team_event_statuses",
+  {
+    description: "Get a team's status at ALL events they attended in a season — quals record, rank, playoff result, and event outcome — in a single call. Use this for season summaries and team comparisons instead of calling get_team_events followed by get_team_event_status for each event. Only fall back to get_team_event_status when you already have a specific event key and need status for that one event alone.",
+    inputSchema: {
+      team: z.string().describe("Team number like 1676 or team key like frc1676."),
+      year: z.number().int().min(2002).describe("Season year, for example 2026."),
+    },
+    outputSchema: resultSchema,
+  },
+  async ({ team, year }) => {
+    const teamKey = normalizeTeamKey(team);
+    const payload = await tbaFetch(`/team/${teamKey}/events/${year}/statuses`);
+
+    return {
+      content: [{ type: "text", text: resultToText(`Event statuses for ${teamKey} in ${year}`, payload.data) }],
+      structuredContent: { ok: true, url: payload.url, data: payload.data },
+    };
+  },
+);
+
+server.registerTool(
   "get_team_event_status",
   {
-    description: "Get a team's status at a specific event from The Blue Alliance.",
+    description: "Get a team's status at one specific event from The Blue Alliance. Only use this when you already have the event key and need status for that single event. For season-wide summaries or multi-event comparisons, use get_team_event_statuses instead — it returns all events in one call.",
     inputSchema: {
       team: z.string().describe("Team number like 1676 or team key like frc1676."),
       event: z.string().describe("Event key like 2026njski."),

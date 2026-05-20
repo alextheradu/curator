@@ -116,8 +116,23 @@ export const TBA_TOOLS: OpenAiTool[] = [
   {
     type: "function",
     function: {
+      name: "get_team_event_statuses",
+      description: "Get a team's status at ALL events they attended in a season — quals record, rank, playoff result, and event outcome — in a single call. Use this for season summaries and team comparisons instead of calling get_team_events followed by get_team_event_status for each event. Only fall back to get_team_event_status when you already have a specific event key and need status for that one event alone.",
+      parameters: {
+        type: "object",
+        properties: {
+          team: { type: "string", description: "Team number like '254' or team key like 'frc254'." },
+          year: { type: "number", description: "Season year, e.g. 2026." },
+        },
+        required: ["team", "year"],
+      },
+    },
+  },
+  {
+    type: "function",
+    function: {
       name: "get_team_event_status",
-      description: "Get a team's complete status at one event: qual rank, W-L-T record, alliance pick number, and playoff advancement. Best answer for 'how did team X do at event Y' or 'were they eliminated in semis'.",
+      description: "Get a team's complete status at one specific event: qual rank, W-L-T record, alliance pick number, and playoff advancement. Only use this when you already have the event key and need status for that single event. For season-wide summaries or multi-event comparisons, use get_team_event_statuses instead.",
       parameters: {
         type: "object",
         properties: {
@@ -210,6 +225,7 @@ export type TbaToolName =
   | "get_event_alliances"
   | "get_event_rankings"
   | "get_event_matches"
+  | "get_team_event_statuses"
   | "get_team_event_status"
   | "get_match"
   | "get_event_teams"
