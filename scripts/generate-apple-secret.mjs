@@ -1,6 +1,6 @@
 /**
  * Generates the AUTH_APPLE_SECRET JWT required by Sign in with Apple.
- * Apple's client secrets expire after 6 months max — re-run this before expiry.
+ * Apple's client secrets expire after 6 months max - re-run this before expiry.
  *
  * Usage:
  *   node scripts/generate-apple-secret.mjs \
@@ -33,7 +33,7 @@ if (!teamId || !keyId || !clientId || !keyFile) {
 
 const privateKey = readFileSync(keyFile, "utf8");
 const now = Math.floor(Date.now() / 1000);
-const exp = now + 15_552_000; // 180 days — Apple max is 6 months
+const exp = now + 15_552_000; // 180 days, Apple's hard cap
 
 const header = Buffer.from(JSON.stringify({ alg: "ES256", kid: keyId })).toString("base64url");
 const payload = Buffer.from(
@@ -46,4 +46,4 @@ sign.update(signingInput);
 const signature = sign.sign({ key: privateKey, dsaEncoding: "ieee-p1363" }, "base64url");
 
 console.log(`\nAUTH_APPLE_SECRET=${signingInput}.${signature}`);
-console.log(`\nExpires: ${new Date(exp * 1000).toISOString()} — add a calendar reminder to rotate.`);
+console.log(`\nExpires: ${new Date(exp * 1000).toISOString()} - add a calendar reminder to rotate.`);

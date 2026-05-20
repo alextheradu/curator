@@ -31,7 +31,7 @@ export function ReportButton({ messageId, className }: { messageId: string; clas
       }
       if (res.status === 409) { toast.info("Already reported"); setOpen(false); return; }
       if (!res.ok) throw new Error((await res.json() as { error: string }).error);
-      toast.success("Report submitted — thanks for the feedback");
+      toast.success("Report submitted - thanks for the feedback");
       setOpen(false);
       setReason("");
     } catch (e) {

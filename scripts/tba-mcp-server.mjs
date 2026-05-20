@@ -280,6 +280,90 @@ server.registerTool(
   },
 );
 
+server.registerTool(
+  "get_event_teams",
+  {
+    description: "Get all teams attending a specific FRC event from The Blue Alliance.",
+    inputSchema: {
+      event: z.string().describe("Event key like 2026njski."),
+    },
+    outputSchema: resultSchema,
+  },
+  async ({ event }) => {
+    const eventKey = normalizeEventKey(event);
+    const payload = await tbaFetch(`/event/${eventKey}/teams/simple`);
+
+    return {
+      content: [{ type: "text", text: resultToText(`Teams at ${eventKey}`, payload.data) }],
+      structuredContent: { ok: true, url: payload.url, data: payload.data },
+    };
+  },
+);
+
+server.registerTool(
+  "get_team_awards",
+  {
+    description: "Get awards a team has won from The Blue Alliance. Omit year for all-time awards.",
+    inputSchema: {
+      team: z.string().describe("Team number like 1676 or team key like frc1676."),
+      year: z.number().int().min(2002).optional().describe("Season year (e.g. 2026). Omit for all-time awards."),
+    },
+    outputSchema: resultSchema,
+  },
+  async ({ team, year }) => {
+    const teamKey = normalizeTeamKey(team);
+    const pathname = year !== undefined ? `/team/${teamKey}/awards/${year}` : `/team/${teamKey}/awards`;
+    const payload = await tbaFetch(pathname);
+
+    return {
+      content: [{ type: "text", text: resultToText(`Awards for ${teamKey}${year !== undefined ? ` in ${year}` : ""}`, payload.data) }],
+      structuredContent: { ok: true, url: payload.url, data: payload.data },
+    };
+  },
+);
+
+server.registerTool(
+  "get_team_event_matches",
+  {
+    description: "Get a team's matches at a specific event from The Blue Alliance.",
+    inputSchema: {
+      team: z.string().describe("Team number like 1676 or team key like frc1676."),
+      event: z.string().describe("Event key like 2026njski."),
+    },
+    outputSchema: resultSchema,
+  },
+  async ({ team, event }) => {
+    const teamKey = normalizeTeamKey(team);
+    const eventKey = normalizeEventKey(event);
+    const payload = await tbaFetch(`/team/${teamKey}/event/${eventKey}/matches/simple`);
+
+    return {
+      content: [{ type: "text", text: resultToText(`Matches for ${teamKey} at ${eventKey}`, payload.data) }],
+      structuredContent: { ok: true, url: payload.url, data: payload.data },
+    };
+  },
+);
+
+server.registerTool(
+  "get_team_years",
+  {
+    description: "Get the list of seasons a team has competed in from The Blue Alliance.",
+    inputSchema: {
+      team: z.string().describe("Team number like 1676 or team key like frc1676."),
+    },
+    outputSchema: resultSchema,
+  },
+  async ({ team }) => {
+    const teamKey = normalizeTeamKey(team);
+    const payload = await tbaFetch(`/team/${teamKey}/years_participated`);
+
+    return {
+      content: [{ type: "text", text: resultToText(`Years participated for ${teamKey}`, payload.data) }],
+      structuredContent: { ok: true, url: payload.url, data: payload.data },
+    };
+  },
+);
+
 const transport = new StdioServerTransport();
 
 try {

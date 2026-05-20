@@ -1,5 +1,4 @@
-// Legacy theme tokens — kept for reference; not used at runtime.
-// The app uses Tailwind CSS with CSS custom properties defined in app/globals.css.
+// leftover. tailwind + globals.css does all of this now, this file isn't loaded.
 
 export const muiDarkTheme = {
   palette: {

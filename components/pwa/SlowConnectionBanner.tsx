@@ -33,7 +33,7 @@ export function SlowConnectionBanner() {
           }
         }
       } catch {
-        // timeout or network error — don't show slow banner (offline banner handles that)
+        // timeout or offline, the offline banner handles it
       }
     }
 
@@ -52,7 +52,7 @@ export function SlowConnectionBanner() {
     >
       <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-yellow-400" />
       <p className="text-xs font-medium text-foreground">
-        Slow connection — chat responses may take longer
+        Slow connection - chat responses may take longer
       </p>
       <button
         onClick={() => setDismissed(true)}

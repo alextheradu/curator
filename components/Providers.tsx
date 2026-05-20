@@ -25,8 +25,8 @@ function CapacitorShell() {
 }
 
 // Tracks keyboard height and exposes it as --keyboard-height CSS variable.
-// Runs @capacitor/keyboard events (exact UIKit height) and visual viewport in parallel —
-// whichever fires wins, so it works before and after npx cap sync.
+// runs capacitor keyboard events and visual viewport in parallel.
+// whichever fires first wins - works before and after npx cap sync.
 function CapacitorKeyboard() {
   useEffect(() => {
     if (typeof window === "undefined" || !("Capacitor" in window)) return;
@@ -60,7 +60,7 @@ function CapacitorKeyboard() {
       vv.addEventListener("scroll", sync);
     }
 
-    // Keyboard plugin events (more reliable — fires after npx cap sync + rebuild).
+    // Keyboard plugin events (more reliable - fires after npx cap sync + rebuild).
     void import("@capacitor/keyboard").then(({ Keyboard }) => {
       void Keyboard.setAccessoryBarVisible({ isVisible: false }).catch(() => {});
       void Keyboard.addListener("keyboardWillShow", (info) => setHeight(info.keyboardHeight)).catch(() => {});

@@ -59,8 +59,8 @@ export function InputBar({
     return () => cancelAnimationFrame(id);
   }, [value]);
 
-  // Auto-focus on mount — always on Capacitor (opens keyboard like Claude/ChatGPT),
-  // desktop only on web (avoids popping keyboard on mobile browsers).
+  // always focus on capacitor so keyboard pops like a real app.
+  // skip on mobile web so we don't keyboard-jack people.
   useEffect(() => {
     const isCapacitor = typeof window !== "undefined" && "Capacitor" in window;
     const isTouchDevice = window.matchMedia("(hover: none) and (pointer: coarse)").matches;
@@ -159,7 +159,7 @@ export function InputBar({
             style={{ maxHeight: "200px" }}
           />
 
-          {/* Inline send button — compact/empty mode on all screen sizes */}
+          {/* inline send, shows in compact/empty mode */}
           <AnimatePresence initial={false}>
             {compact && (
               <motion.div

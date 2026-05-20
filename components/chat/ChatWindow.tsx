@@ -483,7 +483,7 @@ export function ChatWindow({
           stopListener.remove();
         };
       } catch {
-        // Plugin not available (e.g. old app build) — use web InputBar fallback
+        // old build, plugin missing. fall back to web input
         setNativeBarState('fallback');
       }
     })();
