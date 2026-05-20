@@ -10,7 +10,7 @@ export const RAG_SEARCH_TOOL = {
     name: "search_documents",
     description:
       "Search indexed FRC official documents (game manuals, team updates, inspection checklists, Q&As) for rules, definitions, and regulations. "
-      + "Before calling: think about what exact terminology appears in official FRC documents — section names, rule keywords like 'bumper', 'ranking point', 'inspection criteria', 'gracious professionalism', etc. "
+      + "Before calling: think about what exact terminology appears in official FRC documents - section names, rule keywords like 'bumper', 'ranking point', 'inspection criteria', 'gracious professionalism', etc. "
       + "Read the available document descriptions to pick the best query. "
       + "Call this when the user's question involves a rule, a definition, or anything that should be cited from an official source. "
       + "You may request up to 50 results in deep-search mode; use more for broad multi-rule questions, fewer for specific targeted lookups.",
@@ -19,7 +19,7 @@ export const RAG_SEARCH_TOOL = {
       properties: {
         query: {
           type: "string",
-          description: "Search query using FRC official terminology. Be specific—include rule names, section labels, or exact phrases you expect to find in the document.",
+          description: "Search query using FRC official terminology. Be specific - include rule names, section labels, or exact phrases you expect to find in the document.",
         },
         limit: {
           type: "number",

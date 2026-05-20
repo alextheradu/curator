@@ -578,7 +578,7 @@ export function AppSidebar({ latestNewsPublishedAt }: AppSidebarProps) {
           )}
         </SidebarContent>
 
-        {/* Footer — user nav */}
+        {/* footer nav */}
         <SidebarFooter className="border-t border-sidebar-border pt-2 pb-[max(0.75rem,env(safe-area-inset-bottom))] max-md:px-3 max-md:pt-3">
           <SidebarMenu>
             <SidebarMenuItem>

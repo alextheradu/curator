@@ -1,6 +1,6 @@
 # Privacy Policy
 
-**Curator — FRC AI Assistant**
+**Curator - FRC AI Assistant**
 **Last updated: May 18, 2026**
 
 ---
@@ -52,7 +52,7 @@ This Privacy Policy explains how Curator ("the Service", "we", "us") collects, u
 - **Operational logs:** we store application logs for support, abuse prevention, debugging, security auditing, and reliability work. These logs can include request paths, IP address, account ID, admin actions, and error details. When admins view user chat transcripts through the admin panel, we log that access for accountability.
 - **Rate-limit metadata:** we store per-scope counters keyed to your account ID or network metadata so we can slow abusive traffic and protect the Service.
 - **Search indexing notifications:** when indexable public Curator pages are added or updated, we may send the affected page URLs to IndexNow-participating search engines so they can recrawl those pages faster. News/blog URLs are excluded from these submissions.
-- **Analytics usage data (consent required):** if you explicitly accept analytics cookies through the cookie consent banner, we use Google Analytics 4 to collect aggregated usage data — for example, page views, device/browser information, approximate region, and interaction events — to understand and improve the Service. Google Analytics does not load until you actively accept. If you decline or ignore the banner, no GA cookies are set and no GA data is collected. You can change this choice at any time from the in-app cookie preferences control.
+- **Analytics usage data (consent required):** if you explicitly accept analytics cookies through the cookie consent banner, we use Google Analytics 4 to collect aggregated usage data - for example, page views, device/browser information, approximate region, and interaction events - to understand and improve the Service. Google Analytics does not load until you actively accept. If you decline or ignore the banner, no GA cookies are set and no GA data is collected. You can change this choice at any time from the in-app cookie preferences control.
 - **Server logs:** standard web server request logs (IP address, timestamp, user agent) retained for up to 30 days.
 
 ---
@@ -94,7 +94,7 @@ The following services receive data as part of operating the Service. None of th
 | LangSearch | Web search for grounding AI responses | Search query text | (see LangSearch docs) |
 | Sentry | Error monitoring and performance tracing | Error context, URLs, and device info. Session Replay is disabled by default and, if enabled, masks text and blocks media. Sentry processes this only on our behalf under a Data Processing Addendum and does not sell or share this data. | sentry.io/privacy/ |
 | Cloudflare Web Analytics | Cookie-free aggregate site analytics | Aggregate, non-identified performance metrics. No cookies or advertising identifiers used. | cloudflare.com/privacypolicy/ |
-| Google Analytics 4 | Aggregate usage analytics — **only loaded after you explicitly accept analytics cookies** | Page views, device/browser info, approximate region, interaction events. Only active with your consent. | policies.google.com/privacy |
+| Google Analytics 4 | Aggregate usage analytics - **only loaded after you explicitly accept analytics cookies** | Page views, device/browser info, approximate region, interaction events. Only active with your consent. | policies.google.com/privacy |
 | IndexNow | Notifies search engines when indexable public pages change | Indexable public page URLs only; news/blog URLs are excluded | indexnow.org/documentation |
 | MinIO (self-hosted) | Document storage | PDF documents uploaded by admins | Self-hosted, no third party |
 
@@ -130,7 +130,7 @@ If you do not consent to analytics cookies, Google Analytics never loads and no 
 
 ## 6. Data Retention
 
-- **Guest conversations:** stored server-side in our database, linked to your `guest_session_id` cookie, and also cached in your browser's `localStorage`. Guest conversations and their messages are deleted 90 days after creation. If you sign in, your guest conversations are transferred to your account and retained according to the authenticated-user policy above. Clearing your browser data removes the local cache only — the server copy is retained until the 90-day window expires or you sign in and then delete the conversations from your account.
+- **Guest conversations:** stored server-side in our database, linked to your `guest_session_id` cookie, and also cached in your browser's `localStorage`. Guest conversations and their messages are deleted 90 days after creation. If you sign in, your guest conversations are transferred to your account and retained according to the authenticated-user policy above. Clearing your browser data removes the local cache only - the server copy is retained until the 90-day window expires or you sign in and then delete the conversations from your account.
 - **Offline app cache:** limited to the offline fallback page, manifest, and app icons; stored in your browser until the browser clears site data, the service worker replaces the cache during an update, or you manually remove the site's stored data.
 - **Authenticated user data:** retained for as long as your account exists. This includes saved onboarding profile fields, chat-mode preference, Terms of Service acceptance state, project metadata, hidden project summaries, and conversation history. You may delete your account from the Settings page. Account deletion removes your account, saved chats, projects, settings, sessions, linked sign-in records, user reports tied to deleted chats, and other rows that cascade from the account record. Support requests and operational logs linked to the deleted account are redacted where retained for support, security, accountability, or abuse-prevention needs.
 - **OpenRouter/upstream model-provider data:** prompts and model outputs sent for inference may be retained by OpenRouter and/or the selected upstream model provider according to their own retention and training policies (which can vary by model tier, including free models).
@@ -151,18 +151,18 @@ If you do not consent to analytics cookies, Google Analytics never loads and no 
 
 **Necessary cookies (always active):**
 
-- `tos_accepted` — records that a guest browser session has accepted the Terms of Service (session cookie)
-- `guest_session_id` — persistent identifier linking your browser to your guest conversations stored on our servers. Set when you start your first guest conversation; expires after 90 days. Automatically deleted when you sign in or sign out. This cookie is set as HttpOnly.
-- `cookie_consent` — records your cookie consent choice
-- `sidebar_state` — stores whether the sidebar is expanded or collapsed
-- `sidebar_width` — stores your chosen sidebar width
-- `authjs.session-token` or `__Secure-authjs.session-token` — Auth.js session JWT (authenticated users only)
-- `authjs.csrf-token` — protects the sign-in flow from cross-site request forgery
-- `authjs.callback-url` — remembers where to return you after sign-in (if set by Auth.js)
+- `tos_accepted` - records that a guest browser session has accepted the Terms of Service (session cookie)
+- `guest_session_id` - persistent identifier linking your browser to your guest conversations stored on our servers. Set when you start your first guest conversation; expires after 90 days. Automatically deleted when you sign in or sign out. This cookie is set as HttpOnly.
+- `cookie_consent` - records your cookie consent choice
+- `sidebar_state` - stores whether the sidebar is expanded or collapsed
+- `sidebar_width` - stores your chosen sidebar width
+- `authjs.session-token` or `__Secure-authjs.session-token` - Auth.js session JWT (authenticated users only)
+- `authjs.csrf-token` - protects the sign-in flow from cross-site request forgery
+- `authjs.callback-url` - remembers where to return you after sign-in (if set by Auth.js)
 
 **Analytics cookies (only set after you explicitly accept):**
 
-- `_ga`, `_ga_*` — Google Analytics cookies used to distinguish sessions and measure aggregate site usage. These are only set if you explicitly accept analytics cookies through the cookie banner.
+- `_ga`, `_ga_*` - Google Analytics cookies used to distinguish sessions and measure aggregate site usage. These are only set if you explicitly accept analytics cookies through the cookie banner.
 
 We do not use advertising cookies. We do not use cookies for cross-site tracking.
 

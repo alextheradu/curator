@@ -18,7 +18,7 @@ export const TBA_TOOLS: OpenAiTool[] = [
     type: "function",
     function: {
       name: "get_team",
-      description: "Get information about an FRC team (name, location, rookie year). Use for any question about a specific team.",
+      description: "Get basic identity info for an FRC team: nickname, school name, city/state/country, and rookie year. Use when asked about a team's name, location, or how long they've been in FRC. For events they're attending use get_team_events; for seasons active use get_team_years.",
       parameters: {
         type: "object",
         properties: {
@@ -32,7 +32,7 @@ export const TBA_TOOLS: OpenAiTool[] = [
     type: "function",
     function: {
       name: "get_team_events",
-      description: "Get events a team is attending in a season — including district events, regionals, and championship division assignments.",
+      description: "Get events a team is registered for in a specific season - district events, regionals, and championship division assignment. Use when asked where a team is competing or what events they're attending this season.",
       parameters: {
         type: "object",
         properties: {
@@ -47,7 +47,7 @@ export const TBA_TOOLS: OpenAiTool[] = [
     type: "function",
     function: {
       name: "get_events_by_year",
-      description: "Get all FRC events for a season. Use to find an event key when you only know a partial name or location.",
+      description: "Get all FRC events in a season. Best used to look up an event key when you only know the event's name, city, or region - returns a large list. If you already have the event key, use get_event instead.",
       parameters: {
         type: "object",
         properties: {
@@ -61,7 +61,7 @@ export const TBA_TOOLS: OpenAiTool[] = [
     type: "function",
     function: {
       name: "get_event",
-      description: "Get details for a specific FRC event (name, dates, location) given its event key.",
+      description: "Get details for a specific event: official name, dates, location, event type, and week number. Requires the event key (e.g. 2026njski). Use get_events_by_year first if you need to find the key from a name or location.",
       parameters: {
         type: "object",
         properties: {
@@ -75,7 +75,7 @@ export const TBA_TOOLS: OpenAiTool[] = [
     type: "function",
     function: {
       name: "get_event_alliances",
-      description: "Get playoff alliance selections and results for an event. Use to find the winner or alliance compositions.",
+      description: "Get playoff alliance selections and results for an event - which teams were picked, their seed, and playoff outcomes. Use when asked who won an event, who made playoffs, or what the alliance compositions looked like.",
       parameters: {
         type: "object",
         properties: {
@@ -89,7 +89,7 @@ export const TBA_TOOLS: OpenAiTool[] = [
     type: "function",
     function: {
       name: "get_event_rankings",
-      description: "Get qualification rankings for an FRC event.",
+      description: "Get qualification-round standings for an event: rank, W-L-T record, ranking points, and tiebreaker scores for every team. Use when asked about a team's qual rank, overall standings, or how rankings look at an event.",
       parameters: {
         type: "object",
         properties: {
@@ -103,7 +103,7 @@ export const TBA_TOOLS: OpenAiTool[] = [
     type: "function",
     function: {
       name: "get_event_matches",
-      description: "Get the match schedule and scores for an FRC event.",
+      description: "Get simplified match list for an entire event - all qual and playoff matches with scores and alliance rosters. Use for event-wide overviews. For a single team's matches only, prefer get_team_event_matches. For detailed per-period score breakdown of one match, use get_match.",
       parameters: {
         type: "object",
         properties: {
@@ -117,7 +117,7 @@ export const TBA_TOOLS: OpenAiTool[] = [
     type: "function",
     function: {
       name: "get_team_event_status",
-      description: "Get a team's ranking, alliance selection, and playoff status at a specific event.",
+      description: "Get a team's complete status at one event: qual rank, W-L-T record, alliance pick number, and playoff advancement. Best answer for 'how did team X do at event Y' or 'were they eliminated in semis'.",
       parameters: {
         type: "object",
         properties: {
@@ -132,13 +132,71 @@ export const TBA_TOOLS: OpenAiTool[] = [
     type: "function",
     function: {
       name: "get_match",
-      description: "Get full data for a specific match including scores and teams.",
+      description: "Get full detailed data for a single match: component scores broken down by period, winning alliance, and team rosters. Use when asked for a detailed scoring breakdown of a specific match. Requires a match key (e.g. 2026njski_qm1).",
       parameters: {
         type: "object",
         properties: {
           match: { type: "string", description: "Match key like '2026njski_qm1'." },
         },
         required: ["match"],
+      },
+    },
+  },
+  {
+    type: "function",
+    function: {
+      name: "get_event_teams",
+      description: "Get the list of all teams attending a specific FRC event. Use when asked which teams are competing at an event, for scouting prep, or to check if a specific team is registered.",
+      parameters: {
+        type: "object",
+        properties: {
+          event: { type: "string", description: "Event key like '2026njski'." },
+        },
+        required: ["event"],
+      },
+    },
+  },
+  {
+    type: "function",
+    function: {
+      name: "get_team_awards",
+      description: "Get awards a team has won. Provide a year for that season only; omit year for all-time award history. Use when asked what awards a team has won, whether they've received Impact or Chairman's, or their full award record.",
+      parameters: {
+        type: "object",
+        properties: {
+          team: { type: "string", description: "Team number like '254' or team key like 'frc254'." },
+          year: { type: "number", description: "Season year, e.g. 2026. Omit for all-time awards." },
+        },
+        required: ["team"],
+      },
+    },
+  },
+  {
+    type: "function",
+    function: {
+      name: "get_team_event_matches",
+      description: "Get just one team's matches at a specific event - the qual and playoff rounds they participated in, with scores. More targeted than get_event_matches when you only need one team's schedule at one event.",
+      parameters: {
+        type: "object",
+        properties: {
+          team: { type: "string", description: "Team number like '254' or team key like 'frc254'." },
+          event: { type: "string", description: "Event key like '2026njski'." },
+        },
+        required: ["team", "event"],
+      },
+    },
+  },
+  {
+    type: "function",
+    function: {
+      name: "get_team_years",
+      description: "Get the seasons a team has competed in as an array of years. Use when asked how long a team has been active, whether they're a veteran or newer team, or what years they participated in FRC.",
+      parameters: {
+        type: "object",
+        properties: {
+          team: { type: "string", description: "Team number like '254' or team key like 'frc254'." },
+        },
+        required: ["team"],
       },
     },
   },
@@ -153,7 +211,11 @@ export type TbaToolName =
   | "get_event_rankings"
   | "get_event_matches"
   | "get_team_event_status"
-  | "get_match";
+  | "get_match"
+  | "get_event_teams"
+  | "get_team_awards"
+  | "get_team_event_matches"
+  | "get_team_years";
 
 type JsonObject = Record<string, unknown>;
 

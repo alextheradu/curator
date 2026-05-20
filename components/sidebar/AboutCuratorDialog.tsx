@@ -10,7 +10,7 @@ interface AboutCuratorDialogProps {
 
 const PRINCIPLES = [
   "Stays focused on FIRST Robotics Competition rather than acting as a general-purpose chatbot.",
-  "Avoids guessing — when something can't be verified, the right step is to check the official FIRST source.",
+  "Avoids guessing - when something can't be verified, the right step is to check the official FIRST source.",
   "Grounds answers in official documents and live event data so teams can verify what they read.",
   "Helps all teams equally without favoring one team or offering an unfair competitive edge.",
   "Gives feedback and guidance on strategy, code, and outreach rather than doing the work directly.",
