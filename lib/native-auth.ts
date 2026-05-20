@@ -13,8 +13,8 @@ export async function nativeGoogleSignIn(): Promise<void> {
     return;
   }
 
-  // Native iOS: never fall back to Safari — that breaks the UX.
-  // Requires GIDClientID in Info.plist and NEXT_PUBLIC_AUTH_GOOGLE_ID in .env
+  // no safari fallback on iOS, kills the UX.
+  // needs GIDClientID in Info.plist and NEXT_PUBLIC_AUTH_GOOGLE_ID in .env
   try {
     const { GoogleSignIn } = await import("@capawesome/capacitor-google-sign-in");
 
@@ -40,7 +40,7 @@ export async function nativeGoogleSignIn(): Promise<void> {
       throw new Error(`Auth failed: ${response.error} (url: ${response.url ?? ""})`);
     }
 
-    // Success — navigate to app
+    // good, send them in
     window.location.href = response?.url ?? "/";
   } catch (err) {
     console.error("[native-auth] sign-in failed:", err);

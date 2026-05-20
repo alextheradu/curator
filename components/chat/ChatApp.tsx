@@ -202,10 +202,10 @@ export function ChatApp({ requestedConversationId, initialPrompt }: ChatAppProps
               const claimedIds = await claimGuestConversations();
 
               if (claimedIds.includes(activeConversationId ?? "")) {
-                // Active conversation was already persisted as a guest chat — keep its ID
+                // already in DB as a guest chat, keep the same ID
                 transferredConversationId = activeConversationId;
               } else if (activeGuestConversation && activeGuestConversation.messages.length > 0) {
-                // Pre-feature localStorage-only conversation — migrate the old way
+                // old localStorage-only chat from before this feature, migrate it the old way
                 const transferred = await transferGuestConversation(activeGuestConversation);
                 transferredConversationId = transferred.id;
               }
@@ -301,7 +301,7 @@ export function ChatApp({ requestedConversationId, initialPrompt }: ChatAppProps
           );
         }
       } catch {
-        // Network error or no guest session — localStorage fallback is already in the store
+        // network or no session. store already has the localStorage fallback, nothing to do
       }
 
       if (cancelled) return;

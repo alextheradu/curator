@@ -396,7 +396,7 @@ export function SettingsModal() {
             </button>
           </div>
 
-          {/* Nav — horizontal scroll on mobile, vertical sidebar on desktop */}
+          {/* nav: scrolls horizontal on mobile, goes vertical on desktop */}
           <div className="min-w-0 shrink-0 border-b border-border/50 bg-card md:flex md:w-52 md:flex-col md:border-b-0 md:border-r">
             <div className="hidden px-4 pb-2 pt-5 md:block">
               <p className="text-base font-semibold text-foreground">Settings</p>
@@ -418,7 +418,7 @@ export function SettingsModal() {
           <div className="min-h-0 min-w-0 flex-1 overflow-y-auto overflow-x-hidden px-4 py-4 sm:px-6 sm:py-6">
             <div className="mx-auto min-w-0 max-w-2xl">
 
-              {/* Section title — visible on desktop only */}
+              {/* section title, desktop only */}
               <h2 className="mb-6 hidden text-base font-semibold text-foreground md:sr-only">
                 {selectedSection.label}
               </h2>
@@ -768,7 +768,7 @@ export function SettingsModal() {
                     <div className="space-y-2">
                       {[
                         "Stays focused on FIRST Robotics Competition rather than acting as a general-purpose chatbot.",
-                        "Avoids guessing — when something can't be verified, the right step is to check the official FIRST source.",
+                        "Avoids guessing - when something can't be verified, the right step is to check the official FIRST source.",
                         "Grounds answers in official documents and live event data so teams can verify what they read.",
                         "Helps all teams equally without favoring one team or offering an unfair competitive edge.",
                         "Gives feedback and guidance on strategy, code, and outreach rather than doing the work directly.",

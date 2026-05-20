@@ -166,7 +166,7 @@ export default function AdminUsersPage() {
                         <div className="flex items-center gap-2.5">
                           <div className="h-6 w-6 shrink-0 rounded-full bg-muted" />
                           <div>
-                            <p className="font-medium text-foreground">{user.name ?? "—"}</p>
+                            <p className="font-medium text-foreground">{user.name ?? "-"}</p>
                             <p className="text-muted-foreground">{user.email}</p>
                           </div>
                           {user.isAdmin && (

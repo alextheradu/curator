@@ -130,7 +130,7 @@ const WEB_SEARCH_TOOL: OpenAiTool = {
   type: "function",
   function: {
     name: "web_search",
-    description: "Search the web for current FRC news, announcements, rule Q&As, team updates, or anything TBA doesn't cover. Also use for any question about whether a specific part, motor, sensor, or component is legal in FRC — training data is often outdated on part legality.",
+    description: "Search the web for current FRC news, announcements, rule Q&As, team updates, or anything TBA doesn't cover. Also use for any question about whether a specific part, motor, sensor, or component is legal in FRC - training data is often outdated on part legality.",
     parameters: {
       type: "object",
       properties: {
@@ -548,7 +548,7 @@ async function streamChatCompletion({
       const makeWaitMessage = (elapsedSec: number) => {
         if (elapsedSec < 5) return "Waiting for the model to start responding...";
         if (elapsedSec < 12) return `Still waiting on the model... (${elapsedSec}s)`;
-        if (elapsedSec < 25) return `Model is taking longer than usual — hang tight (${elapsedSec}s)`;
+        if (elapsedSec < 25) return `Model is taking longer than usual - hang tight (${elapsedSec}s)`;
         return `Model queue is slow today; still trying (${elapsedSec}s)`;
       };
       sendEvent({ type: "status", message: makeWaitMessage(0) });

@@ -7,7 +7,7 @@ import { appLogs, supportRequests } from "@/lib/db/schema";
 import { getAdminStats } from "@/lib/admin-stats";
 
 function formatTime(value: Date | null) {
-  if (!value) return "—";
+  if (!value) return "-";
   return new Intl.DateTimeFormat("en-US", {
     dateStyle: "medium",
     timeStyle: "short",
