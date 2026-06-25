@@ -103,7 +103,7 @@ server.registerTool(
   {
     description: "Get summary information for an FRC team from The Blue Alliance.",
     inputSchema: {
-      team: z.string().describe("Team number like 1676 or team key like frc1676."),
+      team: z.string().describe("Team number like 254 or team key like frc254."),
     },
     outputSchema: resultSchema,
   },
@@ -123,7 +123,7 @@ server.registerTool(
   {
     description: "Get the list of events for a team in a specific season.",
     inputSchema: {
-      team: z.string().describe("Team number like 1676 or team key like frc1676."),
+      team: z.string().describe("Team number like 254 or team key like frc254."),
       year: z.number().int().min(2002).describe("Season year, for example 2026."),
     },
     outputSchema: resultSchema,
@@ -243,7 +243,7 @@ server.registerTool(
   {
     description: "Get a team's status at ALL events they attended in a season — quals record, rank, playoff result, and event outcome — in a single call. Use this for season summaries and team comparisons instead of calling get_team_events followed by get_team_event_status for each event. Only fall back to get_team_event_status when you already have a specific event key and need status for that one event alone.",
     inputSchema: {
-      team: z.string().describe("Team number like 1676 or team key like frc1676."),
+      team: z.string().describe("Team number like 254 or team key like frc254."),
       year: z.number().int().min(2002).describe("Season year, for example 2026."),
     },
     outputSchema: resultSchema,
@@ -264,7 +264,7 @@ server.registerTool(
   {
     description: "Get a team's status at one specific event from The Blue Alliance. Only use this when you already have the event key and need status for that single event. For season-wide summaries or multi-event comparisons, use get_team_event_statuses instead — it returns all events in one call.",
     inputSchema: {
-      team: z.string().describe("Team number like 1676 or team key like frc1676."),
+      team: z.string().describe("Team number like 254 or team key like frc254."),
       event: z.string().describe("Event key like 2026njski."),
     },
     outputSchema: resultSchema,
@@ -326,7 +326,7 @@ server.registerTool(
   {
     description: "Get awards a team has won from The Blue Alliance. Omit year for all-time awards.",
     inputSchema: {
-      team: z.string().describe("Team number like 1676 or team key like frc1676."),
+      team: z.string().describe("Team number like 254 or team key like frc254."),
       year: z.number().int().min(2002).optional().describe("Season year (e.g. 2026). Omit for all-time awards."),
     },
     outputSchema: resultSchema,
@@ -348,7 +348,7 @@ server.registerTool(
   {
     description: "Get a team's matches at a specific event from The Blue Alliance.",
     inputSchema: {
-      team: z.string().describe("Team number like 1676 or team key like frc1676."),
+      team: z.string().describe("Team number like 254 or team key like frc254."),
       event: z.string().describe("Event key like 2026njski."),
     },
     outputSchema: resultSchema,
@@ -370,7 +370,7 @@ server.registerTool(
   {
     description: "Get the list of seasons a team has competed in from The Blue Alliance.",
     inputSchema: {
-      team: z.string().describe("Team number like 1676 or team key like frc1676."),
+      team: z.string().describe("Team number like 254 or team key like frc254."),
     },
     outputSchema: resultSchema,
   },

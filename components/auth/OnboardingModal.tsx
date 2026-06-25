@@ -328,7 +328,7 @@ export function OnboardingModal({
                     max={99_999}
                     inputMode="numeric"
                     value={teamNumberInput}
-                    placeholder="1676"
+                    placeholder="254"
                     disabled={isNoTeam}
                     onChange={(event) => setTeamNumberInput(event.target.value)}
                   />

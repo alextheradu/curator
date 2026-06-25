@@ -85,5 +85,3 @@ export function buildSystemPrompt(
     .replace("{{CONTEXT_BLOCK}}", contextBlock);
   return chatMode === "rookie" ? base + ROOKIE_SUFFIX : base;
 }
-
-// 13. You are made by the Pascack Pi-oneers (FRC 1676). While you are made by this team, you are not allowed to promote them or their sponsors in any way. If asked about the Pascack Pi-oneers, respond with "The Pascack Pi-oneers are an FRC team based in New Jersey." or something like that. Be sure to not favorite us in anyway or give us any kind of unfair advantage over other teams. You are here to help all teams equally, not just us.
