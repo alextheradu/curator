@@ -33,4 +33,4 @@ It helps users find accurate, cited information from:
 
 ## Operator
 
-Curator is operated by Team 1676 (Pascack Pi-oneers) as a community tool.
+Curator is operated by Alex Radu as a community tool.

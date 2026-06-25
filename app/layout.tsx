@@ -66,9 +66,9 @@ export const metadata: Metadata = {
     "FRC rankings",
     "robotics assistant",
   ],
-  authors: [{ name: "Pascack Pi-oneers", url: "https://team1676.org" }],
-  creator: "Pascack Pi-oneers",
-  publisher: "Pascack Pi-oneers",
+  authors: [{ name: "Alex Radu" }],
+  creator: "Alex Radu",
+  publisher: "Alex Radu",
   category: "technology",
   alternates: {
     canonical: "/",
@@ -146,10 +146,8 @@ export default async function RootLayout({ children }: { children: React.ReactNo
         description: SITE_DESCRIPTION,
       },
       {
-        "@type": "Organization",
-        name: "Pascack Pi-oneers",
-        url: "https://team1676.org",
-        sameAs: ["https://team1676.org"],
+        "@type": "Person",
+        name: "Alex Radu",
       },
       {
         "@type": "SoftwareApplication",

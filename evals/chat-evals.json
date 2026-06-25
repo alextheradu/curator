@@ -20,9 +20,9 @@
   {
     "id": "live-team-context",
     "mode": "deep",
-    "prompt": "Look up current event context for FRC 1676.",
+    "prompt": "Look up current event context for FRC 254.",
     "expect": {
-      "mustMention": ["1676"],
+      "mustMention": ["254"],
       "needsCitation": true
     }
   },
@@ -145,9 +145,9 @@
   {
     "id": "tool-get-event-rankings-rank",
     "mode": "fast",
-    "prompt": "What rank did team 1676 finish at 2026njski?",
+    "prompt": "What rank did team 4481 finish at 2026njski?",
     "expect": {
-      "mustMention": ["1676"],
+      "mustMention": ["4481"],
       "needsCitation": false,
       "usesTool": "get_event_rankings"
     }
@@ -187,9 +187,9 @@
   {
     "id": "tool-get-team-event-status-rank",
     "mode": "fast",
-    "prompt": "How did team 1676 do at 2026njski - what was their rank and playoff result?",
+    "prompt": "How did team 4481 do at 2026njski - what was their rank and playoff result?",
     "expect": {
-      "mustMention": ["1676"],
+      "mustMention": ["4481"],
       "needsCitation": false,
       "usesTool": "get_team_event_status"
     }
@@ -259,9 +259,9 @@
   {
     "id": "tool-get-event-teams-check-registered",
     "mode": "fast",
-    "prompt": "Is team 1676 registered for the 2026njski event?",
+    "prompt": "Is team 4481 registered for the 2026njski event?",
     "expect": {
-      "mustMention": ["1676"],
+      "mustMention": ["4481"],
       "needsCitation": false,
       "usesTool": "get_event_teams"
     }
@@ -301,9 +301,9 @@
   {
     "id": "tool-get-team-event-matches-schedule",
     "mode": "fast",
-    "prompt": "What matches did team 1676 play at 2026njski?",
+    "prompt": "What matches did team 4481 play at 2026njski?",
     "expect": {
-      "mustMention": ["1676"],
+      "mustMention": ["4481"],
       "needsCitation": false,
       "usesTool": "get_team_event_matches"
     }
@@ -332,9 +332,9 @@
   {
     "id": "tool-get-team-years-active",
     "mode": "fast",
-    "prompt": "What years has FRC team 1676 participated in competition?",
+    "prompt": "What years has FRC team 254 participated in competition?",
     "expect": {
-      "mustMention": ["1676"],
+      "mustMention": ["254"],
       "needsCitation": false,
       "usesTool": "get_team_years"
     }
