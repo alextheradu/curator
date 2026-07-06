@@ -6,10 +6,10 @@ import { DrizzleAdapter } from "@auth/drizzle-adapter";
 import { and, eq } from "drizzle-orm";
 import { pgTable, text, timestamp } from "drizzle-orm/pg-core";
 import { db } from "@/lib/db";
-import { withSystemDbAccess } from "@/lib/db/access";
+import { isEmailBanned } from "@/lib/ban-check";
 import { DEFAULT_CHAT_MODE, readUserAccountSettings } from "@/lib/account-settings";
 import { isAdminEmail } from "@/lib/admin-emails";
-import { accounts, bannedEmails, sessions, users, verificationTokens } from "@/lib/db/schema";
+import { accounts, sessions, users, verificationTokens } from "@/lib/db/schema";
 
 type GoogleProfile = {
   sub: string;
@@ -94,13 +94,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
 
         const email = payload.email.toLowerCase();
 
-        const [ban] = await withSystemDbAccess((tx) =>
-          tx.select({ email: bannedEmails.email })
-            .from(bannedEmails)
-            .where(eq(bannedEmails.email, email))
-            .limit(1)
-        );
-        if (ban) return null;
+        if (await isEmailBanned(email)) return null;
 
         // Find existing account link → user
         const [existingAccount] = await db
@@ -188,13 +182,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         return false;
       }
 
-      const [ban] = await withSystemDbAccess((tx) => tx
-        .select({ email: bannedEmails.email })
-        .from(bannedEmails)
-        .where(eq(bannedEmails.email, normalizedEmail))
-        .limit(1));
-
-      return !ban;
+      return !(await isEmailBanned(normalizedEmail));
     },
     async jwt({ token, user, trigger, session }) {
       if (user) token.id = user.id;

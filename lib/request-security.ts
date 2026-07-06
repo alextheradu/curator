@@ -20,13 +20,20 @@ function getAllowedOrigin(req: NextRequest) {
   return req.nextUrl.origin;
 }
 
-export function hasValidMutationOrigin(req: NextRequest) {
+export function hasValidMutationOrigin(
+  req: NextRequest,
+  options?: { requireOriginHeader?: boolean },
+) {
   if (!isMutatingMethod(req.method)) return true;
 
   const origin = req.headers.get("origin");
   if (origin) {
     return origin === getAllowedOrigin(req);
   }
+
+  // Strict callers (admin routes) reject mutations without an Origin header
+  // instead of falling back to Sec-Fetch-Site.
+  if (options?.requireOriginHeader) return false;
 
   const secFetchSite = req.headers.get("sec-fetch-site");
   return secFetchSite === "same-origin" || secFetchSite === "none";

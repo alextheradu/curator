@@ -143,7 +143,13 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Too many conversations created. Please slow down." }, { status: 429, headers });
   }
 
-  const { title = "New Chat", seasonYear = DEFAULT_SEASON_YEAR, projectId = null } = body;
+  const title = typeof body.title === "string" && body.title.trim()
+    ? body.title.trim().slice(0, 120)
+    : "New Chat";
+  const seasonYear = typeof body.seasonYear === "number" && Number.isInteger(body.seasonYear)
+    ? body.seasonYear
+    : DEFAULT_SEASON_YEAR;
+  const projectId = body.projectId ?? null;
   if (projectId !== null && (typeof projectId !== "string" || !isUuid(projectId))) {
     return NextResponse.json({ error: "Invalid project id" }, { status: 400, headers });
   }
