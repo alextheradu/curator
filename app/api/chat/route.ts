@@ -126,6 +126,8 @@ type ChatMessage =
   | { role: "system" | "user" | "assistant"; content: string | null; tool_calls?: ToolCall[] }
   | { role: "tool"; tool_call_id: string; content: string };
 
+const TBA_TOOL_NAMES = new Set(TBA_TOOLS.map((tool) => tool.function.name));
+
 const WEB_SEARCH_TOOL: OpenAiTool = {
   type: "function",
   function: {
@@ -141,17 +143,16 @@ const WEB_SEARCH_TOOL: OpenAiTool = {
   },
 };
 
-function getTbaUserFacingUrl(toolName: string, args: Record<string, unknown>): string {
+function getTbaUserFacingUrl(args: Record<string, unknown>): string {
   const base = "https://www.thebluealliance.com";
   const teamArg = typeof args.team === "string" ? args.team.replace(/^frc/i, "") : null;
   const eventArg = typeof args.event === "string" ? args.event.toLowerCase() : null;
   const matchArg = typeof args.match === "string" ? args.match.toLowerCase() : null;
   const yearArg = typeof args.year === "number" ? args.year : null;
 
-  if (matchArg) return `${base}/match/${matchArg}`;
-  if (toolName === "get_team_event_status" && eventArg) return `${base}/event/${eventArg}`;
-  if (eventArg) return `${base}/event/${eventArg}`;
-  if (teamArg) return `${base}/team/${teamArg}`;
+  if (matchArg) return `${base}/match/${encodeURIComponent(matchArg)}`;
+  if (eventArg) return `${base}/event/${encodeURIComponent(eventArg)}`;
+  if (teamArg) return `${base}/team/${encodeURIComponent(teamArg)}`;
   if (yearArg) return `${base}/events/${yearArg}`;
   return base;
 }
@@ -317,11 +318,12 @@ async function runToolLoop({
             ? "No web results found."
             : results.map((r, i) => `[WEB ${i + 1}] ${r.title}\n${r.snippet}\nURL: ${r.url}`).join("\n\n");
         }
+      } else if (!TBA_TOOL_NAMES.has(name)) {
+        resultContent = `Unknown tool "${name}". Use only the tools provided in this conversation.`;
       } else {
         sendEvent({ type: "status", message: "Fetching live data from The Blue Alliance..." });
-        const args = JSON.parse(argsStr) as Record<string, unknown>;
         const result = await callTbaTool(name as TbaToolName, args);
-        const citationUrl = getTbaUserFacingUrl(name, args);
+        const citationUrl = getTbaUserFacingUrl(args);
         localTbaCitations.push({ type: "web", label: "thebluealliance.com", url: citationUrl });
         searchActivitySteps.push({
           type: "tba",
@@ -716,11 +718,12 @@ function filterUsedCitations(
   webCitations: Citation[],
 ) {
   const docMap = new Map(docCitations.map((citation, index) => [index + 1, citation]));
-  const tbaMap = new Map(tbaCitations.map((citation, index) => [index + 1, citation]));
   const webMap = new Map(webCitations.map((citation, index) => [index + 1, citation]));
   const used: Citation[] = [];
   const seen = new Set<string>();
-  const pattern = /\[(SOURCE|TBA|WEB)\s+(\d+)\]/gi;
+  // TBA results are attributed via the unconditional fallback below; the model
+  // is only instructed to emit [SOURCE N] and [WEB N] markers.
+  const pattern = /\[(SOURCE|WEB)\s+(\d+)\]/gi;
   const normalizedAnswer = assistantText.toLowerCase();
   const mentionsDocumentEvidence = /\b(team update|game manual|field manual|inspection checklist|page\s+\d+|q&a)\b/i.test(assistantText);
   const mentionsWebEvidence = /\bweb\b/i.test(assistantText);
@@ -740,11 +743,7 @@ function filterUsedCitations(
   for (const match of assistantText.matchAll(pattern)) {
     const kind = match[1]?.toUpperCase();
     const index = Number(match[2]);
-    const citation = kind === "SOURCE"
-      ? docMap.get(index)
-      : kind === "TBA"
-        ? tbaMap.get(index)
-      : webMap.get(index);
+    const citation = kind === "SOURCE" ? docMap.get(index) : webMap.get(index);
 
     addCitation(citation);
   }
@@ -828,11 +827,16 @@ export async function POST(request: NextRequest) {
   }
 
   const body = await request.json();
-  const {
-    temperature = 0.2,
-    seasonYear = DEFAULT_SEASON_YEAR,
-    chatMode = "veteran",
-  } = body;
+  const temperature = typeof body.temperature === "number" && Number.isFinite(body.temperature)
+    ? Math.min(Math.max(body.temperature, 0), 2)
+    : 0.2;
+  const seasonYear = typeof body.seasonYear === "number"
+    && Number.isInteger(body.seasonYear)
+    && body.seasonYear >= 1992
+    && body.seasonYear <= DEFAULT_SEASON_YEAR + 1
+    ? body.seasonYear
+    : DEFAULT_SEASON_YEAR;
+  const chatMode: "rookie" | "veteran" = body.chatMode === "rookie" ? "rookie" : "veteran";
   const parsedMessages = parseClientChatMessages(body.messages);
   if (!parsedMessages.ok) {
     return NextResponse.json({ error: parsedMessages.error }, { status: 400 });
@@ -858,7 +862,15 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Daily deep-search limit reached." }, { status: 429, headers });
     }
   }
-  const apiKey = process.env.OPENROUTER_API_KEY!;
+  const apiKey = process.env.OPENROUTER_API_KEY;
+  if (!apiKey) {
+    await captureException("chat", new Error("OPENROUTER_API_KEY is not configured"), {
+      path: request.nextUrl.pathname,
+      userId: session?.user?.id ?? null,
+      ip,
+    });
+    return NextResponse.json({ error: "Chat is temporarily unavailable." }, { status: 503 });
+  }
 
   let projectMemorySummary = "";
   if (projectId && !conversationId) {
@@ -975,10 +987,13 @@ export async function POST(request: NextRequest) {
 
           throwIfStreamAborted();
           const projectMemoryContext = buildProjectMemoryContext(projectMemorySummary);
-          const systemPrompt = buildSystemPrompt(seasonYear, projectMemoryContext, chatMode, {
+          let systemPrompt = buildSystemPrompt(seasonYear, projectMemoryContext, chatMode, {
             preferredName: userAccountSettings?.preferredName ?? null,
             teamNumber: userAccountSettings?.teamNumber ?? null,
           });
+          if (searchMode === "fast") {
+            systemPrompt += "\n\nTOOL AVAILABILITY (fast mode): Only the TBA live-data tools are available in this conversation. The search_documents and web_search tools are NOT available - do not call them, and do not claim to have searched documents or the web. If a question needs document or web verification (e.g. rule wording or part legality), say you could not verify it in this mode and suggest switching to balanced or deep search.";
+          }
 
           let fullMessages: ChatMessage[] = [
             { role: "system", content: systemPrompt },
@@ -1017,11 +1032,11 @@ export async function POST(request: NextRequest) {
               webCitations = toolResult.webCitations;
               ragContextBlocks = toolResult.ragContextBlocks;
               sendEvent({ type: "search_activity", activity: toolResult.searchActivity });
-              const found = [
-                toolResult.ragCitations.length > 0 ? `${toolResult.ragCitations.length} document ${pluralize(toolResult.ragCitations.length, "page")}` : null,
-                toolResult.tbaCitations.length > 0 ? `${toolResult.tbaCitations.length} TBA ${pluralize(toolResult.tbaCitations.length, "result")}` : null,
-                toolResult.webCitations.length > 0 ? `${toolResult.webCitations.length} web ${pluralize(toolResult.webCitations.length, "result")}` : null,
-              ].filter(Boolean).join(", ");
+              const found = describeAnswerInputs(
+                toolResult.ragCitations,
+                toolResult.tbaCitations,
+                toolResult.webCitations,
+              );
               if (found) {
                 sendEvent({ type: "status", message: `Found ${found}.` });
               }
@@ -1106,8 +1121,8 @@ export async function POST(request: NextRequest) {
             userId: session?.user?.id ?? null,
             ip,
           });
-          const message = error instanceof Error ? error.message : "Chat request failed";
-          sendEvent({ type: "error", message });
+          // Never stream raw provider/internal error text to the client.
+          sendEvent({ type: "error", message: "Curator couldn't finish this answer. Please try again." });
           sendDone();
         } finally {
           request.signal.removeEventListener("abort", handleAbort);

@@ -9,11 +9,6 @@ function getClient() {
   return _client;
 }
 
-export async function embedText(text: string): Promise<number[]> {
-  const r = await getClient().embeddings.create({ model: "openai/text-embedding-3-small", input: text });
-  return r.data[0].embedding;
-}
-
 export async function embedBatch(texts: string[]): Promise<number[][]> {
   const r = await getClient().embeddings.create({ model: "openai/text-embedding-3-small", input: texts });
   return r.data.map((d) => d.embedding);

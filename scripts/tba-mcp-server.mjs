@@ -3,6 +3,7 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import * as z from "zod/v4";
+import { normalizeEventKey, normalizeMatchKey, normalizeTeamKey } from "./tba-normalize.mjs";
 
 const API_BASE_URL = "https://www.thebluealliance.com/api/v3";
 const REQUEST_TIMEOUT_MS = 10_000;
@@ -15,41 +16,6 @@ function getApiKey() {
   }
 
   return apiKey;
-}
-
-function normalizeTeamKey(value) {
-  const trimmed = String(value).trim().toLowerCase();
-
-  if (/^frc\d+$/.test(trimmed)) {
-    return trimmed;
-  }
-
-  const numberMatch = trimmed.match(/\d+/);
-  if (!numberMatch) {
-    throw new Error(`Invalid team identifier: ${value}`);
-  }
-
-  return `frc${numberMatch[0]}`;
-}
-
-function normalizeEventKey(value) {
-  const trimmed = String(value).trim().toLowerCase();
-
-  if (!/^20\d{2}[a-z0-9]+$/.test(trimmed)) {
-    throw new Error(`Invalid event key: ${value}`);
-  }
-
-  return trimmed;
-}
-
-function normalizeMatchKey(value) {
-  const trimmed = String(value).trim().toLowerCase();
-
-  if (!/^20\d{2}[a-z0-9]+_(?:qm|ef|qf|sf|f)\d+m\d+$/.test(trimmed)) {
-    throw new Error(`Invalid match key: ${value}`);
-  }
-
-  return trimmed;
 }
 
 function buildTbaUrl(pathname) {

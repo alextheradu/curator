@@ -62,10 +62,6 @@ export async function upsertChunks(
   });
 }
 
-export async function searchChunks(vector: number[], limit = 5) {
-  return searchChunksForSeason(vector, limit);
-}
-
 export async function searchChunksForSeason(vector: number[], limit = 5, seasonYear?: number) {
   const result = await getClient().search(COLLECTION, {
     vector,

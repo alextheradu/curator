@@ -1,9 +1,7 @@
 import { auth } from "@/auth";
-import { withSystemDbAccess } from "@/lib/db/access";
-import { bannedEmails } from "@/lib/db/schema";
+import { isEmailBannedCached } from "@/lib/ban-check";
 import { NO_INDEX_X_ROBOTS_TAG } from "@/lib/seo";
 import { buildCsp } from "@/lib/security-headers";
-import { eq } from "drizzle-orm";
 import { NextResponse } from "next/server";
 
 function shouldNoIndex(pathname: string) {
@@ -35,13 +33,7 @@ export default auth(async (req) => {
   requestHeaders.set("x-nonce", nonce);
 
   if (email) {
-    const [ban] = await withSystemDbAccess((tx) => tx
-      .select({ email: bannedEmails.email })
-      .from(bannedEmails)
-      .where(eq(bannedEmails.email, email))
-      .limit(1));
-
-    if (ban) {
+    if (await isEmailBannedCached(email)) {
       return applySecurityHeaders(
         applyCrawlerHeaders(pathname, new NextResponse("Your access has been suspended.", { status: 403 })),
         nonce,
