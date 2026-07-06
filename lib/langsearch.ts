@@ -65,13 +65,3 @@ export async function webSearch(
     url: r.url,
   }));
 }
-
-export function buildWebContext(results: SearchResult[]) {
-  if (results.length === 0) {
-    return "";
-  }
-
-  return `\n\nCurrent web results for this question (use these for fresh or time-sensitive facts and cite them as [WEB N]):\n${results
-    .map((result, index) => `[WEB ${index + 1}] ${result.title}\n${result.snippet}\nURL: ${result.url}`)
-    .join("\n\n")}`;
-}

@@ -83,8 +83,8 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
 
     const [updated] = await withGuestDbAccess(guestId, (tx) => tx.update(conversations)
       .set({
-        ...(typeof body.title === "string" ? { title: body.title.trim().slice(0, 120) } : {}),
-        ...(typeof body.seasonYear === "number" ? { seasonYear: body.seasonYear } : {}),
+        ...(typeof body.title === "string" && body.title.trim() ? { title: body.title.trim().slice(0, 120) } : {}),
+        ...(typeof body.seasonYear === "number" && Number.isInteger(body.seasonYear) ? { seasonYear: body.seasonYear } : {}),
         updatedAt: new Date(),
       })
       .where(and(eq(conversations.id, id), eq(conversations.guestId, guestId)))
@@ -122,8 +122,8 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
 
     return tx.update(conversations)
       .set({
-        ...(typeof body.title === "string" ? { title: body.title } : {}),
-        ...(typeof body.seasonYear === "number" ? { seasonYear: body.seasonYear } : {}),
+        ...(typeof body.title === "string" && body.title.trim() ? { title: body.title.trim().slice(0, 120) } : {}),
+        ...(typeof body.seasonYear === "number" && Number.isInteger(body.seasonYear) ? { seasonYear: body.seasonYear } : {}),
         ...(typeof body.isPublic === "boolean" ? { isPublic: body.isPublic } : {}),
         ...(nextProjectId !== undefined ? { projectId: nextProjectId } : {}),
         updatedAt: new Date(),
