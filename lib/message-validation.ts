@@ -3,7 +3,7 @@ import { isUuid } from "@/lib/uuid";
 
 export type PersistedMessageInput = {
   id?: string;
-  role: "user" | "assistant";
+  role: "user";
   content: string;
   citations?: Citation[];
 };
@@ -100,8 +100,11 @@ export function parsePersistedMessageInput(value: unknown): ParseResult {
   }
 
   const input = value as Record<string, unknown>;
-  if (input.role !== "user" && input.role !== "assistant") {
-    return { ok: false, error: "role must be user or assistant" };
+  // Clients may only write user messages. Assistant messages are persisted
+  // server-side from actual model output so shared conversations can't show
+  // fabricated Curator answers.
+  if (input.role !== "user") {
+    return { ok: false, error: "role must be user" };
   }
 
   if (typeof input.content !== "string" || input.content.trim().length === 0) {
@@ -120,7 +123,7 @@ export function parsePersistedMessageInput(value: unknown): ParseResult {
     ok: true,
     value: {
       ...(typeof input.id === "string" ? { id: input.id } : {}),
-      role: input.role,
+      role: "user",
       content: input.content,
       ...(Array.isArray(input.citations) ? { citations: sanitizeCitations(input.citations) } : {}),
     },

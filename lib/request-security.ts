@@ -4,7 +4,21 @@ function isMutatingMethod(method: string) {
   return !["GET", "HEAD", "OPTIONS"].includes(method.toUpperCase());
 }
 
-function getAllowedOrigin(req: NextRequest) {
+function getRequestOrigin(req: NextRequest | Request) {
+  // Avoid instanceof: in production bundles the route's NextRequest class can
+  // be a different module instance, which silently fails instanceof checks.
+  if ("nextUrl" in req) {
+    return (req as NextRequest).nextUrl.origin;
+  }
+
+  try {
+    return new URL(req.url).origin;
+  } catch {
+    return "";
+  }
+}
+
+function getAllowedOrigin(req: NextRequest | Request) {
   const configuredOrigin =
     process.env.NEXT_PUBLIC_SITE_URL?.trim()
     || process.env.AUTH_URL?.trim();
@@ -13,15 +27,15 @@ function getAllowedOrigin(req: NextRequest) {
     try {
       return new URL(configuredOrigin).origin;
     } catch {
-      return req.nextUrl.origin;
+      return getRequestOrigin(req);
     }
   }
 
-  return req.nextUrl.origin;
+  return getRequestOrigin(req);
 }
 
 export function hasValidMutationOrigin(
-  req: NextRequest,
+  req: NextRequest | Request,
   options?: { requireOriginHeader?: boolean },
 ) {
   if (!isMutatingMethod(req.method)) return true;
@@ -45,7 +59,7 @@ export function hasJsonContentType(req: Request) {
 }
 
 export function validateJsonMutationRequest(req: NextRequest | Request) {
-  if (req instanceof NextRequest && !hasValidMutationOrigin(req)) {
+  if (!hasValidMutationOrigin(req)) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 

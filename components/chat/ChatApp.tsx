@@ -13,7 +13,6 @@ import {
   fetchConversationList,
   fetchConversationMessages,
   fetchProjects,
-  transferGuestConversation,
   updateConversation as updateConversationRequest,
 } from "@/lib/conversation-api";
 import { normalizeConversation, normalizeMessage } from "@/lib/conversations";
@@ -195,19 +194,17 @@ export function ChatApp({ requestedConversationId, initialPrompt }: ChatAppProps
 
           if (shouldTransferGuestConversation) {
             const activeConversationId = useChatStore.getState().activeConversationId;
-            const activeGuestConversation = guestConversations.find((conversation) => conversation.id === activeConversationId);
 
             try {
-              // Claim all DB-stored guest conversations for this user account
+              // Claim all DB-stored guest conversations for this user account.
+              // (Pre-DB localStorage-only guest chats are no longer migrated: the
+              // client cannot write assistant messages, so there is no safe way to
+              // re-create their transcript server-side.)
               const claimedIds = await claimGuestConversations();
 
               if (claimedIds.includes(activeConversationId ?? "")) {
                 // already in DB as a guest chat, keep the same ID
                 transferredConversationId = activeConversationId;
-              } else if (activeGuestConversation && activeGuestConversation.messages.length > 0) {
-                // old localStorage-only chat from before this feature, migrate it the old way
-                const transferred = await transferGuestConversation(activeGuestConversation);
-                transferredConversationId = transferred.id;
               }
             } catch (error) {
               console.error(error);
