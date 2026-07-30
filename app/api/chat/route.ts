@@ -30,9 +30,12 @@ import { NextRequest, NextResponse } from "next/server";
 import { and, eq } from "drizzle-orm";
 
 const OR_URL = "https://openrouter.ai/api/v1/chat/completions";
+// openai/gpt-oss-120b:free was retired from OpenRouter's free tier. The chain is
+// two free models before the paid fallback, because free-tier models return 429
+// under load and a single free primary leaves no cheap retry.
 const CHAT_MODELS = (
   process.env.OPENROUTER_CHAT_MODELS
-  ?? "openai/gpt-oss-120b:free,openai/gpt-4o-mini"
+  ?? "inclusionai/ling-3.0-flash:free,openai/gpt-oss-20b:free,openai/gpt-4o-mini"
 )
   .split(",")
   .map((model) => model.trim())
