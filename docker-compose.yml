@@ -1,3 +1,6 @@
+# Retired 2026-07-20: DB migrated to the shared Postgres instance at /srv/md0/postgres
+# (see /srv/md0/postgres/CREDENTIALS.md). Do not `docker compose up` this file -
+# it would resurrect a stale copy of the database on the old volume.
 services:
   postgres:
     image: postgres:16-alpine

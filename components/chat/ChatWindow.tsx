@@ -42,6 +42,7 @@ import type { Citation } from "@/lib/db/schema";
 import type { SearchActivity, SearchMode } from "@/lib/search-activity";
 import type { Conversation } from "@/lib/store";
 import { useChatStore } from "@/lib/store";
+import { randomUuid } from "@/lib/uuid";
 import { streamOpenRouterChat } from "@/lib/openrouter";
 import { DEFAULT_SEASON_YEAR } from "@/lib/seasons";
 import { generateChatTitle } from "@/lib/utils";
@@ -120,8 +121,23 @@ export function ChatWindow({
       return;
     }
 
-    setSearchMode(localStorage.getItem("curator:deepSearch") === "true" ? "deep" : defaultSearchMode);
-  }, [defaultSearchMode]);
+    if (localStorage.getItem("curator:deepSearch") === "true") {
+      setSearchMode("deep");
+      return;
+    }
+
+    // No explicit in-chat selection yet. Honor a settings-configured default when
+    // the user changed it away from the base "fast"; otherwise signed-in users
+    // default to balanced (document grounding) and guests to fast (cost control).
+    // A signed-in user who deliberately picks fast in-chat persists that via
+    // curator:searchMode above, which then wins.
+    if (defaultSearchMode !== "fast") {
+      setSearchMode(defaultSearchMode);
+      return;
+    }
+
+    setSearchMode(isAuthenticated ? "balanced" : "fast");
+  }, [defaultSearchMode, isAuthenticated]);
 
   const handleFactCheckChange = useCallback((enabled: boolean) => {
     setFactCheckEnabled(enabled);
@@ -163,42 +179,19 @@ export function ChatWindow({
     }
   }, [conversation, onShareDialogHandled, readOnly, shareDialogConversationId]);
 
-  const persistLatestAssistantMessage = useCallback(async (conversationId: string, citations?: Citation[]) => {
-    if (readOnly) {
-      return;
-    }
-
-    const currentConversation = useChatStore
-      .getState()
-      .conversations
-      .find((item) => item.id === conversationId);
-    const latestMessage = currentConversation?.messages.at(-1);
-
-    if (!latestMessage || latestMessage.role !== "assistant") {
-      return;
-    }
-
-    try {
-      await createConversationMessage(conversationId, {
-        id: latestMessage.id,
-        role: "assistant",
-        content: latestMessage.content,
-        citations: citations ?? latestMessage.citations,
-      });
-    } catch (error) {
-      console.error(error);
-      toast.error("The latest assistant reply could not be saved.");
-    }
-  }, [readOnly]);
+  // The assistant message is persisted server-side by /api/chat; the client only
+  // renders it optimistically. We mint its id here and pass it to the server so
+  // the persisted row matches the optimistic message on reload.
+  const assistantMsgIdRef = useRef<string | null>(null);
 
   const stopStreaming = useCallback(async () => {
     abortRef.current?.abort();
     abortRef.current = null;
 
     if (activeConversationId && streamingContent) {
-      finalizeStreamingMessage(activeConversationId);
+      // Aborting the fetch signals /api/chat to persist the partial answer.
+      finalizeStreamingMessage(activeConversationId, undefined, undefined, undefined, assistantMsgIdRef.current ?? undefined);
       setStreamStatus("");
-      await persistLatestAssistantMessage(activeConversationId);
       return;
     }
 
@@ -207,7 +200,6 @@ export function ChatWindow({
   }, [
     activeConversationId,
     finalizeStreamingMessage,
-    persistLatestAssistantMessage,
     resetStreamingState,
     streamingContent,
   ]);
@@ -294,6 +286,8 @@ export function ChatWindow({
       .map((message) => ({ role: message.role as "user" | "assistant", content: message.content }));
 
     let accumulated = "";
+    const assistantMessageId = randomUuid();
+    assistantMsgIdRef.current = assistantMessageId;
 
     await streamOpenRouterChat({
       messages: history,
@@ -302,6 +296,7 @@ export function ChatWindow({
       chatMode,
       conversationId,
       projectId,
+      assistantMessageId,
       factCheck: factCheckEnabled,
       searchMode,
       signal: controller.signal,
@@ -315,20 +310,19 @@ export function ChatWindow({
       onSearchActivity: (activity) => {
         setStreamingSearchActivity(activity);
       },
-      onDone: async (citations: Citation[], factCheck, searchActivity) => {
+      onDone: (citations: Citation[], factCheck, searchActivity) => {
         abortRef.current = null;
         setStreamStatus("");
         setStreamingSearchActivity(undefined);
-        finalizeStreamingMessage(conversationId, citations, factCheck, searchActivity);
-        await persistLatestAssistantMessage(conversationId, citations);
+        // /api/chat already persisted the assistant message server-side.
+        finalizeStreamingMessage(conversationId, citations, factCheck, searchActivity, assistantMessageId);
         scrollToBottom();
       },
-      onError: async (error) => {
+      onError: (error) => {
         abortRef.current = null;
         setStreamStatus("");
         setStreamingSearchActivity(undefined);
-        finalizeStreamingMessage(conversationId);
-        await persistLatestAssistantMessage(conversationId);
+        finalizeStreamingMessage(conversationId, undefined, undefined, undefined, assistantMessageId);
         window.dispatchEvent(new CustomEvent("curator:error", {
           detail: { message: error.message || "Failed to reach OpenRouter." },
         }));
@@ -345,7 +339,6 @@ export function ChatWindow({
     finalizeStreamingMessage,
     isAuthenticated,
     isStreaming,
-    persistLatestAssistantMessage,
     readOnly,
     resetStreamingState,
     scrollToBottom,

@@ -8,6 +8,7 @@ interface StreamOptions {
   chatMode?: "rookie" | "veteran";
   conversationId?: string;
   projectId?: string | null;
+  assistantMessageId?: string;
   factCheck?: boolean;
   deepSearch?: boolean;
   searchMode?: SearchMode;
@@ -21,14 +22,14 @@ interface StreamOptions {
 }
 
 export async function streamOpenRouterChat({
-  messages, temperature = 0.2, seasonYear, chatMode = "veteran", conversationId, projectId, factCheck, deepSearch, searchMode,
+  messages, temperature = 0.2, seasonYear, chatMode = "veteran", conversationId, projectId, assistantMessageId, factCheck, deepSearch, searchMode,
   signal, onToken, onStatus, onSearchActivity, onDone, onError, onAuthRequired,
 }: StreamOptions) {
   try {
     const response = await fetch("/api/chat", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ messages, temperature, seasonYear, chatMode, conversationId, projectId, factCheck, deepSearch, searchMode }),
+      body: JSON.stringify({ messages, temperature, seasonYear, chatMode, conversationId, projectId, assistantMessageId, factCheck, deepSearch, searchMode }),
       signal,
     });
 

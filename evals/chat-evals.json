@@ -235,6 +235,16 @@
       "usesTool": "get_match"
     }
   },
+  {
+    "id": "tool-get-match-qual-key",
+    "mode": "fast",
+    "prompt": "What was the final score of qualification match 12 at 2026njski (match key 2026njski_qm12)?",
+    "expect": {
+      "mustMention": ["score"],
+      "needsCitation": false,
+      "usesTool": "get_match"
+    }
+  },
 
   {
     "id": "tool-get-event-teams-list",

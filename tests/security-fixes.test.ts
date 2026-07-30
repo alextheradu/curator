@@ -127,12 +127,27 @@ describe("request validation helpers", () => {
     ])).toEqual({ ok: false, error: "messages contains an unsupported role" });
   });
 
-  test("normalizes persisted messages and safe citation urls", async () => {
+  test("rejects client-persisted assistant messages", async () => {
+    const { parsePersistedMessageInput } = await import("@/lib/message-validation");
+
+    // Assistant messages are persisted server-side from real model output, so a
+    // client attempting to write one (to forge a Curator answer on a shared chat)
+    // must be rejected.
+    const parsed = parsePersistedMessageInput({
+      id: "11111111-1111-4111-8111-111111111111",
+      role: "assistant",
+      content: "See this source.",
+    });
+
+    expect(parsed.ok).toBe(false);
+  });
+
+  test("normalizes safe citation urls on user messages", async () => {
     const { parsePersistedMessageInput } = await import("@/lib/message-validation");
 
     const parsed = parsePersistedMessageInput({
       id: "11111111-1111-4111-8111-111111111111",
-      role: "assistant",
+      role: "user",
       content: "See this source.",
       citations: [
         { type: "web", label: "Rules", url: "https://example.com/rules" },
