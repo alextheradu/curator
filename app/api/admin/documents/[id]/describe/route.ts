@@ -7,7 +7,7 @@ import { eq, asc } from "drizzle-orm";
 
 const DESCRIPTION_MODELS = (
   process.env.OPENROUTER_DESCRIPTION_MODELS
-  ?? "openai/gpt-4o-mini,openai/gpt-oss-120b:free"
+  ?? "openai/gpt-4o-mini,inclusionai/ling-3.0-flash:free"
 )
   .split(",")
   .map((model) => model.trim())
