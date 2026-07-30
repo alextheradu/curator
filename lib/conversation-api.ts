@@ -1,7 +1,5 @@
-import type { Citation } from "@/lib/db/schema";
 import type { ConversationRecord, MessageRecord } from "@/lib/conversations";
 import type { ProjectRecord } from "@/lib/projects";
-import type { Conversation } from "@/lib/store";
 
 type ConversationAccess = "owner" | "public";
 
@@ -98,9 +96,8 @@ export async function createConversationMessage(
   id: string,
   payload: {
     id?: string;
-    role: "user" | "assistant";
+    role: "user";
     content: string;
-    citations?: Citation[];
   }
 ) {
   const response = await fetch(`/api/conversations/${id}/messages`, {
@@ -117,26 +114,4 @@ export async function claimGuestConversations(): Promise<string[]> {
   if (!response.ok) return [];
   const data = await response.json() as { conversationIds?: string[] };
   return data.conversationIds ?? [];
-}
-
-export async function transferGuestConversation(conversation: Conversation) {
-  const created = await createConversation({
-    title: conversation.title,
-    seasonYear: conversation.seasonYear,
-  });
-
-  for (const message of conversation.messages) {
-    if (message.role === "system") {
-      continue;
-    }
-
-    await createConversationMessage(created.id, {
-      id: message.id,
-      role: message.role,
-      content: message.content,
-      citations: message.citations,
-    });
-  }
-
-  return created;
 }

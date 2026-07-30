@@ -12,6 +12,8 @@ import {
   type DeepSearchConfig,
 } from "@/lib/chat-search-options";
 import { parseClientChatMessages } from "@/lib/chat-request-validation";
+import { persistAssistantMessage } from "@/lib/assistant-messages";
+import { isUuid } from "@/lib/uuid";
 import type { SearchActivity, SearchActivityStep, SearchMode } from "@/lib/search-activity";
 import { DEFAULT_SEASON_YEAR } from "@/lib/seasons";
 import { isTbaMcpEnabled } from "@/lib/tba";
@@ -484,12 +486,16 @@ async function streamChatCompletion({
   temperature,
   sendEvent,
   signal,
+  progress,
 }: {
   apiKey: string;
   messages: ChatMessage[];
   temperature: number;
   sendEvent: (payload: unknown) => void;
   signal?: AbortSignal;
+  // Mutated as tokens arrive so the caller can persist a partial answer even if
+  // the stream is aborted mid-flight.
+  progress?: { text: string };
 }) {
   const errors: string[] = [];
 
@@ -587,6 +593,7 @@ async function streamChatCompletion({
             if (tokenCount === 0) clearHeartbeat();
             tokenCount++;
             fullText += token;
+            if (progress) progress.text = fullText;
             sendEvent({ type: "token", token });
           }
         } catch {
@@ -810,8 +817,8 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Too many chat requests. Please slow down." }, { status: 429, headers });
   }
 
+  const guestId = session?.user?.id ? null : await readGuestSessionId();
   if (!session?.user?.id) {
-    const guestId = await readGuestSessionId();
     const guestQuota = await enforceRateLimit({
       scope: "guest-message-quota",
       key: guestId ? `guest:${guestId}` : `ip:${ip}`,
@@ -844,6 +851,9 @@ export async function POST(request: NextRequest) {
   const messages = parsedMessages.value;
   const conversationId = typeof body.conversationId === "string" ? body.conversationId : null;
   const projectId = typeof body.projectId === "string" ? body.projectId : null;
+  // Optional client-supplied id so the persisted assistant row matches the
+  // client's optimistic message id; ignored unless it's a valid UUID.
+  const assistantMessageId = isUuid(body.assistantMessageId) ? body.assistantMessageId : null;
   const searchOptions = parseChatSearchOptions(body);
   const factCheck = searchOptions.factCheck;
   const searchMode = searchOptions.searchMode;
@@ -974,6 +984,30 @@ export async function POST(request: NextRequest) {
         }
       };
 
+      // Assistant messages are persisted server-side (never by the client) so
+      // shared conversations can't show fabricated Curator answers. Declared in
+      // the IIFE scope so the abort branch can still save a partial answer.
+      const progress = { text: "" };
+      const persistAnswer = async (text: string, citations: Citation[]) => {
+        if (!conversationId || !text.trim()) return;
+        if (!session?.user?.id && !guestId) return;
+
+        try {
+          await persistAssistantMessage(
+            session?.user?.id
+              ? { session, conversationId, messageId: assistantMessageId, content: text, citations }
+              : { guestId: guestId!, conversationId, messageId: assistantMessageId, content: text, citations },
+          );
+        } catch (error) {
+          await captureException("chat-persist", error, {
+            path: request.nextUrl.pathname,
+            userId: session?.user?.id ?? null,
+            ip,
+            details: { conversationId },
+          });
+        }
+      };
+
       void (async () => {
         try {
           const chatStartedAt = Date.now();
@@ -1061,6 +1095,7 @@ export async function POST(request: NextRequest) {
             temperature,
             sendEvent,
             signal: request.signal,
+            progress,
           });
           void logAppEvent({
             level: "info",
@@ -1091,9 +1126,11 @@ export async function POST(request: NextRequest) {
               console.error(error);
             });
           }
+          const usedCitations = filterUsedCitations(assistantText, ragCitations, tbaCitations, webCitations);
+          await persistAnswer(assistantText, usedCitations);
           sendEvent({
             type: "citations",
-            citations: filterUsedCitations(assistantText, ragCitations, tbaCitations, webCitations),
+            citations: usedCitations,
           });
           if (factCheck && ragContextBlocks.length > 0 && assistantText) {
             try {
@@ -1113,6 +1150,9 @@ export async function POST(request: NextRequest) {
           sendDone();
         } catch (error) {
           if (isAbortError(error) || request.signal.aborted || streamAborted) {
+            // Save whatever the model produced before the client stopped the
+            // stream, mirroring the old client-side "stop saves the partial" UX.
+            await persistAnswer(progress.text, []);
             return;
           }
 

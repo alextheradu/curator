@@ -53,7 +53,7 @@ interface ChatStore {
   addMessage: (conversationId: string, message: Omit<Message, "id" | "timestamp">) => string;
   startStreaming: () => void;
   updateStreamingContent: (content: string) => void;
-  finalizeStreamingMessage: (conversationId: string, citations?: Citation[], factCheck?: { accurate: boolean; note: string }, searchActivity?: SearchActivity) => void;
+  finalizeStreamingMessage: (conversationId: string, citations?: Citation[], factCheck?: { accurate: boolean; note: string }, searchActivity?: SearchActivity, messageId?: string) => void;
   resetStreamingState: () => void;
   setTypingTitle: (conversationId: string, title: string) => void;
   clearTypingTitle: () => void;
@@ -151,11 +151,11 @@ export const useChatStore = create<ChatStore>()(
 
       updateStreamingContent: (content) => set({ streamingContent: content, isStreaming: true }),
 
-      finalizeStreamingMessage: (conversationId, citations, factCheck, searchActivity) => {
+      finalizeStreamingMessage: (conversationId, citations, factCheck, searchActivity, messageId) => {
         const { streamingContent } = get();
         if (!streamingContent) { set({ streamingContent: "", isStreaming: false }); return; }
         const msg: Message = {
-          id: randomUuid(), role: "assistant",
+          id: messageId ?? randomUuid(), role: "assistant",
           content: streamingContent, timestamp: new Date(),
           ...(citations?.length && { citations }),
           ...(factCheck && { factCheck }),
