@@ -1,6 +1,8 @@
 import { and, eq } from "drizzle-orm";
+import { revalidateConversationDerivedCaches } from "@/lib/cache-tags";
 import { withGuestDbAccess, withSessionDbAccess } from "@/lib/db/access";
 import { conversations, messages, type Citation } from "@/lib/db/schema";
+import { revalidatePublicConversation } from "@/lib/public-conversations";
 import { randomUuid } from "@/lib/uuid";
 
 type SessionLike = { user?: { id?: string | null; isAdmin?: boolean | null } };
@@ -64,20 +66,29 @@ export async function persistAssistantMessage(
     return inserted?.id ?? null;
   };
 
+  let persistedId: string | null;
+
   if (args.session) {
     const userId = args.session.user?.id;
     if (!userId) {
       return null;
     }
 
-    return withSessionDbAccess(args.session, (tx) => run(
+    persistedId = await withSessionDbAccess(args.session, (tx) => run(
       tx,
       and(eq(conversations.id, args.conversationId), eq(conversations.userId, userId)),
     ));
+  } else {
+    persistedId = await withGuestDbAccess(args.guestId, (tx) => run(
+      tx,
+      and(eq(conversations.id, args.conversationId), eq(conversations.guestId, args.guestId)),
+    ));
   }
 
-  return withGuestDbAccess(args.guestId, (tx) => run(
-    tx,
-    and(eq(conversations.id, args.conversationId), eq(conversations.guestId, args.guestId)),
-  ));
+  if (persistedId) {
+    revalidatePublicConversation(args.conversationId);
+    revalidateConversationDerivedCaches();
+  }
+
+  return persistedId;
 }
