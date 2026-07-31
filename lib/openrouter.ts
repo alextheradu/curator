@@ -21,16 +21,38 @@ interface StreamOptions {
   onAuthRequired?: () => void;
 }
 
+const STALL_TIMEOUT_MS = 30_000;
+
 export async function streamOpenRouterChat({
   messages, temperature = 0.2, seasonYear, chatMode = "veteran", conversationId, projectId, assistantMessageId, factCheck, deepSearch, searchMode,
   signal, onToken, onStatus, onSearchActivity, onDone, onError, onAuthRequired,
 }: StreamOptions) {
+  // A stalled connection (dropped mid-stream, hung request) otherwise never
+  // rejects on its own - fetch/reader.read() just wait forever with no
+  // error ever reaching onError. This watchdog aborts if no bytes arrive
+  // for STALL_TIMEOUT_MS, reset on every chunk received.
+  const internalController = new AbortController();
+  let stallTimer: ReturnType<typeof setTimeout> | undefined;
+  let stalled = false;
+
+  const armStallTimer = () => {
+    clearTimeout(stallTimer);
+    stallTimer = setTimeout(() => {
+      stalled = true;
+      internalController.abort();
+    }, STALL_TIMEOUT_MS);
+  };
+
+  const onExternalAbort = () => internalController.abort();
+  signal?.addEventListener("abort", onExternalAbort);
+
   try {
+    armStallTimer();
     const response = await fetch("/api/chat", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ messages, temperature, seasonYear, chatMode, conversationId, projectId, assistantMessageId, factCheck, deepSearch, searchMode }),
-      signal,
+      signal: internalController.signal,
     });
 
     if (response.status === 401) {
@@ -53,6 +75,7 @@ export async function streamOpenRouterChat({
     let buffer = "";
 
     while (true) {
+      armStallTimer();
       const { done, value } = await reader.read();
       if (done) break;
       buffer += decoder.decode(value, { stream: true });
@@ -111,11 +134,21 @@ export async function streamOpenRouterChat({
         }
       }
     }
+    clearTimeout(stallTimer);
     onStatus?.("");
     onDone(citations, pendingFactCheck, pendingSearchActivity);
   } catch (err: unknown) {
-    if (err instanceof Error && err.name === "AbortError") return;
+    clearTimeout(stallTimer);
+    if (err instanceof Error && err.name === "AbortError") {
+      if (stalled) {
+        onStatus?.("");
+        onError(new Error("The response stalled. Please try again."));
+      }
+      return;
+    }
     onStatus?.("");
     onError(err instanceof Error ? err : new Error(String(err)));
+  } finally {
+    signal?.removeEventListener("abort", onExternalAbort);
   }
 }
