@@ -1,7 +1,6 @@
 "use client";
 
-import { signIn } from "next-auth/react";
-import { nativeGoogleSignIn } from "@/lib/native-auth";
+import { nativeAppleSignIn, nativeGoogleSignIn } from "@/lib/native-auth";
 import {
   Dialog,
   DialogContent,
@@ -41,7 +40,7 @@ export function AuthModal({ open, onOpenChange }: Props) {
         <div className="flex flex-col gap-2 py-2">
           {appleEnabled && (
             <button
-              onClick={() => signIn("apple", { callbackUrl: "/" })}
+              onClick={() => void nativeAppleSignIn()}
               className="flex w-full items-center justify-center gap-3 rounded-2xl bg-white px-4 py-2.5 text-sm font-medium text-black transition-opacity hover:opacity-90 active:opacity-75 dark:bg-black dark:text-white dark:border dark:border-white/20"
             >
               <AppleLogo />

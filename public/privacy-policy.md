@@ -1,7 +1,7 @@
 # Privacy Policy
 
 **Curator - FRC AI Assistant**
-**Last updated: May 18, 2026**
+**Last updated: July 30, 2026**
 
 ---
 
@@ -88,7 +88,7 @@ The following services receive data as part of operating the Service. None of th
 | Service | Purpose | Data they receive | Their Privacy Policy |
 |---|---|---|---|
 | Google OAuth | Authentication (web and iOS) | Email, name, profile picture | policies.google.com/privacy |
-| Apple Sign-In | Authentication (iOS) | Email, name (first sign-in only) | apple.com/legal/privacy |
+| Apple Sign-In | Authentication (web and iOS) | Email, name (first sign-in only). On iOS, also sends account-lifecycle server-to-server notifications (see §6) | apple.com/legal/privacy |
 | OpenRouter | LLM routing and inference | Chat message content; upstream model providers may process and retain prompts under their own terms | openrouter.ai/privacy |
 | The Blue Alliance | Live team, event, and match context | Team number, query context | thebluealliance.com/privacy |
 | LangSearch | Web search for grounding AI responses | Search query text | (see LangSearch docs) |
@@ -133,6 +133,7 @@ If you do not consent to analytics cookies, Google Analytics never loads and no 
 - **Guest conversations:** stored server-side in our database, linked to your `guest_session_id` cookie, and also cached in your browser's `localStorage`. Guest conversations and their messages are deleted 90 days after creation. If you sign in, your guest conversations are transferred to your account and retained according to the authenticated-user policy above. Clearing your browser data removes the local cache only - the server copy is retained until the 90-day window expires or you sign in and then delete the conversations from your account.
 - **Offline app cache:** limited to the offline fallback page, manifest, and app icons; stored in your browser until the browser clears site data, the service worker replaces the cache during an update, or you manually remove the site's stored data.
 - **Authenticated user data:** retained for as long as your account exists. This includes saved onboarding profile fields, chat-mode preference, Terms of Service acceptance state, project metadata, hidden project summaries, and conversation history. You may delete your account from the Settings page. Account deletion removes your account, saved chats, projects, settings, sessions, linked sign-in records, user reports tied to deleted chats, and other rows that cascade from the account record. Support requests and operational logs linked to the deleted account are redacted where retained for support, security, accountability, or abuse-prevention needs.
+- **Apple account-lifecycle notifications (iOS):** if you signed in with Apple on iOS, Apple may notify us server-to-server when you delete your Apple Account or revoke Curator's Sign in with Apple access. A permanent Apple Account deletion triggers the same account deletion described above. Revoking Sign in with Apple access (without deleting your Apple Account) unlinks Apple as a sign-in method for your Curator account without deleting your other account data.
 - **OpenRouter/upstream model-provider data:** prompts and model outputs sent for inference may be retained by OpenRouter and/or the selected upstream model provider according to their own retention and training policies (which can vary by model tier, including free models).
 - **Projects:** retained for as long as your account exists unless you delete a project. Deleting a project removes its project metadata and hidden summary while returning its chats to normal history.
 - **Moderation data:** moderation reports and banned-email records are retained until they are manually cleared, no longer needed for safety or abuse review, or your account and related moderation history are deleted.
