@@ -47,3 +47,47 @@ export async function nativeGoogleSignIn(): Promise<void> {
     throw err;
   }
 }
+
+export async function nativeAppleSignIn(): Promise<void> {
+  if (typeof window === "undefined") return;
+
+  const { Capacitor } = await import("@capacitor/core");
+
+  if (!Capacitor.isNativePlatform()) {
+    // Web: standard OAuth redirect
+    await signIn("apple", { callbackUrl: "/" });
+    return;
+  }
+
+  // needs "Sign In with Apple" capability enabled in Xcode + on the App ID
+  // in the Apple Developer portal (com.apple.developer.applesignin).
+  try {
+    const { AppleSignIn, SignInScope } = await import("@capawesome/capacitor-apple-sign-in");
+
+    const nonce = crypto.randomUUID();
+    const result = await AppleSignIn.signIn({
+      scopes: [SignInScope.Email, SignInScope.FullName],
+      nonce,
+    });
+
+    if (!result.idToken) throw new Error("No ID token returned from Apple");
+
+    const response = await signIn("apple-id-token", {
+      idToken: result.idToken,
+      nonce,
+      firstName: result.givenName ?? "",
+      lastName: result.familyName ?? "",
+      callbackUrl: "/",
+      redirect: false,
+    });
+
+    if (response?.error) {
+      throw new Error(`Auth failed: ${response.error} (url: ${response.url ?? ""})`);
+    }
+
+    window.location.href = response?.url ?? "/";
+  } catch (err) {
+    console.error("[native-auth] apple sign-in failed:", err);
+    throw err;
+  }
+}

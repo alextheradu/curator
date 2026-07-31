@@ -6,6 +6,7 @@ import { DrizzleAdapter } from "@auth/drizzle-adapter";
 import { and, eq } from "drizzle-orm";
 import { pgTable, text, timestamp } from "drizzle-orm/pg-core";
 import { db } from "@/lib/db";
+import { verifyAppleJwt } from "@/lib/apple-jwt";
 import { isEmailBanned } from "@/lib/ban-check";
 import { DEFAULT_CHAT_MODE, readUserAccountSettings } from "@/lib/account-settings";
 import { isAdminEmail } from "@/lib/admin-emails";
@@ -149,6 +150,96 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         }
 
         return { id: userId, email, name: payload.name ?? null, image: payload.picture ?? null };
+      },
+    }),
+    // Native iOS Sign in with Apple: receives an idToken from the device,
+    // verifies it against Apple's JWKS, then finds or creates the user in
+    // the DB. Shares the "apple" provider/providerAccountId space with the
+    // web Apple OAuth provider below, keyed by Apple's stable `sub`.
+    Credentials({
+      id: "apple-id-token",
+      credentials: { idToken: {}, nonce: {}, firstName: {}, lastName: {} },
+      async authorize(credentials) {
+        const idToken = credentials?.idToken;
+        if (typeof idToken !== "string" || !idToken) return null;
+
+        const payload = await verifyAppleJwt(idToken);
+        if (!payload) return null;
+
+        const nonce = typeof credentials?.nonce === "string" ? credentials.nonce : "";
+        if (!nonce || payload.nonce !== nonce) return null;
+
+        const sub = payload.sub;
+        const emailVerified =
+          payload.email_verified === true || payload.email_verified === "true";
+        const email = typeof payload.email === "string" ? payload.email.toLowerCase() : null;
+
+        if (!sub || !email || !emailVerified) return null;
+        if (await isEmailBanned(email)) return null;
+
+        const [existingAccount] = await db
+          .select({ userId: accounts.userId })
+          .from(accounts)
+          .where(and(eq(accounts.provider, "apple"), eq(accounts.providerAccountId, sub)))
+          .limit(1);
+
+        let userId: string;
+
+        if (existingAccount) {
+          userId = existingAccount.userId;
+        } else {
+          const [existingUser] = await db
+            .select({ id: users.id, emailVerified: users.emailVerified })
+            .from(users)
+            .where(eq(users.email, email))
+            .limit(1);
+
+          if (existingUser) {
+            if (!existingUser.emailVerified) {
+              const [linkedAppleAccount] = await db
+                .select({ userId: accounts.userId })
+                .from(accounts)
+                .where(and(eq(accounts.userId, existingUser.id), eq(accounts.provider, "apple")))
+                .limit(1);
+
+              if (!linkedAppleAccount) {
+                return null;
+              }
+            }
+
+            userId = existingUser.id;
+          } else {
+            // Apple only sends the user's name on the device's very first
+            // authorization, so the client passes it through here.
+            const firstName = typeof credentials?.firstName === "string" ? credentials.firstName : "";
+            const lastName = typeof credentials?.lastName === "string" ? credentials.lastName : "";
+            const name = `${firstName} ${lastName}`.trim() || null;
+
+            userId = crypto.randomUUID();
+            await db.insert(authAdapterUsers).values({
+              id: userId,
+              email,
+              name,
+              image: null,
+              emailVerified: new Date(),
+            });
+          }
+
+          await db.insert(accounts).values({
+            userId,
+            type: "oidc",
+            provider: "apple",
+            providerAccountId: sub,
+          }).onConflictDoNothing();
+        }
+
+        const [user] = await db
+          .select({ name: users.name, image: users.image })
+          .from(users)
+          .where(eq(users.id, userId))
+          .limit(1);
+
+        return { id: userId, email, name: user?.name ?? null, image: user?.image ?? null };
       },
     }),
     ...(process.env.AUTH_APPLE_ID && process.env.AUTH_APPLE_SECRET
