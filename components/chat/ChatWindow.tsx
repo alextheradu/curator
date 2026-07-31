@@ -322,7 +322,18 @@ export function ChatWindow({
         abortRef.current = null;
         setStreamStatus("");
         setStreamingSearchActivity(undefined);
-        finalizeStreamingMessage(conversationId, undefined, undefined, undefined, assistantMessageId);
+        if (accumulated) {
+          finalizeStreamingMessage(conversationId, undefined, undefined, undefined, assistantMessageId);
+        } else {
+          // No tokens ever arrived - a toast alone disappears in a few
+          // seconds and leaves no trace, so a failed send looks identical
+          // to one that silently never went out. Leave a visible marker.
+          addMessage(conversationId, {
+            role: "assistant",
+            content: "⚠️ Something went wrong and this didn't get a response. Please try sending it again.",
+          });
+          resetStreamingState();
+        }
         window.dispatchEvent(new CustomEvent("curator:error", {
           detail: { message: error.message || "Failed to reach OpenRouter." },
         }));
