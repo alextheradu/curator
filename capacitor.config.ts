@@ -2,7 +2,7 @@ import type { CapacitorConfig } from "@capacitor/cli";
 import { KeyboardResize } from "@capacitor/keyboard";
 
 const config: CapacitorConfig = {
-  appId: "com.curatorfrc.app",
+  appId: "com.alexradu.curatorai",
   appName: "Curator",
   webDir: "public",
   server: {
