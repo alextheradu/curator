@@ -124,7 +124,16 @@ function SidebarProvider({
 
   // Helper to toggle the sidebar.
   const toggleSidebar = React.useCallback(() => {
-    return isMobile ? setOpenMobile((open) => !open) : setOpen((open) => !open)
+    if (isMobile) {
+      // Dismiss the on-screen keyboard first, otherwise it stays up and
+      // overlaps the sidebar sheet since the keyboard is a system layer
+      // that ignores in-page z-index.
+      if (document.activeElement instanceof HTMLElement) {
+        document.activeElement.blur()
+      }
+      return setOpenMobile((open) => !open)
+    }
+    return setOpen((open) => !open)
   }, [isMobile, setOpen, setOpenMobile])
 
   // Adds a keyboard shortcut to toggle the sidebar.
