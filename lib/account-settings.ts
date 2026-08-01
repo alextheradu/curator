@@ -16,13 +16,24 @@ type UserAccountSettings = {
   ageConfirmedAt: Date | null;
 };
 
-function isMissingColumn(error: unknown) {
-  return (
-    typeof error === "object" &&
-    error !== null &&
-    "code" in error &&
-    error.code === "42703"
-  );
+function isMissingColumn(error: unknown, depth = 0): boolean {
+  if (depth > 3 || typeof error !== "object" || error === null) {
+    return false;
+  }
+
+  if ("code" in error && error.code === "42703") {
+    return true;
+  }
+
+  // Some drivers/wrappers surface the actual PostgresError as `.cause`
+  // rather than setting `code` on the top-level caught error - this
+  // callback runs on every sign-in, so a missed match here means a pending
+  // migration takes down auth entirely instead of degrading gracefully.
+  if ("cause" in error) {
+    return isMissingColumn(error.cause, depth + 1);
+  }
+
+  return false;
 }
 
 export async function readUserAccountSettings(userId: string): Promise<UserAccountSettings> {
