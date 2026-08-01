@@ -59,15 +59,32 @@ export async function nativeAppleSignIn(): Promise<void> {
     return;
   }
 
-  // needs "Sign In with Apple" capability enabled in Xcode + on the App ID
+  // iOS needs "Sign In with Apple" capability enabled in Xcode + on the App ID
   // in the Apple Developer portal (com.apple.developer.applesignin).
+  // Android runs Apple's OAuth page in an in-app WebView and needs an Apple
+  // Services ID (NEXT_PUBLIC_AUTH_APPLE_ANDROID_CLIENT_ID) with a matching
+  // Return URL registered in the Apple Developer portal.
   try {
     const { AppleSignIn, SignInScope } = await import("@capawesome/capacitor-apple-sign-in");
 
+    const platform = Capacitor.getPlatform();
     const nonce = crypto.randomUUID();
+
+    if (platform === "android") {
+      const clientId = process.env.NEXT_PUBLIC_AUTH_APPLE_ANDROID_CLIENT_ID;
+      if (!clientId) throw new Error("Apple sign-in is not configured for Android");
+      await AppleSignIn.initialize({ clientId });
+    }
+
     const result = await AppleSignIn.signIn({
       scopes: [SignInScope.Email, SignInScope.FullName],
       nonce,
+      ...(platform === "android"
+        ? {
+            redirectUrl: "https://curatorfrc.com/native-auth/apple-callback",
+            state: crypto.randomUUID(),
+          }
+        : {}),
     });
 
     if (!result.idToken) throw new Error("No ID token returned from Apple");
