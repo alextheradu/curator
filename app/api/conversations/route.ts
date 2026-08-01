@@ -12,7 +12,7 @@ import {
   readGuestSessionId,
   serializeGuestSessionCookie,
 } from "@/lib/guest-session";
-import { and, asc, desc, eq, inArray } from "drizzle-orm";
+import { and, asc, desc, eq, inArray, isNull, isNotNull } from "drizzle-orm";
 import { NextRequest, NextResponse } from "next/server";
 
 function buildSearchDescription(content: string) {
@@ -26,15 +26,19 @@ function buildSearchDescription(content: string) {
     .slice(0, 120);
 }
 
-export async function GET() {
+export async function GET(req: NextRequest) {
   const session = await auth();
+  // Recently Deleted reads the same list endpoint scoped to soft-deleted
+  // rows, rather than duplicating the owner/guest access logic in a new route.
+  const wantsDeleted = req.nextUrl.searchParams.get("deleted") === "true";
+  const deletedFilter = wantsDeleted ? isNotNull(conversations.deletedAt) : isNull(conversations.deletedAt);
 
   if (!session?.user?.id) {
     const guestId = await readGuestSessionId();
     if (!guestId) return NextResponse.json([]);
 
     const rows = await withGuestDbAccess(guestId, (tx) => tx.select().from(conversations)
-      .where(eq(conversations.guestId, guestId))
+      .where(and(eq(conversations.guestId, guestId), deletedFilter))
       .orderBy(desc(conversations.updatedAt)));
 
     return NextResponse.json(rows);
@@ -43,7 +47,7 @@ export async function GET() {
   const rows = await withSessionDbAccess(session, (tx) => tx
     .select()
     .from(conversations)
-    .where(eq(conversations.userId, session.user.id))
+    .where(and(eq(conversations.userId, session.user.id), deletedFilter))
     .orderBy(desc(conversations.updatedAt)));
 
   if (rows.length === 0) {

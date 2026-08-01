@@ -7,6 +7,7 @@ export interface LiquidGlassComposerPlugin {
   setStreaming(options: { value: boolean }): Promise<void>;
   setDisabled(options: { value: boolean }): Promise<void>;
   clear(): Promise<void>;
+  setText(options: { value: string }): Promise<void>;
   addListener(
     event: 'send',
     handler: (data: { value: string }) => void

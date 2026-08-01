@@ -1,6 +1,49 @@
 import { describe, expect, it } from "vitest";
 
-import { buildWebSearchQuery } from "@/lib/web-search-decision";
+import { buildWebSearchQuery, needsCurrentFrcVerification } from "@/lib/web-search-decision";
+
+describe("needsCurrentFrcVerification", () => {
+  // The exact tester-reported prompts from the FRC reliability bug report.
+  it("flags 'What was the 2026 FRC game?'", () => {
+    expect(needsCurrentFrcVerification("What was the 2026 FRC game?", 2026)).toBe(true);
+  });
+
+  it("flags 'What's the height limit for Rebuilt?'", () => {
+    expect(needsCurrentFrcVerification("What's the height limit for Rebuilt?", 2026)).toBe(true);
+  });
+
+  it("flags the misspelled 'hight limit' variant", () => {
+    expect(needsCurrentFrcVerification("What is the hight limit for a robot in rebuilt?", 2026)).toBe(true);
+  });
+
+  it("flags 'Rules of FRC'", () => {
+    expect(needsCurrentFrcVerification("Rules of FRC", 2026)).toBe(true);
+  });
+
+  it("flags current-game phrasing without an explicit year", () => {
+    expect(needsCurrentFrcVerification("what is the current FRC game called", 2026)).toBe(true);
+  });
+
+  it("flags a weight limit question", () => {
+    expect(needsCurrentFrcVerification("what's the max robot weight this season", 2026)).toBe(true);
+  });
+
+  it("does not flag an ordinary strategy question", () => {
+    expect(needsCurrentFrcVerification("how should we practice alliance selection interviews", 2026)).toBe(false);
+  });
+
+  it("does not flag a general programming question", () => {
+    expect(needsCurrentFrcVerification("how do I debounce a limit switch in Java", 2026)).toBe(false);
+  });
+
+  it("does not flag an empty query", () => {
+    expect(needsCurrentFrcVerification("", 2026)).toBe(false);
+  });
+
+  it("does not flag a past-season year below the current season", () => {
+    expect(needsCurrentFrcVerification("what was the 2019 FRC game", 2026)).toBe(false);
+  });
+});
 
 describe("buildWebSearchQuery", () => {
   describe("FRC scope injection", () => {

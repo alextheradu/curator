@@ -25,6 +25,8 @@ struct ComposerBarView: View {
                 .padding(.vertical, 10)
                 .focused($focused)
                 .disabled(vm.isDisabled)
+                .submitLabel(.send)
+                .onSubmit(sendAction)
 
             actionButton
         }

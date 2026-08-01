@@ -4,6 +4,7 @@ import { lazy, Suspense } from "react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { cn, normalizeAssistantMarkdown } from "@/lib/utils";
+import { stripToolCallMarkup } from "@/lib/tool-call-sanitizer";
 
 const LazyCodeBlock = lazy(() =>
   import("./LazyCodeBlock").then((m) => ({ default: m.LazyCodeBlock }))
@@ -93,7 +94,7 @@ export function AssistantMarkdown({
           ),
         }}
       >
-        {normalizeAssistantMarkdown(content)}
+        {normalizeAssistantMarkdown(stripToolCallMarkup(content))}
       </ReactMarkdown>
       {isStreaming && (
         <span className="ml-0.5 inline-block h-3.5 w-0.5 animate-pulse rounded-full bg-foreground/60" />
