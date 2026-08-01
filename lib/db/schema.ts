@@ -66,11 +66,13 @@ export const conversations = pgTable("conversations", {
   title: text("title").notNull().default("New Chat"),
   seasonYear: integer("season_year").notNull().default(2026),
   isPublic: boolean("is_public").notNull().default(false),
+  deletedAt: timestamp("deleted_at"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 }, (table) => [
   index("conversations_project_id_idx").on(table.projectId),
   index("conversations_guest_id_idx").on(table.guestId),
+  index("conversations_deleted_at_idx").on(table.deletedAt),
 ]);
 
 export const messages = pgTable("messages", {

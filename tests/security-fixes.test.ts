@@ -212,6 +212,7 @@ describe("public DTO helpers", () => {
       title: "Private title",
       seasonYear: 2026,
       isPublic: true,
+      deletedAt: null,
       createdAt: new Date("2026-05-18T00:00:00.000Z"),
       updatedAt: new Date("2026-05-18T01:00:00.000Z"),
     })).toEqual({

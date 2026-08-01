@@ -14,6 +14,7 @@ public class LiquidGlassComposerPlugin: CAPPlugin, CAPBridgedPlugin {
         CAPPluginMethod(name: "setStreaming",   returnType: CAPPluginReturnPromise),
         CAPPluginMethod(name: "setDisabled",    returnType: CAPPluginReturnPromise),
         CAPPluginMethod(name: "clear",          returnType: CAPPluginReturnPromise),
+        CAPPluginMethod(name: "setText",        returnType: CAPPluginReturnPromise),
     ]
 
     private var overlayVC: UIViewController?
@@ -86,6 +87,12 @@ public class LiquidGlassComposerPlugin: CAPPlugin, CAPBridgedPlugin {
 
     @objc func clear(_ call: CAPPluginCall) {
         DispatchQueue.main.async { [weak self] in self?.vm.text = "" }
+        call.resolve()
+    }
+
+    @objc func setText(_ call: CAPPluginCall) {
+        let v = call.getString("value") ?? ""
+        DispatchQueue.main.async { [weak self] in self?.vm.text = v }
         call.resolve()
     }
 

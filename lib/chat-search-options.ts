@@ -55,7 +55,7 @@ export function clampDocumentSearchLimit(limit: unknown, searchMode: SearchMode 
   return Math.min(Math.max(Math.trunc(numericLimit), 1), max);
 }
 
-export function buildDeepSearchConfig(searchMode: SearchMode | boolean): DeepSearchConfig {
+export function buildDeepSearchConfig(searchMode: SearchMode | boolean, forceWebResults = false): DeepSearchConfig {
   const normalizedMode: SearchMode = typeof searchMode === "boolean"
     ? (searchMode ? "deep" : "fast")
     : searchMode;
@@ -65,7 +65,11 @@ export function buildDeepSearchConfig(searchMode: SearchMode | boolean): DeepSea
       maxIterations: FAST_SEARCH_MAX_ITERATIONS,
       maxToolDurationMs: FAST_SEARCH_MAX_TOOL_DURATION_MS,
       documentLimit: FAST_DOCUMENT_LIMIT,
-      webResultsPerCall: 0,
+      // Fast mode normally skips web_search entirely (webResultsPerCall: 0
+      // makes any call return nothing). When a question needs current-season
+      // verification we grant the tool for this turn (see
+      // needsCurrentFrcVerification) - it must actually return results.
+      webResultsPerCall: forceWebResults ? BALANCED_WEB_RESULTS_PER_CALL : 0,
     };
   }
 

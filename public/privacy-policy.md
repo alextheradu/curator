@@ -1,7 +1,7 @@
 # Privacy Policy
 
 **Curator - FRC AI Assistant**
-**Last updated: July 30, 2026**
+**Last updated: August 1, 2026**
 
 ---
 
@@ -131,6 +131,7 @@ If you do not consent to analytics cookies, Google Analytics never loads and no 
 ## 6. Data Retention
 
 - **Guest conversations:** stored server-side in our database, linked to your `guest_session_id` cookie, and also cached in your browser's `localStorage`. Guest conversations and their messages are deleted 90 days after creation. If you sign in, your guest conversations are transferred to your account and retained according to the authenticated-user policy above. Clearing your browser data removes the local cache only - the server copy is retained until the 90-day window expires or you sign in and then delete the conversations from your account.
+- **Deleted conversations:** deleting a chat (guest or signed-in) moves it to a "Recently Deleted" area instead of removing it immediately. From there you can restore it or delete it forever. Chats left in Recently Deleted are permanently deleted automatically after 30 days. A publicly shared chat stops being reachable via its share link as soon as it's deleted, even while it's still recoverable from Recently Deleted.
 - **Offline app cache:** limited to the offline fallback page, manifest, and app icons; stored in your browser until the browser clears site data, the service worker replaces the cache during an update, or you manually remove the site's stored data.
 - **Authenticated user data:** retained for as long as your account exists. This includes saved onboarding profile fields, chat-mode preference, Terms of Service acceptance state, project metadata, hidden project summaries, and conversation history. You may delete your account from the Settings page. Account deletion removes your account, saved chats, projects, settings, sessions, linked sign-in records, user reports tied to deleted chats, and other rows that cascade from the account record. Support requests and operational logs linked to the deleted account are redacted where retained for support, security, accountability, or abuse-prevention needs.
 - **Apple account-lifecycle notifications (iOS):** if you signed in with Apple on iOS, Apple may notify us server-to-server when you delete your Apple Account or revoke Curator's Sign in with Apple access. A permanent Apple Account deletion triggers the same account deletion described above. Revoking Sign in with Apple access (without deleting your Apple Account) unlinks Apple as a sign-in method for your Curator account without deleting your other account data.
