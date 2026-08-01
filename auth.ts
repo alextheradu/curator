@@ -50,6 +50,13 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     Google({
       clientId: process.env.AUTH_GOOGLE_ID!,
       clientSecret: process.env.AUTH_GOOGLE_SECRET!,
+      // Safe here specifically because every account in this DB - including
+      // the native Credentials flows below - only ever gets created from a
+      // provider-verified email (no password/unverified signup path exists
+      // at all). Without this, someone who signed up with Google and later
+      // taps "Sign in with Apple" using the same email gets a hard
+      // OAuthAccountNotLinked error instead of landing in their own account.
+      allowDangerousEmailAccountLinking: true,
       profile(profile: GoogleProfile) {
         return {
           id: profile.sub,
@@ -247,6 +254,9 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
           Apple({
             clientId: process.env.AUTH_APPLE_ID,
             clientSecret: process.env.AUTH_APPLE_SECRET,
+            // See the matching comment on the Google provider above - same
+            // reasoning applies symmetrically.
+            allowDangerousEmailAccountLinking: true,
             profile(profile: AppleProfile) {
               const firstName = profile.name?.firstName ?? "";
               const lastName = profile.name?.lastName ?? "";
