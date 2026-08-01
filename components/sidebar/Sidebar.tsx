@@ -16,7 +16,9 @@ import {
   XIcon,
 } from "lucide-react";
 import { useSession } from "next-auth/react";
-import { nativeGoogleSignIn } from "@/lib/native-auth";
+import { requestSignIn } from "@/lib/age-gate";
+import { AppleIcon, GoogleIcon } from "@/components/auth/BrandIcons";
+import { AuthModal } from "@/components/auth/AuthModal";
 import { NewsBadge } from "@/components/news/NewsBadge";
 import { useSidebarActions } from "@/hooks/useSidebarActions";
 import {
@@ -107,6 +109,8 @@ function stringToHue(value: string): number {
   return Math.abs(hash) % 360;
 }
 
+const appleEnabled = !!process.env.NEXT_PUBLIC_APPLE_SIGNIN_ENABLED;
+
 interface AppSidebarProps {
   latestNewsPublishedAt: string | null;
 }
@@ -136,6 +140,7 @@ export function AppSidebar({ latestNewsPublishedAt }: AppSidebarProps) {
   const [searchQuery, setSearchQuery] = useState("");
   const [isSearchFocused, setIsSearchFocused] = useState(false);
   const [avatarLoadFailed, setAvatarLoadFailed] = useState(false);
+  const [authModalOpen, setAuthModalOpen] = useState(false);
   const [projectDialogOpen, setProjectDialogOpen] = useState(false);
   const [projectDialogVersion, setProjectDialogVersion] = useState(0);
   const [editingProject, setEditingProject] = useState<Project | null>(null);
@@ -221,6 +226,7 @@ export function AppSidebar({ latestNewsPublishedAt }: AppSidebarProps) {
 
   return (
     <>
+      <AuthModal open={authModalOpen} onOpenChange={setAuthModalOpen} />
       <ProjectDialog
         key={`${editingProject?.id ?? "new"}-${projectDialogVersion}`}
         open={projectDialogOpen}
@@ -462,7 +468,7 @@ export function AppSidebar({ latestNewsPublishedAt }: AppSidebarProps) {
                     <SidebarMenuButton
                       onClick={() => {
                         if (!canUseProjects) {
-                          void nativeGoogleSignIn();
+                          setAuthModalOpen(true);
                           return;
                         }
                         openNewProjectDialog();
@@ -638,11 +644,22 @@ export function AppSidebar({ latestNewsPublishedAt }: AppSidebarProps) {
                 </div>
               ) : (
                 <div className="flex w-full flex-col gap-2 group-data-[collapsible=icon]:items-center">
+                  {appleEnabled && (
+                    <button
+                      type="button"
+                      onClick={() => requestSignIn("apple")}
+                      className="flex h-11 w-full items-center justify-center gap-2.5 rounded-xl border border-sidebar-border bg-sidebar-accent/30 text-[14px] font-medium text-sidebar-foreground transition-colors hover:bg-sidebar-accent/60 group-data-[collapsible=icon]:hidden max-md:h-12 max-md:rounded-2xl max-md:text-[15px]"
+                    >
+                      <AppleIcon className="size-4" />
+                      Sign in with Apple
+                    </button>
+                  )}
                   <button
                     type="button"
-                    onClick={() => void nativeGoogleSignIn()}
-                    className="flex h-11 w-full items-center justify-center rounded-xl border border-sidebar-border bg-sidebar-accent/30 text-[14px] font-medium text-sidebar-foreground transition-colors hover:bg-sidebar-accent/60 group-data-[collapsible=icon]:hidden max-md:h-12 max-md:rounded-2xl max-md:text-[15px]"
+                    onClick={() => requestSignIn("google")}
+                    className="flex h-11 w-full items-center justify-center gap-2.5 rounded-xl border border-sidebar-border bg-sidebar-accent/30 text-[14px] font-medium text-sidebar-foreground transition-colors hover:bg-sidebar-accent/60 group-data-[collapsible=icon]:hidden max-md:h-12 max-md:rounded-2xl max-md:text-[15px]"
                   >
+                    <GoogleIcon className="size-4" />
                     Sign in with Google
                   </button>
                   <button

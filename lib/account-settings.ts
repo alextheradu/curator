@@ -13,6 +13,7 @@ type UserAccountSettings = {
   teamNumber: number | null;
   onboardedAt: Date | null;
   tosAcceptedAt: Date | null;
+  ageConfirmedAt: Date | null;
 };
 
 function isMissingColumn(error: unknown) {
@@ -34,6 +35,7 @@ export async function readUserAccountSettings(userId: string): Promise<UserAccou
         teamNumber: users.teamNumber,
         onboardedAt: users.onboardedAt,
         tosAcceptedAt: users.tosAcceptedAt,
+        ageConfirmedAt: users.ageConfirmedAt,
       })
       .from(users)
       .where(eq(users.id, userId))
@@ -46,6 +48,7 @@ export async function readUserAccountSettings(userId: string): Promise<UserAccou
       teamNumber: row?.teamNumber ?? null,
       onboardedAt: row?.onboardedAt ?? null,
       tosAcceptedAt: row?.tosAcceptedAt ?? null,
+      ageConfirmedAt: row?.ageConfirmedAt ?? null,
     };
   } catch (error) {
     if (!isMissingColumn(error)) {
@@ -67,6 +70,7 @@ export async function readUserAccountSettings(userId: string): Promise<UserAccou
       teamNumber: null,
       onboardedAt: null,
       tosAcceptedAt: null,
+      ageConfirmedAt: null,
     };
   }
 }
