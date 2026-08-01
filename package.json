@@ -34,7 +34,7 @@
   "dependencies": {
     "@auth/drizzle-adapter": "^1.11.1",
     "@base-ui/react": "^1.4.0",
-    "@capacitor/android": "^8.5.0",
+    "@capacitor/android": "^8.3.3",
     "@capacitor/cli": "^8.3.3",
     "@capacitor/core": "^8.3.3",
     "@capacitor/haptics": "^8.0.2",
