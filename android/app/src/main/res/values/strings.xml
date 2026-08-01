@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Curator</string>
+    <string name="title_activity_main">Curator</string>
+    <string name="package_name">com.alexradu.curatorai</string>
+    <string name="custom_url_scheme">com.alexradu.curatorai</string>
+</resources>

@@ -20,8 +20,10 @@
     "db:migrate:dev": "node scripts/run-with-env.mjs .env.development.local drizzle-kit migrate",
     "db:studio:dev": "node scripts/run-with-env.mjs .env.development.local drizzle-kit studio",
     "cap:assets": "npx --yes @capacitor/assets@3.0.5 generate --assetPath resources --ios",
+    "cap:assets:android": "npx --yes @capacitor/assets@3.0.5 generate --assetPath resources --android",
     "cap:sync": "cap sync",
-    "cap:open:ios": "cap open ios"
+    "cap:open:ios": "cap open ios",
+    "cap:open:android": "cap open android"
   },
   "browserslist": [
     "Chrome >= 109",
@@ -32,6 +34,7 @@
   "dependencies": {
     "@auth/drizzle-adapter": "^1.11.1",
     "@base-ui/react": "^1.4.0",
+    "@capacitor/android": "^8.5.0",
     "@capacitor/cli": "^8.3.3",
     "@capacitor/core": "^8.3.3",
     "@capacitor/haptics": "^8.0.2",
