@@ -16,6 +16,7 @@ export const users = pgTable("users", {
   teamNumber: integer("team_number"),
   onboardedAt: timestamp("onboarded_at"),
   tosAcceptedAt: timestamp("tos_accepted_at"),
+  ageConfirmedAt: timestamp("age_confirmed_at"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 

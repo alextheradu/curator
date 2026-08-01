@@ -127,6 +127,13 @@
       "when": 1780000000000,
       "tag": "0017_conversation_soft_delete",
       "breakpoints": true
+    },
+    {
+      "idx": 18,
+      "version": "7",
+      "when": 1780000060000,
+      "tag": "0018_user_age_confirmed",
+      "breakpoints": true
     }
   ]
 }
