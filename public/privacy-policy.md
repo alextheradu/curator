@@ -194,7 +194,7 @@ We may retain limited moderation records when reasonably necessary to enforce th
 
 ## 9. Children's Privacy
 
-The Service is intended for FRC team members, mentors, and coaches. FRC participants may include students under 18. We do not knowingly collect data from children under 13. If you believe a child under 13 has provided us personal information, contact us and we will delete it promptly.
+The Service is intended for FRC team members, mentors, and coaches. FRC participants may include students under 18, and guest chatting without an account has no age requirement. Creating an **account** (Google or Apple sign-in), however, requires you to be at least 13 years old, in compliance with the U.S. Children's Online Privacy Protection Act (COPPA). Before any sign-in attempt, we show a neutral age-confirmation screen; account creation does not proceed unless you confirm you are 13 or older. We do not knowingly collect personal information via an account from anyone under 13. If you believe a child under 13 has created an account or otherwise provided us personal information, contact us through the Support page and we will delete it promptly.
 
 ---
 

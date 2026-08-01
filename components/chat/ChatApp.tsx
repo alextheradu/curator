@@ -6,6 +6,7 @@ import { useSession } from "next-auth/react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import { OnboardingModal } from "@/components/auth/OnboardingModal";
+import { hasConfirmedAge } from "@/lib/age-gate";
 import { ChatWindow } from "@/components/chat/ChatWindow";
 import {
   claimGuestConversations,
@@ -22,6 +23,8 @@ import type { Conversation } from "@/lib/store";
 import { useChatStore } from "@/lib/store";
 
 type ViewMode = "loading" | "guest" | "owner" | "public" | "not-found" | "error";
+
+const AGE_CONFIRM_SYNCED_KEY = "curator:age-confirm-synced";
 
 interface ChatAppProps {
   requestedConversationId?: string;
@@ -111,6 +114,18 @@ export function ChatApp({ requestedConversationId, initialPrompt }: ChatAppProps
       setDefaultChatMode(accountChatMode);
     }
   }, [isAuthenticated, session?.user?.defaultChatMode, setDefaultChatMode]);
+
+  // One-time, one-way sync: if this browser passed the age gate before
+  // signing in (cookie set by AgeGateDialog), record it on the account.
+  // Never re-prompts or challenges an already-authenticated session that
+  // predates this feature - this only carries a confirmation forward.
+  useEffect(() => {
+    if (!isAuthenticated) return;
+    if (hasConfirmedAge() && localStorage.getItem(AGE_CONFIRM_SYNCED_KEY) !== "true") {
+      localStorage.setItem(AGE_CONFIRM_SYNCED_KEY, "true");
+      void fetch("/api/account/age-confirm", { method: "PATCH" }).catch(() => {});
+    }
+  }, [isAuthenticated]);
 
   useEffect(() => {
     if (!session?.user?.id) {

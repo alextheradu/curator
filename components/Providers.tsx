@@ -10,6 +10,7 @@ import { SlowConnectionBanner } from "@/components/pwa/SlowConnectionBanner";
 import { CapacitorOfflineScreen } from "@/components/pwa/CapacitorOfflineScreen";
 import { Toaster } from "@/components/ui/sonner";
 import { ErrorToastListener } from "@/components/ui/ErrorToast";
+import { AgeGateDialog } from "@/components/auth/AgeGateDialog";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { sanitizeClientLogUrl } from "@/lib/url-safety";
 
@@ -227,6 +228,7 @@ export function Providers({ children, nonce }: { children: ReactNode; nonce?: st
           <CapacitorKeyboard />
           <AssetRecovery />
           <ErrorToastListener />
+          <AgeGateDialog />
           {children}
           <CookieConsentBanner />
           <Toaster richColors position="top-right" closeButton />
