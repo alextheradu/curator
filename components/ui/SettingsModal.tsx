@@ -21,6 +21,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { SupportForm } from "@/components/support/SupportForm";
+import { RecentlyDeletedDialog } from "@/components/sidebar/RecentlyDeletedDialog";
 import { Button } from "@/components/ui/button";
 import {
   AlertDialog,
@@ -220,6 +221,7 @@ export function SettingsModal() {
   const [isExporting, setIsExporting] = useState(false);
   const [isResetting, setIsResetting] = useState(false);
   const [isDeletingAccount, setIsDeletingAccount] = useState(false);
+  const [recentlyDeletedOpen, setRecentlyDeletedOpen] = useState(false);
 
   const hydrated = useSyncExternalStore(
     () => () => {},
@@ -376,7 +378,24 @@ export function SettingsModal() {
 
   return (
     <Dialog open={settingsOpen} onOpenChange={setSettingsOpen}>
-      <DialogContent className="!left-0 !top-0 !h-[100dvh] !w-full !max-w-none !translate-x-0 !translate-y-0 overflow-hidden overflow-x-hidden rounded-none border-0 bg-card p-0 shadow-none [&>button]:hidden md:!left-[50%] md:!top-[50%] md:!h-auto md:!w-full md:!max-w-4xl md:!max-h-[calc(100dvh-2rem)] md:!translate-x-[-50%] md:!translate-y-[-50%] md:rounded-2xl md:border md:border-border/60 md:shadow-[var(--shadow-float)] md:[&>button]:flex">
+      <DialogContent
+        className="!left-0 !top-0 !h-[100dvh] !w-full !max-w-none !translate-x-0 !translate-y-0 overflow-hidden overflow-x-hidden rounded-none border-0 bg-card p-0 shadow-none [&>button]:hidden md:!left-[50%] md:!top-[50%] md:!h-auto md:!w-full md:!max-w-4xl md:!max-h-[calc(100dvh-2rem)] md:!translate-x-[-50%] md:!translate-y-[-50%] md:rounded-2xl md:border md:border-border/60 md:shadow-[var(--shadow-float)] md:[&>button]:flex"
+        onPointerDownOutside={(event) => {
+          // iPhone Mirroring forwards Mac trackpad/mouse clicks as synthetic
+          // pointer events. When the real click target can't be resolved
+          // (a known WebKit quirk with synthetic pointer input), the event
+          // target resolves to <body>/<html> instead of the actual element
+          // the user clicked - which Radix's outside-click detection then
+          // reads as "clicked outside the dialog" and closes it, even for
+          // clicks on real controls inside Settings. A genuine outside click
+          // never targets body/html directly, so treat that as unresolved
+          // and ignore it rather than dismiss.
+          const target = event.target as Node | null;
+          if (!target || target === document.body || target === document.documentElement) {
+            event.preventDefault();
+          }
+        }}
+      >
         <DialogTitle className="sr-only">Settings</DialogTitle>
         <DialogDescription className="sr-only">
           Manage account, appearance, privacy, data, and support settings for Curator.
@@ -619,6 +638,25 @@ export function SettingsModal() {
                   </div>
 
                   <div>
+                    <SectionHeading>History</SectionHeading>
+                    <SettingRow
+                      label="Recently deleted"
+                      description="Restore a deleted chat or remove it for good."
+                    >
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        className="rounded-lg"
+                        onClick={() => setRecentlyDeletedOpen(true)}
+                      >
+                        <Trash2Icon className="size-3.5" />
+                        View
+                      </Button>
+                    </SettingRow>
+                  </div>
+
+                  <div>
                     <SectionHeading>Reset</SectionHeading>
                     <SettingRow
                       label="Reset settings"
@@ -825,6 +863,7 @@ export function SettingsModal() {
           </div>
         </div>
       </DialogContent>
+      <RecentlyDeletedDialog open={recentlyDeletedOpen} onOpenChange={setRecentlyDeletedOpen} />
     </Dialog>
   );
 }

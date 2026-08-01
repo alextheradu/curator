@@ -11,6 +11,8 @@ import {
   deleteProject as deleteProjectRequest,
   fetchConversation,
   fetchConversationMessages,
+  permanentlyDeleteConversation as permanentlyDeleteConversationRequest,
+  restoreConversation as restoreConversationRequest,
   updateProject as updateProjectRequest,
   updateConversation as updateConversationRequest,
 } from "@/lib/conversation-api";
@@ -116,9 +118,12 @@ export function useSidebarActions() {
     const remaining = useChatStore.getState().conversations.filter((c) => c.id !== conversationId);
 
     try {
-      if (isAuthenticated) {
-        await deleteConversationRequest(conversationId);
-      }
+      // Guests have DB-backed conversations too (server DELETE route
+      // handles the guest-session branch) - not calling this for guests
+      // meant a "deleted" chat only vanished from local state and came
+      // back on the next reload, and never actually reached Recently
+      // Deleted since the server never learned about it.
+      await deleteConversationRequest(conversationId);
       deleteConversation(conversationId);
 
       if (currentActiveId === conversationId) {
@@ -133,7 +138,32 @@ export function useSidebarActions() {
     } catch {
       toast.error("Unable to delete that chat.");
     }
-  }, [deleteConversation, isAuthenticated, router, setActiveConversation]);
+  }, [deleteConversation, router, setActiveConversation]);
+
+  const restoreConversationAction = useCallback(async (conversationId: string) => {
+    try {
+      const restored = normalizeConversation(
+        await restoreConversationRequest(conversationId),
+        [],
+        useChatStore.getState().defaultChatMode,
+      );
+      upsertConversation(restored);
+      return true;
+    } catch {
+      toast.error("Unable to restore that chat.");
+      return false;
+    }
+  }, [upsertConversation]);
+
+  const permanentlyDeleteConversationAction = useCallback(async (conversationId: string) => {
+    try {
+      await permanentlyDeleteConversationRequest(conversationId);
+      return true;
+    } catch {
+      toast.error("Unable to permanently delete that chat.");
+      return false;
+    }
+  }, []);
 
   const shareConversation = useCallback(async (conversationId: string) => {
     if (!isAuthenticated) {
@@ -239,6 +269,8 @@ export function useSidebarActions() {
     openConversation,
     renameConversation,
     deleteConversation: deleteConversationAction,
+    restoreConversation: restoreConversationAction,
+    permanentlyDeleteConversation: permanentlyDeleteConversationAction,
     shareConversation,
     createProject,
     updateProject,

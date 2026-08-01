@@ -7,7 +7,7 @@ import { applyRateLimitHeaders, enforceRequestRateLimit } from "@/lib/rate-limit
 import { readGuestSessionId } from "@/lib/guest-session";
 import { hasValidMutationOrigin, validateJsonMutationRequest } from "@/lib/request-security";
 import { isUuid } from "@/lib/uuid";
-import { eq, and } from "drizzle-orm";
+import { eq, and, isNotNull } from "drizzle-orm";
 import { NextRequest, NextResponse } from "next/server";
 
 export async function GET(_: Request, { params }: { params: Promise<{ id: string }> }) {
@@ -150,6 +150,12 @@ export async function DELETE(req: NextRequest, { params }: { params: Promise<{ i
   const { id } = await params;
   if (!isUuid(id)) return NextResponse.json({ error: "Invalid conversation id" }, { status: 400 });
 
+  // Deleting from normal history soft-deletes (recoverable from Recently
+  // Deleted for CONVERSATION_TRASH_RETENTION_DAYS). ?permanent=true is only
+  // honored for a conversation that's already in the trash, so a chat can
+  // never be permanently destroyed in a single tap from the main list.
+  const permanent = new URL(req.url).searchParams.get("permanent") === "true";
+
   if (!session?.user?.id) {
     const rateLimit = await enforceRequestRateLimit(req, "conversationMutate");
     const headers = new Headers();
@@ -161,8 +167,18 @@ export async function DELETE(req: NextRequest, { params }: { params: Promise<{ i
     const guestId = await readGuestSessionId();
     if (!guestId) return NextResponse.json({ error: "Unauthorized" }, { status: 401, headers });
 
-    await withGuestDbAccess(guestId, (tx) => tx.delete(conversations)
-      .where(and(eq(conversations.id, id), eq(conversations.guestId, guestId))));
+    if (permanent) {
+      await withGuestDbAccess(guestId, (tx) => tx.delete(conversations)
+        .where(and(
+          eq(conversations.id, id),
+          eq(conversations.guestId, guestId),
+          isNotNull(conversations.deletedAt),
+        )));
+    } else {
+      await withGuestDbAccess(guestId, (tx) => tx.update(conversations)
+        .set({ deletedAt: new Date() })
+        .where(and(eq(conversations.id, id), eq(conversations.guestId, guestId))));
+    }
 
     revalidateConversationDerivedCaches();
     return NextResponse.json({ ok: true }, { headers });
@@ -175,10 +191,70 @@ export async function DELETE(req: NextRequest, { params }: { params: Promise<{ i
     return NextResponse.json({ error: "Too many conversation updates. Please slow down." }, { status: 429, headers });
   }
 
-  await withSessionDbAccess(session, (tx) => tx.delete(conversations)
-    .where(and(eq(conversations.id, id), eq(conversations.userId, session.user.id))));
+  if (permanent) {
+    await withSessionDbAccess(session, (tx) => tx.delete(conversations)
+      .where(and(
+        eq(conversations.id, id),
+        eq(conversations.userId, session.user.id),
+        isNotNull(conversations.deletedAt),
+      )));
+  } else {
+    await withSessionDbAccess(session, (tx) => tx.update(conversations)
+      .set({ deletedAt: new Date() })
+      .where(and(eq(conversations.id, id), eq(conversations.userId, session.user.id))));
+  }
 
   revalidatePublicConversation(id);
   revalidateConversationDerivedCaches();
   return NextResponse.json({ ok: true }, { headers });
+}
+
+export async function POST(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  // Restore a soft-deleted conversation back into normal history.
+  if (!hasValidMutationOrigin(req)) {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
+
+  const session = await auth();
+  const { id } = await params;
+  if (!isUuid(id)) return NextResponse.json({ error: "Invalid conversation id" }, { status: 400 });
+
+  if (!session?.user?.id) {
+    const rateLimit = await enforceRequestRateLimit(req, "conversationMutate");
+    const headers = new Headers();
+    applyRateLimitHeaders(headers, rateLimit);
+    if (!rateLimit.ok) {
+      return NextResponse.json({ error: "Too many conversation updates. Please slow down." }, { status: 429, headers });
+    }
+
+    const guestId = await readGuestSessionId();
+    if (!guestId) return NextResponse.json({ error: "Unauthorized" }, { status: 401, headers });
+
+    const [restored] = await withGuestDbAccess(guestId, (tx) => tx.update(conversations)
+      .set({ deletedAt: null })
+      .where(and(eq(conversations.id, id), eq(conversations.guestId, guestId)))
+      .returning());
+
+    if (!restored) return NextResponse.json({ error: "Not found" }, { status: 404, headers });
+
+    revalidateConversationDerivedCaches();
+    return NextResponse.json(restored, { headers });
+  }
+
+  const rateLimit = await enforceRequestRateLimit(req, "conversationMutate", session.user.id);
+  const headers = new Headers();
+  applyRateLimitHeaders(headers, rateLimit);
+  if (!rateLimit.ok) {
+    return NextResponse.json({ error: "Too many conversation updates. Please slow down." }, { status: 429, headers });
+  }
+
+  const [restored] = await withSessionDbAccess(session, (tx) => tx.update(conversations)
+    .set({ deletedAt: null })
+    .where(and(eq(conversations.id, id), eq(conversations.userId, session.user.id)))
+    .returning());
+
+  if (!restored) return NextResponse.json({ error: "Not found" }, { status: 404, headers });
+
+  revalidateConversationDerivedCaches();
+  return NextResponse.json(restored, { headers });
 }

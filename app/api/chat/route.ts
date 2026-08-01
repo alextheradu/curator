@@ -11,8 +11,10 @@ import {
   parseChatSearchOptions,
   type DeepSearchConfig,
 } from "@/lib/chat-search-options";
+import { needsCurrentFrcVerification } from "@/lib/web-search-decision";
 import { parseClientChatMessages } from "@/lib/chat-request-validation";
 import { persistAssistantMessage } from "@/lib/assistant-messages";
+import { createToolCallStreamFilter } from "@/lib/tool-call-sanitizer";
 import { isUuid } from "@/lib/uuid";
 import type { SearchActivity, SearchActivityStep, SearchMode } from "@/lib/search-activity";
 import { DEFAULT_SEASON_YEAR } from "@/lib/seasons";
@@ -573,6 +575,19 @@ async function streamChatCompletion({
       let tokenCount = 0;
       let streamDone = false;
       let fullText = "";
+      // The model has no `tools` in this call (tool execution already
+      // happened in the earlier agentic loop), so any `<tool_call>` markup
+      // that shows up here is a hallucinated/malformed artifact from a weak
+      // model imitating its own tool-calling template - never real, never
+      // safe to show. Strip it before it reaches the client or gets persisted.
+      const toolCallFilter = createToolCallStreamFilter();
+
+      const emitVisible = (visible: string) => {
+        if (!visible) return;
+        fullText += visible;
+        if (progress) progress.text = fullText;
+        sendEvent({ type: "token", token: visible });
+      };
 
       const consumeLine = (line: string) => {
         if (!line.startsWith("data:")) {
@@ -595,9 +610,7 @@ async function streamChatCompletion({
           if (token) {
             if (tokenCount === 0) clearHeartbeat();
             tokenCount++;
-            fullText += token;
-            if (progress) progress.text = fullText;
-            sendEvent({ type: "token", token });
+            emitVisible(toolCallFilter.push(token));
           }
         } catch {
           // Ignore malformed upstream chunks.
@@ -635,6 +648,17 @@ async function streamChatCompletion({
 
       if (tokenCount > 0) {
         clearHeartbeat();
+        emitVisible(toolCallFilter.flush());
+        if (toolCallFilter.strippedBlocks > 0) {
+          // Count only - never log the raw tool-call content (may echo the
+          // user's query verbatim via the tool arguments).
+          void logAppEvent({
+            level: "warn",
+            source: "chat-tool-call-leak",
+            message: "stripped_leaked_tool_call_markup",
+            details: { model, blocks: toolCallFilter.strippedBlocks },
+          });
+        }
         return fullText;
       }
 
@@ -860,7 +884,13 @@ export async function POST(request: NextRequest) {
   const searchOptions = parseChatSearchOptions(body);
   const factCheck = searchOptions.factCheck;
   const searchMode = searchOptions.searchMode;
-  const searchConfig = buildDeepSearchConfig(searchMode);
+  const lastUserMessage = [...messages].reverse().find((m) => m.role === "user");
+  const lastUserText = typeof lastUserMessage?.content === "string" ? lastUserMessage.content : "";
+  // See needsCurrentFrcVerification: escalates web_search (and its result
+  // budget) for this turn when "fast" mode would otherwise leave a
+  // season-specific or rules question unverifiable.
+  const frcVerificationNeeded = searchMode === "fast" && needsCurrentFrcVerification(lastUserText, seasonYear);
+  const searchConfig = buildDeepSearchConfig(searchMode, frcVerificationNeeded);
   if (searchMode === "deep") {
     const deepSearchLimit = await enforceRateLimit({
       scope: "chat-deep-search",
@@ -1028,8 +1058,13 @@ export async function POST(request: NextRequest) {
             preferredName: userAccountSettings?.preferredName ?? null,
             teamNumber: userAccountSettings?.teamNumber ?? null,
           });
+          // frcVerificationNeeded is computed above (outer scope) from the
+          // same last user message, before buildDeepSearchConfig - see
+          // needsCurrentFrcVerification for what this escalates and why.
           if (searchMode === "fast") {
-            systemPrompt += "\n\nTOOL AVAILABILITY (fast mode): Only the TBA live-data tools are available in this conversation. The search_documents and web_search tools are NOT available - do not call them, and do not claim to have searched documents or the web. If a question needs document or web verification (e.g. rule wording or part legality), say you could not verify it in this mode and suggest switching to balanced or deep search.";
+            systemPrompt += frcVerificationNeeded
+              ? "\n\nTOOL AVAILABILITY (fast mode, verification needed): This looks like a season-specific or rules question, so web_search and search_documents are available this turn in addition to the TBA tools - use them before answering rather than relying on training data, which may be outdated or may not recognize a new season's game name. Prefer official FIRST documentation and the game manual. If you still cannot find an authoritative answer after searching, say so plainly instead of guessing."
+              : "\n\nTOOL AVAILABILITY (fast mode): Only the TBA live-data tools are available in this conversation. The search_documents and web_search tools are NOT available - do not call them, and do not claim to have searched documents or the web. If a question needs document or web verification (e.g. rule wording or part legality), say you could not verify it in this mode and suggest switching to balanced or deep search.";
           }
 
           let fullMessages: ChatMessage[] = [
@@ -1037,17 +1072,21 @@ export async function POST(request: NextRequest) {
             ...(messages as ChatMessage[]),
           ];
 
-          const fastToolsAvailable = searchMode === "fast" && isTbaMcpEnabled();
+          const fastToolsAvailable = searchMode === "fast" && (isTbaMcpEnabled() || frcVerificationNeeded);
           if (lastUser && (searchMode !== "fast" || fastToolsAvailable)) {
             throwIfStreamAborted();
             const modeLabel = searchMode === "deep"
               ? "Deep search"
               : searchMode === "balanced"
                 ? "Balanced search"
-                : "Live data lookup";
+                : frcVerificationNeeded
+                  ? "Verifying against current sources"
+                  : "Live data lookup";
             sendEvent({ type: "status", message: `${modeLabel} is reading your question...` });
             const tools = searchMode === "fast"
-              ? TBA_TOOLS
+              ? frcVerificationNeeded
+                ? [...TBA_TOOLS, WEB_SEARCH_TOOL, RAG_SEARCH_TOOL]
+                : TBA_TOOLS
               : isTbaMcpEnabled()
                 ? [...TBA_TOOLS, WEB_SEARCH_TOOL, RAG_SEARCH_TOOL]
                 : [WEB_SEARCH_TOOL, RAG_SEARCH_TOOL];

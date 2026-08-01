@@ -92,6 +92,23 @@ export async function deleteConversation(id: string) {
   return readJson<{ ok: true }>(response);
 }
 
+export type DeletedConversationRecord = ConversationRecord & { deletedAt: string | Date };
+
+export async function fetchDeletedConversations() {
+  const response = await fetch("/api/conversations?deleted=true", { cache: "no-store" });
+  return readJson<DeletedConversationRecord[]>(response);
+}
+
+export async function restoreConversation(id: string) {
+  const response = await fetch(`/api/conversations/${id}`, { method: "POST" });
+  return readJson<ConversationRecord>(response);
+}
+
+export async function permanentlyDeleteConversation(id: string) {
+  const response = await fetch(`/api/conversations/${id}?permanent=true`, { method: "DELETE" });
+  return readJson<{ ok: true }>(response);
+}
+
 export async function createConversationMessage(
   id: string,
   payload: {

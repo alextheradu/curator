@@ -41,7 +41,9 @@ export async function getCachedPublicConversation(id: string) {
         .where(eq(conversations.id, id))
         .limit(1);
 
-      if (!conversation?.isPublic) {
+      // A soft-deleted conversation must stop being publicly reachable
+      // immediately, not just drop out of the owner's own history list.
+      if (!conversation?.isPublic || conversation.deletedAt) {
         return null;
       }
 
@@ -63,12 +65,14 @@ export async function getCachedPublicConversationMessages(id: string) {
   const load = unstable_cache(
     async () => withDbAccessContext({}, async (tx) => {
       const [conversation] = await tx
-        .select({ id: conversations.id })
+        .select({ isPublic: conversations.isPublic, deletedAt: conversations.deletedAt })
         .from(conversations)
         .where(eq(conversations.id, id))
         .limit(1);
 
-      if (!conversation) {
+      // This only guards messages for genuinely public, non-deleted
+      // conversations - callers must not skip the isPublic check upstream.
+      if (!conversation?.isPublic || conversation.deletedAt) {
         return null;
       }
 

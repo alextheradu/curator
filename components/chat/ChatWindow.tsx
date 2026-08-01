@@ -204,6 +204,19 @@ export function ChatWindow({
     streamingContent,
   ]);
 
+  // Restores a draft that never made it out (guest-limit block, failed
+  // conversation create) into whichever composer is currently active.
+  const restoreDraft = useCallback((text: string) => {
+    if (nativeBarState === 'ready') {
+      void import('@/lib/plugins/liquid-glass-composer').then(({ LiquidGlassComposer }) => {
+        void LiquidGlassComposer.setText({ value: text }).catch(() => {});
+      });
+      return;
+    }
+
+    window.dispatchEvent(new CustomEvent("curator:restore-draft", { detail: { text } }));
+  }, [nativeBarState]);
+
   const sendMessage = useCallback(async (text: string) => {
     if (isStreaming || readOnly) {
       return;
@@ -219,6 +232,7 @@ export function ChatWindow({
       } catch (error) {
         console.error(error);
         toast.error("Couldn't start a new chat.");
+        restoreDraft(text);
         return;
       }
 
@@ -352,6 +366,7 @@ export function ChatWindow({
     isStreaming,
     readOnly,
     resetStreamingState,
+    restoreDraft,
     scrollToBottom,
     clearTypingTitle,
     setActiveConversation,
@@ -378,6 +393,7 @@ export function ChatWindow({
     }
 
     if (!isAuthenticated && !consumeGuestTurn()) {
+      restoreDraft(text);
       return;
     }
 
@@ -387,6 +403,7 @@ export function ChatWindow({
     isAuthenticated,
     isStreaming,
     readOnly,
+    restoreDraft,
     sendMessage,
     setShowTosModal,
     tosAccepted,
@@ -465,6 +482,18 @@ export function ChatWindow({
     toast.success(makePublic ? "This chat is now public." : "This chat is private again.");
   }, [conversation, onShareChange]);
 
+  // handleSend/stopStreaming are recreated whenever their dependencies
+  // change (new conversation, auth state, streaming state, ...), but the
+  // native listener effect below only registers once per `readOnly` value.
+  // Without this ref indirection the native 'send'/'stop' listeners would
+  // keep calling the mount-time closures forever - e.g. always seeing
+  // activeConversationId as null and creating a new chat on every message,
+  // or never seeing isStreaming flip true and letting rapid taps double-send.
+  const handleSendRef = useRef(handleSend);
+  handleSendRef.current = handleSend;
+  const stopStreamingRef = useRef(stopStreaming);
+  stopStreamingRef.current = stopStreaming;
+
   // Native Liquid Glass composer bar (Capacitor iOS only)
   useEffect(() => {
     if (!isCapacitorIOS || readOnly) return;
@@ -477,10 +506,10 @@ export function ChatWindow({
         await LiquidGlassComposer.show();
         setNativeBarState('ready');
         const sendListener = await LiquidGlassComposer.addListener('send', (data) => {
-          handleSend(data.value);
+          handleSendRef.current(data.value);
         });
         const stopListener = await LiquidGlassComposer.addListener('stop', () => {
-          void stopStreaming();
+          void stopStreamingRef.current();
         });
         removeListeners = () => {
           sendListener.remove();
@@ -499,7 +528,6 @@ export function ChatWindow({
         void LiquidGlassComposer.hide();
       }).catch(() => {});
     };
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [readOnly]);
 
   useEffect(() => {

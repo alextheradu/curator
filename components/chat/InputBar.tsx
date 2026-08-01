@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState, useEffect, KeyboardEvent } from "react";
+import { useRef, useState, useEffect, KeyboardEvent, MouseEvent as ReactMouseEvent, PointerEvent as ReactPointerEvent } from "react";
 import { ArrowUpIcon, MoreHorizontalIcon, SquareIcon } from "lucide-react";
 import { AnimatePresence, motion } from "framer-motion";
 import { cn } from "@/lib/utils";
@@ -48,6 +48,22 @@ export function InputBar({
   const [value, setValue] = useState(() => initialValue ?? "");
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const [focused, setFocused] = useState(false);
+  // Guards against the same tap firing handleSend twice (e.g. a fast double
+  // tap lands before React re-renders the disabled state onto the button).
+  const sendingRef = useRef(false);
+
+  // Restores a draft that never made it out (guest-limit block, failed
+  // conversation create) - see ChatWindow's restoreDraft(). Only applies
+  // when the box is empty so it never clobbers newer typing.
+  useEffect(() => {
+    const handleRestore = (event: Event) => {
+      const detail = (event as CustomEvent<{ text: string }>).detail;
+      if (!detail?.text || value.trim().length > 0) return;
+      setValue(detail.text);
+    };
+    window.addEventListener("curator:restore-draft", handleRestore);
+    return () => window.removeEventListener("curator:restore-draft", handleRestore);
+  }, [value]);
 
   useEffect(() => {
     const textarea = textareaRef.current;
@@ -73,12 +89,32 @@ export function InputBar({
 
   const handleSend = () => {
     const trimmed = value.trim();
-    if (!trimmed || disabled || isStreaming) return;
+    if (!trimmed || disabled || isStreaming || sendingRef.current) return;
+    sendingRef.current = true;
     onSend(trimmed);
     setValue("");
     if (textareaRef.current) {
       textareaRef.current.style.height = "auto";
     }
+    // onSend is synchronous handoff (it queues the message or defers to a
+    // consent modal) - release the guard on the next tick rather than
+    // holding it open, so it only ever blocks a true same-tick double-fire.
+    queueMicrotask(() => {
+      sendingRef.current = false;
+    });
+  };
+
+  // Tapping the send/stop button while the textarea is focused blurs the
+  // textarea on pointerdown, which (via the `:has(textarea:focus)` padding
+  // change on the composer's outer container) shifts the button's position
+  // mid-tap. iOS Safari/WKWebView cancels click synthesis when the tap
+  // target moves between pointerdown and pointerup, so the tap silently
+  // only dismisses the keyboard and the click never fires - the reported
+  // "requires two taps" bug. Blocking the default pointerdown behavior
+  // keeps focus on the textarea through the tap so nothing shifts, and the
+  // click still fires normally right after.
+  const preventFocusLoss = (event: ReactPointerEvent | ReactMouseEvent) => {
+    event.preventDefault();
   };
 
   const handleKeyDown = (event: KeyboardEvent<HTMLTextAreaElement>) => {
@@ -147,6 +183,7 @@ export function InputBar({
             onBlur={() => setFocused(false)}
             placeholder="Ask anything..."
             disabled={disabled}
+            enterKeyHint="send"
             rows={1}
             data-gramm="false"
             data-gramm_editor="false"
@@ -188,11 +225,11 @@ export function InputBar({
                   {renderOptionsMenu()}
                 </DropdownMenu>
                 {isStreaming ? (
-                  <button type="button" onClick={onStop} className="flex h-8 w-8 items-center justify-center rounded-xl bg-foreground text-background transition-all duration-200 hover:opacity-85 active:scale-95" aria-label="Stop">
+                  <button type="button" onPointerDown={preventFocusLoss} onMouseDown={preventFocusLoss} onClick={onStop} className="flex h-8 w-8 items-center justify-center rounded-xl bg-foreground text-background transition-all duration-200 hover:opacity-85 active:scale-95" aria-label="Stop">
                     <SquareIcon className="size-3.5" />
                   </button>
                 ) : (
-                  <button type="button" onClick={handleSend} disabled={!canSend} className={cn("flex h-8 w-8 items-center justify-center rounded-xl transition-all duration-200", canSend ? "bg-foreground text-background hover:opacity-85 active:scale-95" : "cursor-not-allowed bg-muted text-muted-foreground/25")} aria-label="Send">
+                  <button type="button" onPointerDown={preventFocusLoss} onMouseDown={preventFocusLoss} onClick={handleSend} disabled={!canSend} className={cn("flex h-8 w-8 items-center justify-center rounded-xl transition-all duration-200", canSend ? "bg-foreground text-background hover:opacity-85 active:scale-95" : "cursor-not-allowed bg-muted text-muted-foreground/25")} aria-label="Send">
                     <ArrowUpIcon className="size-4" />
                   </button>
                 )}
@@ -235,11 +272,11 @@ export function InputBar({
                     {renderOptionsMenu()}
                   </DropdownMenu>
                   {isStreaming ? (
-                    <button type="button" onClick={onStop} className="flex h-9 w-9 items-center justify-center rounded-xl bg-foreground text-background transition-all duration-200 hover:opacity-85 active:scale-95 sm:h-7 sm:w-7" aria-label="Stop">
+                    <button type="button" onPointerDown={preventFocusLoss} onMouseDown={preventFocusLoss} onClick={onStop} className="flex h-9 w-9 items-center justify-center rounded-xl bg-foreground text-background transition-all duration-200 hover:opacity-85 active:scale-95 sm:h-7 sm:w-7" aria-label="Stop">
                       <SquareIcon className="size-3.5" />
                     </button>
                   ) : (
-                    <button type="button" onClick={handleSend} disabled={!canSend} className={cn("flex h-9 w-9 items-center justify-center rounded-xl transition-all duration-200 sm:h-7 sm:w-7", canSend ? "bg-foreground text-background hover:opacity-85 active:scale-95" : "cursor-not-allowed bg-muted text-muted-foreground/25")} aria-label="Send">
+                    <button type="button" onPointerDown={preventFocusLoss} onMouseDown={preventFocusLoss} onClick={handleSend} disabled={!canSend} className={cn("flex h-9 w-9 items-center justify-center rounded-xl transition-all duration-200 sm:h-7 sm:w-7", canSend ? "bg-foreground text-background hover:opacity-85 active:scale-95" : "cursor-not-allowed bg-muted text-muted-foreground/25")} aria-label="Send">
                       <ArrowUpIcon className="size-4" />
                     </button>
                   )}
