@@ -15,6 +15,9 @@ const config: CapacitorConfig = {
     allowsLinkPreview: false,
     scrollEnabled: false,
   },
+  android: {
+    backgroundColor: "#0f0f0f",
+  },
   plugins: {
     Keyboard: {
       resize: KeyboardResize.None,
