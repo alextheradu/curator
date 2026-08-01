@@ -43,4 +43,16 @@ describe("native and PWA runtime guards", () => {
     expect(styles).toContain("justify-content: flex-end");
     expect(styles).toContain("padding-bottom: clamp");
   });
+
+  it("initializes the Apple Sign-In plugin before calling signIn on Android", () => {
+    const nativeAuth = readFileSync(path.join(root, "lib/native-auth.ts"), "utf8");
+    const appleFn = nativeAuth.match(/export async function nativeAppleSignIn[\s\S]*$/)?.[0] ?? "";
+
+    const initializeIndex = appleFn.indexOf("AppleSignIn.initialize(");
+    const signInIndex = appleFn.indexOf("AppleSignIn.signIn(");
+
+    expect(appleFn).toContain('platform === "android"');
+    expect(initializeIndex).toBeGreaterThan(-1);
+    expect(signInIndex).toBeGreaterThan(initializeIndex);
+  });
 });
