@@ -158,6 +158,7 @@ If you do not consent to analytics cookies, Google Analytics never loads and no 
 - `cookie_consent` - records your cookie consent choice
 - `sidebar_state` - stores whether the sidebar is expanded or collapsed
 - `sidebar_width` - stores your chosen sidebar width
+- `admin_sidebar_collapsed` - stores whether the admin navigation panel is expanded or collapsed (admin accounts only)
 - `authjs.session-token` or `__Secure-authjs.session-token` - Auth.js session JWT (authenticated users only)
 - `authjs.csrf-token` - protects the sign-in flow from cross-site request forgery
 - `authjs.callback-url` - remembers where to return you after sign-in (if set by Auth.js)

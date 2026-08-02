@@ -45,6 +45,7 @@ import { useChatStore } from "@/lib/store";
 import { randomUuid } from "@/lib/uuid";
 import { streamOpenRouterChat } from "@/lib/openrouter";
 import { DEFAULT_SEASON_YEAR } from "@/lib/seasons";
+import { isLegalAcceptanceCurrent } from "@/lib/legal";
 import { generateChatTitle } from "@/lib/utils";
 import { toast } from "sonner";
 
@@ -76,7 +77,8 @@ export function ChatWindow({
 }: ChatWindowProps) {
   const { data: session, update } = useSession();
   const isAuthenticated = !!session?.user?.id;
-  const accountTosAccepted = session?.user?.tosAcceptedAt != null;
+  const accountTosAccepted = isLegalAcceptanceCurrent(session?.user?.tosAcceptedAt);
+  const accountHadPriorTosAcceptance = session?.user?.tosAcceptedAt != null;
 
   const {
     activeConversation,
@@ -100,13 +102,14 @@ export function ChatWindow({
 
   const {
     tosAccepted,
+    isTosUpdate,
     showTosModal,
     setShowTosModal,
     showAuthModal,
     setShowAuthModal,
     acceptGuestTos,
     consumeGuestTurn,
-  } = useGuestLimit(isAuthenticated, accountTosAccepted);
+  } = useGuestLimit(isAuthenticated, accountTosAccepted, accountHadPriorTosAcceptance);
 
   const [nativeBarState, setNativeBarState] = useState<'pending' | 'ready' | 'fallback'>(isCapacitorIOS ? 'pending' : 'fallback');
   const [factCheckEnabled, setFactCheckEnabled] = useState(false);
@@ -548,7 +551,7 @@ export function ChatWindow({
       className="flex min-h-0 flex-col overflow-hidden bg-background pt-[env(safe-area-inset-top)] pr-[env(safe-area-inset-right)] md:pt-0 md:pr-0"
     >
       <Suspense>
-        <TosModal open={showTosModal} onAccept={handleAcceptTos} />
+        <TosModal open={showTosModal} onAccept={handleAcceptTos} isUpdate={isTosUpdate} />
         <AuthModal open={showAuthModal} onOpenChange={setShowAuthModal} />
         <DocumentViewerModal
           open={!!viewerCitation}

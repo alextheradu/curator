@@ -1,7 +1,7 @@
 # Terms of Service
 
 **Curator - FRC AI Assistant**
-**Last updated: August 1, 2026**
+**Last updated: August 2, 2026**
 
 ---
 
@@ -98,6 +98,8 @@ We reserve the right to suspend or terminate access to the Service at any time, 
 ## 9. Limitation of Liability
 
 To the maximum extent permitted by law, Curator and its operators shall not be liable for any indirect, incidental, special, or consequential damages arising from your use of the Service, including but not limited to damages arising from AI inaccuracies, data loss, or service interruptions.
+
+You are solely responsible for your own conduct and for any content you submit, share, or make public through the Service, including chat messages, shared chat links, and content within projects. You agree to indemnify, defend, and hold harmless Curator and its operators from any claims, damages, liabilities, costs, or expenses (including reasonable legal fees) arising out of or related to your use of the Service, your content, or your violation of these Terms.
 
 ---
 

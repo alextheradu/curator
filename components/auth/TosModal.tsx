@@ -14,9 +14,10 @@ import { ExternalLink } from "lucide-react";
 interface Props {
   open: boolean;
   onAccept: () => void;
+  isUpdate?: boolean;
 }
 
-export function TosModal({ open, onAccept }: Props) {
+export function TosModal({ open, onAccept, isUpdate = false }: Props) {
   return (
     <Dialog open={open} onOpenChange={() => {}}>
       <DialogContent
@@ -27,10 +28,12 @@ export function TosModal({ open, onAccept }: Props) {
         <div className="border-b border-border/60 px-6 py-5">
           <DialogHeader className="gap-2 text-left">
             <DialogTitle className="text-lg font-semibold text-foreground">
-              Accept the terms to start chatting
+              {isUpdate ? "Our Terms or Privacy Policy have been updated" : "Accept the terms to start chatting"}
             </DialogTitle>
             <DialogDescription className="text-sm leading-6 text-muted-foreground">
-              Before Curator sends your first message, you need to accept the Terms of Service and Privacy Policy.
+              {isUpdate
+                ? "We've updated our Terms of Service and/or Privacy Policy. Please review and accept before continuing to chat."
+                : "Before Curator sends your first message, you need to accept the Terms of Service and Privacy Policy."}
             </DialogDescription>
           </DialogHeader>
         </div>
@@ -74,7 +77,7 @@ export function TosModal({ open, onAccept }: Props) {
             onClick={onAccept}
             className="w-full"
           >
-            I agree and want to chat
+            {isUpdate ? "I accept the updated terms" : "I agree and want to chat"}
           </Button>
         </div>
       </DialogContent>

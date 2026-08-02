@@ -4,6 +4,14 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { Ban, LockOpen, MessageSquare, Search, Shield, ShieldOff, Trash2 } from "lucide-react";
 import { ConfirmDialog } from "@/components/admin/ConfirmDialog";
+import {
+  AdminFilterPill,
+  AdminPageContainer,
+  AdminPageHeader,
+  AdminStatCard,
+  AdminStatGrid,
+  AdminTableCard,
+} from "@/components/admin/AdminShell";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
@@ -95,61 +103,39 @@ export default function AdminUsersPage() {
   };
 
   return (
-    <div className="relative">
-      <div className="relative mx-auto max-w-5xl space-y-6 px-4 py-6 sm:px-6 sm:py-8">
-        <div className="space-y-2">
-          <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
-            Admin panel
-          </p>
-          <h1 className="text-3xl font-semibold tracking-tight text-foreground">Users</h1>
-          <p className="mt-1 text-[13px] leading-6 text-muted-foreground">
-            Search accounts, review activity, and manage account-level moderation. Email bans now suspend by account identity instead of network address.
-          </p>
-        </div>
+    <AdminPageContainer>
+      <AdminPageHeader
+        title="Users"
+        description="Search accounts, review activity, and manage account-level moderation. Email bans now suspend by account identity instead of network address."
+      />
 
-        <div className="grid gap-3 sm:grid-cols-3">
-          <div className="rounded-[1.5rem] border border-border/60 bg-card/70 p-4 shadow-[var(--shadow-card)]">
-            <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">Loaded</p>
-            <p className="mt-2 text-2xl font-semibold text-foreground">{summary.total}</p>
-          </div>
-          <div className="rounded-[1.5rem] border border-border/60 bg-card/70 p-4 shadow-[var(--shadow-card)]">
-            <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">Admins</p>
-            <p className="mt-2 text-2xl font-semibold text-foreground">{summary.admins}</p>
-          </div>
-          <div className="rounded-[1.5rem] border border-border/60 bg-card/70 p-4 shadow-[var(--shadow-card)]">
-            <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">Email bans</p>
-            <p className="mt-2 text-2xl font-semibold text-foreground">{summary.banned}</p>
-          </div>
-        </div>
+      <AdminStatGrid className="sm:grid-cols-3 xl:grid-cols-3">
+        <AdminStatCard label="Loaded" value={summary.total} />
+        <AdminStatCard label="Admins" value={summary.admins} />
+        <AdminStatCard label="Email bans" value={summary.banned} />
+      </AdminStatGrid>
 
-        <div className="flex flex-wrap items-center gap-2 rounded-[1.5rem] border border-border/60 bg-card/70 p-2 shadow-[var(--shadow-card)]">
-          <div className="relative min-w-[14rem] flex-1">
-            <Search className="absolute left-3 top-1/2 size-3.5 -translate-y-1/2 text-muted-foreground" />
-            <Input
-              className="h-10 rounded-[1rem] border-white/6 bg-background/45 pl-8 text-[13px]"
-              placeholder="Search users..."
-              value={search}
-              onChange={(event) => setSearch(event.target.value)}
-            />
-          </div>
-          {(["all", "admin", "banned"] as const).map((value) => (
-            <button
-              key={value}
-              onClick={() => setFilter(value)}
-              className={`rounded-full border px-3 py-2 text-[12px] transition-colors ${
-                filter === value ? "border-foreground/10 bg-foreground text-background" : "border-border/60 bg-card/70 text-muted-foreground hover:text-foreground"
-              }`}
-            >
-              {value.charAt(0).toUpperCase() + value.slice(1)}
-            </button>
-          ))}
+      <div className="flex flex-wrap items-center gap-2 rounded-[1.5rem] border border-border/60 bg-card/70 p-2 shadow-[var(--shadow-card)]">
+        <div className="relative min-w-[14rem] flex-1">
+          <Search className="absolute left-3 top-1/2 size-3.5 -translate-y-1/2 text-muted-foreground" />
+          <Input
+            className="h-10 rounded-[1rem] border-white/6 bg-background/45 pl-8 text-[13px]"
+            placeholder="Search users..."
+            value={search}
+            onChange={(event) => setSearch(event.target.value)}
+          />
         </div>
+        {(["all", "admin", "banned"] as const).map((value) => (
+          <AdminFilterPill key={value} active={filter === value} onClick={() => setFilter(value)}>
+            {value.charAt(0).toUpperCase() + value.slice(1)}
+          </AdminFilterPill>
+        ))}
+      </div>
 
-        <div className="overflow-hidden rounded-[1.75rem] border border-border/60 bg-card/72 shadow-[var(--shadow-card)] backdrop-blur-sm">
-          {users.length === 0 ? (
-            <p className="px-5 py-10 text-center text-[13px] text-muted-foreground">No users found.</p>
-          ) : (
-            <div className="overflow-x-auto">
+      <AdminTableCard>
+        {users.length === 0 ? (
+          <p className="px-5 py-10 text-center text-[13px] text-muted-foreground">No users found.</p>
+        ) : (
               <table className="min-w-[760px] w-full text-[13px]">
                 <thead>
                   <tr className="border-b border-border/60">
@@ -256,10 +242,8 @@ export default function AdminUsersPage() {
                   ))}
                 </tbody>
               </table>
-            </div>
-          )}
-        </div>
-      </div>
+        )}
+      </AdminTableCard>
 
       <ConfirmDialog
         open={!!dialog}
@@ -295,6 +279,6 @@ export default function AdminUsersPage() {
         onConfirm={handleAction}
         onCancel={() => setDialog(null)}
       />
-    </div>
+    </AdminPageContainer>
   );
 }
