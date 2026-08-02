@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 import { withDbAccessContext } from "@/lib/db/access";
 import { appLogs } from "@/lib/db/schema";
 import { ThumbsDown, ThumbsUp } from "lucide-react";
+import { AdminCard, AdminPageContainer, AdminPageHeader, AdminStatGrid } from "@/components/admin/AdminShell";
 
 function formatTime(value: Date | null) {
   if (!value) return "-";
@@ -42,30 +43,25 @@ export default async function AdminFeedbackPage() {
   }, {});
 
   return (
-    <div className="mx-auto flex w-full max-w-6xl flex-col gap-6 px-4 py-6 sm:px-6 sm:py-8">
-      <div className="space-y-2">
-        <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
-          Admin panel
-        </p>
-        <h1 className="text-3xl font-semibold tracking-tight text-foreground">Response feedback</h1>
-        <p className="max-w-3xl text-[13px] leading-6 text-muted-foreground">
-          Review answer quality signals from helpful, unhelpful, bad-citation, and missed-source controls.
-        </p>
-      </div>
+    <AdminPageContainer width="wide">
+      <AdminPageHeader
+        title="Response feedback"
+        description="Review answer quality signals from helpful, unhelpful, bad-citation, and missed-source controls."
+      />
 
-      <div className="grid gap-3 sm:grid-cols-4">
+      <AdminStatGrid>
         {["helpful", "not_helpful", "bad_citation", "missed_source"].map((kind) => (
-          <div key={kind} className="rounded-[1.5rem] border border-border/60 bg-card/70 p-4 shadow-[var(--shadow-card)]">
-            <div className="flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
+          <AdminCard key={kind} className="p-4">
+            <div className="flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
               {kind === "helpful" ? <ThumbsUp className="size-3.5" /> : <ThumbsDown className="size-3.5" />}
               {kind.replace(/_/g, " ")}
             </div>
             <p className="mt-2 text-2xl font-semibold text-foreground">{counts[kind] ?? 0}</p>
-          </div>
+          </AdminCard>
         ))}
-      </div>
+      </AdminStatGrid>
 
-      <div className="space-y-3 rounded-[1.75rem] border border-border/60 bg-card/60 p-4 shadow-[var(--shadow-card)]">
+      <div className="space-y-3 rounded-[1.5rem] border border-border/60 bg-card/60 p-4 shadow-[var(--shadow-card)]">
         {rows.length === 0 ? (
           <p className="rounded-2xl border border-dashed border-border/70 px-4 py-10 text-center text-sm text-muted-foreground">
             No feedback yet.
@@ -85,6 +81,6 @@ export default async function AdminFeedbackPage() {
           </div>
         ))}
       </div>
-    </div>
+    </AdminPageContainer>
   );
 }

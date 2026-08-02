@@ -22,13 +22,9 @@ export default async function AdminLayout({ children }: { children: React.ReactN
     .where(eq(reports.status, "pending")));
 
   return (
-    <div className="flex h-svh flex-col overflow-hidden bg-[#0f0f0f] text-foreground">
+    <div className="flex h-svh flex-col overflow-hidden bg-background text-foreground md:flex-row">
       <AdminSidebar pendingReports={pending.length} />
-      <main className="relative min-h-0 min-w-0 flex-1 overflow-y-auto">
-        <div className="pointer-events-none absolute inset-x-0 top-0 h-72 bg-[radial-gradient(circle_at_top,rgba(255,255,255,0.07),transparent_58%)]" />
-        <div className="pointer-events-none absolute inset-x-0 top-0 h-48 bg-[linear-gradient(180deg,rgba(255,255,255,0.03),transparent)]" />
-        {children}
-      </main>
+      <main className="min-h-0 min-w-0 flex-1 overflow-y-auto">{children}</main>
     </div>
   );
 }

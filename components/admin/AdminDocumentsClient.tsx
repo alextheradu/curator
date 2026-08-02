@@ -49,13 +49,10 @@ export function AdminDocumentsClient() {
 
   return (
     <div className="min-h-svh bg-transparent">
-      <div className="mx-auto flex w-full max-w-[1600px] flex-col gap-6 px-4 py-6 sm:px-6 sm:py-8">
+      <div className="mx-auto flex w-full max-w-[1600px] flex-col gap-6 px-6 py-8 sm:px-8">
         <div className="flex items-start justify-between gap-4">
-          <div className="space-y-2">
-            <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
-              Admin panel
-            </p>
-            <h1 className="text-3xl font-semibold tracking-tight text-foreground">Documents</h1>
+          <div className="space-y-1.5">
+            <h1 className="text-2xl font-semibold tracking-tight text-foreground sm:text-[1.75rem]">Documents</h1>
             <p className="max-w-2xl text-[13px] leading-6 text-muted-foreground">
               Upload source PDFs, keep seasons organized, and manage what Curator can cite.
             </p>

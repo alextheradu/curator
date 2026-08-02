@@ -6,11 +6,19 @@ import {
   TOS_ACCEPTED_COOKIE_NAME,
 } from "@/lib/app-cookies";
 import { readBrowserCookie, serializeCookie } from "@/lib/cookies";
+import { isLegalAcceptanceCurrent } from "@/lib/legal";
 
 const GUEST_MESSAGE_COUNT_STORAGE_KEY = "curator:guest-message-count";
 
 function initializeTosState(): boolean {
-  return readBrowserCookie(TOS_ACCEPTED_COOKIE_NAME) === "true";
+  // Cookie value is an ISO timestamp of when the guest accepted, not a
+  // plain boolean, so an update to the Terms/Privacy Policy after that
+  // point re-gates them until they accept again.
+  return isLegalAcceptanceCurrent(readBrowserCookie(TOS_ACCEPTED_COOKIE_NAME));
+}
+
+function initializeHadPriorTosAcceptance(): boolean {
+  return readBrowserCookie(TOS_ACCEPTED_COOKIE_NAME) != null;
 }
 
 function initializeGuestCount(): number {
@@ -19,15 +27,23 @@ function initializeGuestCount(): number {
   return Number.isFinite(parsed) ? parsed : 0;
 }
 
-export function useGuestLimit(isAuthenticated: boolean, accountTosAccepted: boolean) {
+export function useGuestLimit(
+  isAuthenticated: boolean,
+  accountTosAccepted: boolean,
+  accountHadPriorTosAcceptance: boolean,
+) {
   const [guestTosAccepted, setGuestTosAccepted] = useState(initializeTosState);
+  const [guestHadPriorTosAcceptance] = useState(initializeHadPriorTosAcceptance);
   const [guestCount, setGuestCount] = useState(initializeGuestCount);
   const [showTosModal, setShowTosModal] = useState(false);
   const [showAuthModal, setShowAuthModal] = useState(false);
   const tosAccepted = isAuthenticated ? accountTosAccepted : guestTosAccepted;
+  const isTosUpdate = isAuthenticated
+    ? accountHadPriorTosAcceptance && !accountTosAccepted
+    : guestHadPriorTosAcceptance && !guestTosAccepted;
 
   const acceptGuestTos = useCallback(() => {
-    document.cookie = serializeCookie(TOS_ACCEPTED_COOKIE_NAME, "true");
+    document.cookie = serializeCookie(TOS_ACCEPTED_COOKIE_NAME, new Date().toISOString());
     setGuestTosAccepted(true);
     setShowTosModal(false);
   }, []);
@@ -47,6 +63,7 @@ export function useGuestLimit(isAuthenticated: boolean, accountTosAccepted: bool
 
   return {
     tosAccepted,
+    isTosUpdate,
     showTosModal,
     setShowTosModal,
     showAuthModal,

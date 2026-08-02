@@ -4,6 +4,13 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { Flag, Search } from "lucide-react";
 import { ReportDetailModal } from "@/components/admin/ReportDetailModal";
 import { ChatViewerModal } from "@/components/admin/ChatViewerModal";
+import {
+  AdminFilterPill,
+  AdminPageContainer,
+  AdminPageHeader,
+  AdminStatCard,
+  AdminStatGrid,
+} from "@/components/admin/AdminShell";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 
@@ -87,32 +94,18 @@ export default function AdminReportsPage() {
   }, [allReports, filter, search, sourceFilter]);
 
   return (
-    <div className="min-h-svh bg-transparent">
-      <div className="mx-auto flex w-full max-w-5xl flex-col gap-6 px-4 py-6 sm:px-6 sm:py-8">
-        <div className="space-y-2">
-          <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
-            Admin panel
-          </p>
-          <h1 className="text-3xl font-semibold tracking-tight text-foreground">Reports</h1>
-          <p className="text-[13px] leading-6 text-muted-foreground">
-            Review manual reports and automatic moderation flags in one queue, with the affected account and trigger details visible up front.
-          </p>
-        </div>
+    <>
+      <AdminPageContainer>
+        <AdminPageHeader
+          title="Reports"
+          description="Review manual reports and automatic moderation flags in one queue, with the affected account and trigger details visible up front."
+        />
 
-        <div className="grid gap-3 sm:grid-cols-3">
-          <div className="rounded-[1.5rem] border border-border/60 bg-card/70 p-4 shadow-[var(--shadow-card)]">
-            <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">Pending</p>
-            <p className="mt-2 text-2xl font-semibold text-foreground">{pending}</p>
-          </div>
-          <div className="rounded-[1.5rem] border border-border/60 bg-card/70 p-4 shadow-[var(--shadow-card)]">
-            <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">Automatic flags</p>
-            <p className="mt-2 text-2xl font-semibold text-foreground">{automaticFlags}</p>
-          </div>
-          <div className="rounded-[1.5rem] border border-border/60 bg-card/70 p-4 shadow-[var(--shadow-card)]">
-            <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">Loaded</p>
-            <p className="mt-2 text-2xl font-semibold text-foreground">{allReports.length}</p>
-          </div>
-        </div>
+        <AdminStatGrid className="sm:grid-cols-3 xl:grid-cols-3">
+          <AdminStatCard label="Pending" value={pending} />
+          <AdminStatCard label="Automatic flags" value={automaticFlags} />
+          <AdminStatCard label="Loaded" value={allReports.length} />
+        </AdminStatGrid>
 
         <div className="space-y-3 rounded-[1.5rem] border border-border/60 bg-card/70 p-3 shadow-[var(--shadow-card)]">
           <div className="relative">
@@ -127,42 +120,22 @@ export default function AdminReportsPage() {
 
           <div className="flex flex-wrap gap-2">
             {(["pending", "all", "reviewed", "dismissed"] as const).map((value) => (
-              <button
-                key={value}
-                type="button"
-                onClick={() => setFilter(value)}
-                className={cn(
-                  "rounded-full border px-3 py-1.5 text-[12px] transition-colors",
-                  filter === value
-                    ? "border-foreground/15 bg-foreground text-background"
-                    : "border-border/60 bg-card/70 text-muted-foreground hover:text-foreground"
-                )}
-              >
+              <AdminFilterPill key={value} active={filter === value} onClick={() => setFilter(value)}>
                 {value === "pending" ? `${pending} pending` : value}
-              </button>
+              </AdminFilterPill>
             ))}
           </div>
 
           <div className="flex flex-wrap gap-2">
             {(["all", "auto_moderation", "user_report"] as const).map((value) => (
-              <button
-                key={value}
-                type="button"
-                onClick={() => setSourceFilter(value)}
-                className={cn(
-                  "rounded-full border px-3 py-1.5 text-[12px] transition-colors",
-                  sourceFilter === value
-                    ? "border-foreground/15 bg-foreground text-background"
-                    : "border-border/60 bg-card/70 text-muted-foreground hover:text-foreground"
-                )}
-              >
+              <AdminFilterPill key={value} active={sourceFilter === value} onClick={() => setSourceFilter(value)}>
                 {value === "all" ? "All sources" : value === "auto_moderation" ? "Automatic" : "User reports"}
-              </button>
+              </AdminFilterPill>
             ))}
           </div>
         </div>
 
-        <div className="space-y-3 rounded-[1.75rem] border border-border/60 bg-card/60 p-4 shadow-[var(--shadow-card)]">
+        <div className="space-y-3 rounded-[1.5rem] border border-border/60 bg-card/60 p-4 shadow-[var(--shadow-card)]">
           {filteredReports.length === 0 ? (
             <div className="flex flex-col items-center gap-2 py-16">
               <Flag className="size-8 text-muted-foreground/40" />
@@ -228,7 +201,7 @@ export default function AdminReportsPage() {
             ))
           )}
         </div>
-      </div>
+      </AdminPageContainer>
 
       <ReportDetailModal
         report={selected}
@@ -237,6 +210,6 @@ export default function AdminReportsPage() {
         onViewChat={(id) => { setSelected(null); setChatId(id); }}
       />
       <ChatViewerModal conversationId={chatId} onClose={() => setChatId(null)} />
-    </div>
+    </>
   );
 }

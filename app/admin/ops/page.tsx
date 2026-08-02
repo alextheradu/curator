@@ -5,6 +5,7 @@ import { redirect } from "next/navigation";
 import { withDbAccessContext } from "@/lib/db/access";
 import { appLogs, supportRequests } from "@/lib/db/schema";
 import { getAdminStats } from "@/lib/admin-stats";
+import { AdminCard, AdminPageContainer, AdminPageHeader } from "@/components/admin/AdminShell";
 
 function formatTime(value: Date | null) {
   if (!value) return "-";
@@ -31,16 +32,13 @@ export default async function AdminOpsPage() {
   const qdrantDelta = stats.qdrantCount - stats.totalChunks.count;
 
   return (
-    <div className="mx-auto max-w-[1400px] space-y-8 px-4 py-6 sm:px-6 sm:py-8">
-      <div className="space-y-2">
-        <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">Admin panel</p>
-        <h1 className="text-3xl font-semibold tracking-tight text-foreground">Support queue and runtime logs</h1>
-        <p className="max-w-3xl text-sm leading-6 text-muted-foreground">
-          Recent support requests and captured runtime errors live here so the operator can triage real problems without digging through process output.
-        </p>
-      </div>
+    <AdminPageContainer width="wide">
+      <AdminPageHeader
+        title="Support queue and runtime logs"
+        description="Recent support requests and captured runtime errors live here so the operator can triage real problems without digging through process output."
+      />
 
-      <section className="rounded-[1.75rem] border border-border/60 bg-card/72 p-5 shadow-[var(--shadow-card)]">
+      <AdminCard className="p-5">
         <div className="flex flex-wrap items-center gap-3">
           <div className="flex size-10 items-center justify-center rounded-2xl border border-white/6 bg-white/[0.04] text-[#8cc6f3]">
             <Database className="size-5" />
@@ -67,10 +65,10 @@ export default async function AdminOpsPage() {
             </div>
           ))}
         </div>
-      </section>
+      </AdminCard>
 
       <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_minmax(0,1.2fr)]">
-        <section className="rounded-[1.75rem] border border-border/60 bg-card/72 p-5 shadow-[var(--shadow-card)]">
+        <AdminCard className="p-5">
           <div className="flex items-center gap-3">
             <div className="flex size-10 items-center justify-center rounded-2xl border border-white/6 bg-white/[0.04] text-[#8cc6f3]">
               <Inbox className="size-5" />
@@ -109,9 +107,9 @@ export default async function AdminOpsPage() {
               ))
             )}
           </div>
-        </section>
+        </AdminCard>
 
-        <section className="rounded-[1.75rem] border border-border/60 bg-card/72 p-5 shadow-[var(--shadow-card)]">
+        <AdminCard className="p-5">
           <div className="flex items-center gap-3">
             <div className="flex size-10 items-center justify-center rounded-2xl border border-white/6 bg-white/[0.04] text-red-400">
               <Bug className="size-5" />
@@ -152,7 +150,7 @@ export default async function AdminOpsPage() {
               ))
             )}
           </div>
-        </section>
+        </AdminCard>
       </div>
 
       <div className="rounded-[1.5rem] border border-dashed border-border/70 bg-background/60 px-5 py-4 text-sm leading-6 text-muted-foreground">
@@ -164,6 +162,6 @@ export default async function AdminOpsPage() {
           These logs are intentionally lightweight. They help surface support issues and uncaught client/server failures without introducing a paid monitoring dependency by default.
         </p>
       </div>
-    </div>
+    </AdminPageContainer>
   );
 }

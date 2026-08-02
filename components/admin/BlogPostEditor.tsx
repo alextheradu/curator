@@ -293,13 +293,10 @@ export function BlogPostEditor() {
 
   return (
     <>
-      <div className="relative mx-auto flex w-full max-w-[1500px] flex-col gap-5 px-4 py-5 sm:px-6 sm:py-7">
+      <div className="relative mx-auto flex w-full max-w-[1500px] flex-col gap-5 px-6 py-8 sm:px-8">
         <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
-          <div className="space-y-2">
-            <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
-              Admin panel
-            </p>
-            <h1 className="text-3xl font-semibold tracking-tight text-foreground">News editor</h1>
+          <div className="space-y-1.5">
+            <h1 className="text-2xl font-semibold tracking-tight text-foreground sm:text-[1.75rem]">News editor</h1>
             <p className="max-w-2xl text-[13px] leading-6 text-muted-foreground">
               Draft, preview, and publish Curator updates without splitting the page into competing columns.
             </p>
