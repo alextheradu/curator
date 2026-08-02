@@ -69,6 +69,7 @@ export async function nativeAppleSignIn(): Promise<void> {
 
     const platform = Capacitor.getPlatform();
     const nonce = crypto.randomUUID();
+    const state = platform === "android" ? crypto.randomUUID() : undefined;
 
     if (platform === "android") {
       const clientId = process.env.NEXT_PUBLIC_AUTH_APPLE_ANDROID_CLIENT_ID;
@@ -81,11 +82,18 @@ export async function nativeAppleSignIn(): Promise<void> {
       nonce,
       ...(platform === "android"
         ? {
+            // Intentionally hardcoded to match the Return URL registered for
+            // this Services ID in the Apple Developer portal - not derived
+            // from lib/site.ts, since it must not vary by deployment target.
             redirectUrl: "https://curatorfrc.com/native-auth/apple-callback",
-            state: crypto.randomUUID(),
+            state,
           }
         : {}),
     });
+
+    if (platform === "android" && result.state !== state) {
+      throw new Error("Apple sign-in state mismatch");
+    }
 
     if (!result.idToken) throw new Error("No ID token returned from Apple");
 
