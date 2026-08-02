@@ -109,6 +109,13 @@ function stringToHue(value: string): number {
   return Math.abs(hash) % 360;
 }
 
+function getInitials(value: string): string {
+  const parts = value.trim().split(/\s+/).filter(Boolean);
+  if (parts.length === 0) return "";
+  if (parts.length === 1) return parts[0]!.slice(0, 2).toUpperCase();
+  return `${parts[0]!.charAt(0)}${parts[parts.length - 1]!.charAt(0)}`.toUpperCase();
+}
+
 const appleEnabled = !!process.env.NEXT_PUBLIC_APPLE_SIGNIN_ENABLED;
 
 interface AppSidebarProps {
@@ -616,13 +623,14 @@ export function AppSidebar({ latestNewsPublishedAt }: AppSidebarProps) {
               ) : session?.user ? (
                 <div className="flex w-full items-center gap-1 group-data-[collapsible=icon]:justify-center">
                   <SidebarMenuButton
-                    className="h-8 flex-1 rounded-lg bg-transparent px-2 text-sidebar-foreground/70 transition-colors duration-150 hover:text-sidebar-foreground group-data-[collapsible=icon]:hidden max-md:h-10 max-md:rounded-xl max-md:px-3"
+                    onClick={openSettings}
+                    className="h-8 flex-1 rounded-lg bg-transparent px-2 text-sidebar-foreground/70 transition-colors duration-150 hover:text-sidebar-foreground group-data-[collapsible=icon]:hidden max-md:h-11 max-md:rounded-full max-md:px-2 max-md:active:bg-sidebar-accent"
                   >
                     {avatarUrl && !avatarLoadFailed ? (
                       <Image
                         src={avatarUrl}
                         alt={userLabel}
-                        className="size-5 shrink-0 rounded-full object-cover ring-1 ring-sidebar-border/50"
+                        className="size-5 shrink-0 rounded-full object-cover ring-1 ring-sidebar-border/50 max-md:size-8"
                         width={20}
                         height={20}
                         sizes="20px"
@@ -631,18 +639,20 @@ export function AppSidebar({ latestNewsPublishedAt }: AppSidebarProps) {
                       />
                     ) : (
                       <div
-                        className="size-5 shrink-0 rounded-full ring-1 ring-sidebar-border/50"
+                        className="flex size-5 shrink-0 items-center justify-center rounded-full text-[9px] font-semibold text-white/90 ring-1 ring-sidebar-border/50 max-md:size-8 max-md:text-[12px]"
                         style={{
                           background: `linear-gradient(135deg, oklch(0.35 0.08 ${stringToHue(avatarHueSource)}), oklch(0.25 0.05 ${stringToHue(avatarHueSource) + 40}))`,
                         }}
-                      />
+                      >
+                        {getInitials(userLabel)}
+                      </div>
                     )}
-                    <span className="truncate text-[13px]">{userLabel}</span>
+                    <span className="truncate text-[13px] max-md:text-[14px]">{userLabel}</span>
                   </SidebarMenuButton>
 
                   <button
                     type="button"
-                    className="flex size-8 shrink-0 items-center justify-center rounded-lg text-sidebar-foreground/50 transition-colors duration-150 hover:bg-sidebar-accent hover:text-sidebar-foreground group-data-[collapsible=icon]:mx-auto max-md:size-10 max-md:rounded-xl"
+                    className="flex size-8 shrink-0 items-center justify-center rounded-lg text-sidebar-foreground/50 transition-colors duration-150 hover:bg-sidebar-accent hover:text-sidebar-foreground group-data-[collapsible=icon]:mx-auto max-md:hidden"
                     title="Settings"
                     aria-label="Settings"
                     onClick={openSettings}
