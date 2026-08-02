@@ -123,37 +123,63 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
             .where(eq(users.email, email))
             .limit(1);
 
-          if (existingUser) {
-            if (!existingUser.emailVerified) {
-              const [linkedGoogleAccount] = await db
-                .select({ userId: accounts.userId })
-                .from(accounts)
-                .where(and(eq(accounts.userId, existingUser.id), eq(accounts.provider, "google")))
-                .limit(1);
+          if (existingUser && !existingUser.emailVerified) {
+            const [linkedGoogleAccount] = await db
+              .select({ userId: accounts.userId })
+              .from(accounts)
+              .where(and(eq(accounts.userId, existingUser.id), eq(accounts.provider, "google")))
+              .limit(1);
 
-              if (!linkedGoogleAccount) {
-                return null;
+            if (!linkedGoogleAccount) {
+              return null;
+            }
+          }
+
+          // User creation + account link run in one transaction so a
+          // mid-sequence failure can't leave a user row with no linked
+          // account. The users.email unique constraint also means two
+          // concurrent first-time sign-ins for the same address can race
+          // here: if this insert loses that race, the transaction catches
+          // the unique violation and links to the account the other
+          // request just created instead of surfacing a spurious auth
+          // error.
+          userId = await db.transaction(async (tx) => {
+            let resolvedUserId = existingUser?.id;
+
+            if (!resolvedUserId) {
+              resolvedUserId = crypto.randomUUID();
+              try {
+                await tx.insert(authAdapterUsers).values({
+                  id: resolvedUserId,
+                  email,
+                  name: payload.name ?? null,
+                  image: payload.picture ?? null,
+                  emailVerified: payload.email_verified === "true" ? new Date() : null,
+                });
+              } catch (err) {
+                const [raceWinner] = await tx
+                  .select({ id: users.id })
+                  .from(users)
+                  .where(eq(users.email, email))
+                  .limit(1);
+                if (!raceWinner) {
+                  console.error("[auth] google-id-token: user insert failed and no concurrent row to recover from");
+                  throw err;
+                }
+                console.warn("[auth] google-id-token: recovered from a concurrent user-creation race");
+                resolvedUserId = raceWinner.id;
               }
             }
 
-            userId = existingUser.id;
-          } else {
-            userId = crypto.randomUUID();
-            await db.insert(authAdapterUsers).values({
-              id: userId,
-              email,
-              name: payload.name ?? null,
-              image: payload.picture ?? null,
-              emailVerified: payload.email_verified === "true" ? new Date() : null,
-            });
-          }
+            await tx.insert(accounts).values({
+              userId: resolvedUserId,
+              type: "oidc",
+              provider: "google",
+              providerAccountId: payload.sub as string,
+            }).onConflictDoNothing();
 
-          await db.insert(accounts).values({
-            userId,
-            type: "oidc",
-            provider: "google",
-            providerAccountId: payload.sub,
-          }).onConflictDoNothing();
+            return resolvedUserId;
+          });
         }
 
         return { id: userId, email, name: payload.name ?? null, image: payload.picture ?? null };
@@ -201,43 +227,63 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
             .where(eq(users.email, email))
             .limit(1);
 
-          if (existingUser) {
-            if (!existingUser.emailVerified) {
-              const [linkedAppleAccount] = await db
-                .select({ userId: accounts.userId })
-                .from(accounts)
-                .where(and(eq(accounts.userId, existingUser.id), eq(accounts.provider, "apple")))
-                .limit(1);
+          if (existingUser && !existingUser.emailVerified) {
+            const [linkedAppleAccount] = await db
+              .select({ userId: accounts.userId })
+              .from(accounts)
+              .where(and(eq(accounts.userId, existingUser.id), eq(accounts.provider, "apple")))
+              .limit(1);
 
-              if (!linkedAppleAccount) {
-                return null;
+            if (!linkedAppleAccount) {
+              return null;
+            }
+          }
+
+          // See the matching comment on the google-id-token provider above -
+          // same transactional/race-safe reasoning applies symmetrically.
+          userId = await db.transaction(async (tx) => {
+            let resolvedUserId = existingUser?.id;
+
+            if (!resolvedUserId) {
+              // Apple only sends the user's name on the device's very first
+              // authorization, so the client passes it through here.
+              const firstName = typeof credentials?.firstName === "string" ? credentials.firstName : "";
+              const lastName = typeof credentials?.lastName === "string" ? credentials.lastName : "";
+              const name = `${firstName} ${lastName}`.trim() || null;
+
+              resolvedUserId = crypto.randomUUID();
+              try {
+                await tx.insert(authAdapterUsers).values({
+                  id: resolvedUserId,
+                  email,
+                  name,
+                  image: null,
+                  emailVerified: new Date(),
+                });
+              } catch (err) {
+                const [raceWinner] = await tx
+                  .select({ id: users.id })
+                  .from(users)
+                  .where(eq(users.email, email))
+                  .limit(1);
+                if (!raceWinner) {
+                  console.error("[auth] apple-id-token: user insert failed and no concurrent row to recover from");
+                  throw err;
+                }
+                console.warn("[auth] apple-id-token: recovered from a concurrent user-creation race");
+                resolvedUserId = raceWinner.id;
               }
             }
 
-            userId = existingUser.id;
-          } else {
-            // Apple only sends the user's name on the device's very first
-            // authorization, so the client passes it through here.
-            const firstName = typeof credentials?.firstName === "string" ? credentials.firstName : "";
-            const lastName = typeof credentials?.lastName === "string" ? credentials.lastName : "";
-            const name = `${firstName} ${lastName}`.trim() || null;
+            await tx.insert(accounts).values({
+              userId: resolvedUserId,
+              type: "oidc",
+              provider: "apple",
+              providerAccountId: sub,
+            }).onConflictDoNothing();
 
-            userId = crypto.randomUUID();
-            await db.insert(authAdapterUsers).values({
-              id: userId,
-              email,
-              name,
-              image: null,
-              emailVerified: new Date(),
-            });
-          }
-
-          await db.insert(accounts).values({
-            userId,
-            type: "oidc",
-            provider: "apple",
-            providerAccountId: sub,
-          }).onConflictDoNothing();
+            return resolvedUserId;
+          });
         }
 
         const [user] = await db

@@ -157,6 +157,14 @@ export function AppSidebar({ latestNewsPublishedAt }: AppSidebarProps) {
   const grouped = groupConversationsByDate(history);
 
   const openSettings = useCallback(() => {
+    // Belt-and-suspenders: the sidebar itself already dismisses the keyboard
+    // on open (see useSidebar's setOpenMobile), so the composer is normally
+    // already blurred by the time Settings can be reached. Blur explicitly
+    // here too so Settings never opens over a visible keyboard even if it
+    // gains another entry point later.
+    if (document.activeElement instanceof HTMLElement) {
+      document.activeElement.blur();
+    }
     setOpenMobile(false);
     setSettingsOpen(true);
   }, [setOpenMobile, setSettingsOpen]);
