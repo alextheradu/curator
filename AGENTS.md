@@ -14,6 +14,8 @@ This version has breaking changes - APIs, conventions, and file structure may al
 - Adding new cookie types (Privacy Policy §7)
 - Adding new user-facing restrictions (Terms §4)
 - Changing authentication methods (Terms §5, Privacy Policy §2b)
+
+lib/legal.ts - in this file, change the timestamp whenever you update the TOS/Privacy Policy so that users will know that they have to accept the new one.
 <!-- END:nextjs-agent-rules -->
 
 </INSTRUCTIONS>

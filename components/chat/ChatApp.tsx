@@ -103,6 +103,7 @@ export function ChatApp({ requestedConversationId, initialPrompt }: ChatAppProps
   const effectiveInitialPrompt = initialPrompt ?? searchParams.get("prompt") ?? undefined;
   const previousAuthRef = useRef(false);
   const hasResolvedAuthRef = useRef(false);
+  const previousRequestedConversationIdRef = useRef(requestedConversationId);
 
   useEffect(() => {
     if (!isAuthenticated) {
@@ -187,13 +188,27 @@ export function ChatApp({ requestedConversationId, initialPrompt }: ChatAppProps
 
     const wasAuthenticated = previousAuthRef.current;
     const hasResolvedAuth = hasResolvedAuthRef.current;
+    // useSession().update() (e.g. re-accepting updated Terms/Privacy Policy
+    // mid-session) bounces status through "loading" and back without any
+    // real auth or route change. Since status is a dependency below, that
+    // bounce alone would otherwise re-run this whole bootstrap and stomp
+    // whatever conversation was just created/opened. Only actually
+    // re-bootstrap when something real changed.
+    const isRedundantRerun = hasResolvedAuth
+      && isAuthenticated === wasAuthenticated
+      && requestedConversationId === previousRequestedConversationIdRef.current;
 
     if (hasResolvedAuth && previousAuthRef.current && !isAuthenticated) {
       clearAllConversations();
     }
 
     previousAuthRef.current = isAuthenticated;
+    previousRequestedConversationIdRef.current = requestedConversationId;
     hasResolvedAuthRef.current = true;
+
+    if (isRedundantRerun) {
+      return;
+    }
 
     let cancelled = false;
 
