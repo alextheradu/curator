@@ -80,7 +80,26 @@ function SidebarProvider({
   onOpenChange?: (open: boolean) => void
 }) {
   const isMobile = useIsMobile()
-  const [openMobile, setOpenMobile] = React.useState(false)
+  const [openMobile, setOpenMobileState] = React.useState(false)
+
+  // Single choke point for every mobile-sidebar-opening entry point (trigger
+  // tap, swipe gesture, keyboard shortcut, rail drag). Blurring here instead
+  // of in each caller guarantees the on-screen keyboard never stays up
+  // behind the sidebar no matter which entry point opened it - the keyboard
+  // is a system layer that ignores in-page z-index, so it has to be
+  // dismissed, not just visually covered.
+  const setOpenMobile = React.useCallback(
+    (value: boolean | ((value: boolean) => boolean)) => {
+      setOpenMobileState((prev) => {
+        const next = typeof value === "function" ? value(prev) : value
+        if (next && document.activeElement instanceof HTMLElement) {
+          document.activeElement.blur()
+        }
+        return next
+      })
+    },
+    []
+  )
   const [width, setWidthState] = React.useState(() => {
     const raw = readBrowserCookie(SIDEBAR_WIDTH_COOKIE_NAME)
     const parsed = Number(raw)
@@ -125,12 +144,6 @@ function SidebarProvider({
   // Helper to toggle the sidebar.
   const toggleSidebar = React.useCallback(() => {
     if (isMobile) {
-      // Dismiss the on-screen keyboard first, otherwise it stays up and
-      // overlaps the sidebar sheet since the keyboard is a system layer
-      // that ignores in-page z-index.
-      if (document.activeElement instanceof HTMLElement) {
-        document.activeElement.blur()
-      }
       return setOpenMobile((open) => !open)
     }
     return setOpen((open) => !open)

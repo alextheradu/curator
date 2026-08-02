@@ -288,6 +288,12 @@ html.capacitor [data-capacitor-root] {
   right: 0;
   bottom: max(0px, var(--keyboard-height, 0px), calc(100vh - 100dvh));
   height: auto;
+  /* Without this, `bottom` above jumps straight to its new value the instant
+     --keyboard-height changes, snapping the composer instead of riding up
+     with the keyboard. 250ms/ease approximates the iOS system keyboard's own
+     show/hide animation - the Keyboard plugin only reports height, not the
+     native duration/easing, so this is the closest we can sync without it. */
+  transition: bottom 250ms ease;
 }
 
 /* When keyboard detected via JS events: push logo/text toward input bar */
