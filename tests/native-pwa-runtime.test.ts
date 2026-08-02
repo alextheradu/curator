@@ -44,6 +44,21 @@ describe("native and PWA runtime guards", () => {
     expect(styles).toContain("padding-bottom: clamp");
   });
 
+  it("animates the composer/root offset with the keyboard instead of snapping it", () => {
+    const styles = readFileSync(path.join(root, "app/globals.css"), "utf8");
+    const rootRule = styles.match(/html\.capacitor \[data-capacitor-root\] \{([\s\S]*?)\}/)?.[1] ?? "";
+
+    expect(rootRule).toContain("transition: bottom");
+  });
+
+  it("gives the mobile Settings sheet the full viewport height with no max-height cap underneath it", () => {
+    const settingsModal = readFileSync(path.join(root, "components/ui/SettingsModal.tsx"), "utf8");
+    const mobileDialogClass = settingsModal.match(/className="([^"]*!h-\[100dvh\][^"]*)"/)?.[1] ?? "";
+
+    expect(mobileDialogClass).toContain("!h-[100dvh]");
+    expect(mobileDialogClass).toContain("!max-h-[100dvh]");
+  });
+
   it("initializes the Apple Sign-In plugin before calling signIn on Android", () => {
     const nativeAuth = readFileSync(path.join(root, "lib/native-auth.ts"), "utf8");
     const appleFn = nativeAuth.match(/export async function nativeAppleSignIn[\s\S]*$/)?.[0] ?? "";

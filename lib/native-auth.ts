@@ -25,10 +25,13 @@ export async function nativeGoogleSignIn(): Promise<void> {
       await GoogleSignIn.initialize({ clientId });
     }
 
+    console.log("[native-auth] google: opening native sign-in sheet");
     const result = await GoogleSignIn.signIn();
 
     const idToken = result.idToken;
     if (!idToken) throw new Error("No ID token returned from Google");
+
+    console.log("[native-auth] google: got id token, exchanging with server");
 
     const response = await signIn("google-id-token", {
       idToken,
@@ -37,9 +40,14 @@ export async function nativeGoogleSignIn(): Promise<void> {
     });
 
     if (response?.error) {
-      throw new Error(`Auth failed: ${response.error} (url: ${response.url ?? ""})`);
+      // Deliberately omits response.url: on some next-auth versions it can
+      // echo back a query string built from the request, which is not safe
+      // to log verbatim.
+      console.error(`[native-auth] google: callback rejected (${response.error})`);
+      throw new Error(`Auth failed: ${response.error}`);
     }
 
+    console.log("[native-auth] google: callback accepted, navigating in");
     // good, send them in
     window.location.href = response?.url ?? "/";
   } catch (err) {
