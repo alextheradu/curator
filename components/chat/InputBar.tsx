@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState, useEffect, KeyboardEvent, MouseEvent as ReactMouseEvent, PointerEvent as ReactPointerEvent } from "react";
+import { useRef, useState, useEffect, KeyboardEvent, MouseEvent as ReactMouseEvent, PointerEvent as ReactPointerEvent, TouchEvent as ReactTouchEvent } from "react";
 import { ArrowUpIcon, MoreHorizontalIcon, SquareIcon } from "lucide-react";
 import { AnimatePresence, motion } from "framer-motion";
 import { cn } from "@/lib/utils";
@@ -15,6 +15,8 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import type { SearchMode } from "@/lib/search-activity";
+
+const SWIPE_DISMISS_THRESHOLD_PX = 40;
 
 interface Props {
   onSend: (message: string) => void;
@@ -124,6 +126,44 @@ export function InputBar({
     }
   };
 
+  // Swipe-down-to-dismiss: drag down from the textarea to close the
+  // keyboard, mirroring the gesture most native chat apps support. Only
+  // arms when the drag starts at the textarea's own scroll top - otherwise
+  // a downward drag inside a tall multi-line draft would hijack scrolling
+  // the draft back up instead of dismissing.
+  const swipeStartRef = useRef<{ x: number; y: number; atTop: boolean } | null>(null);
+
+  const handleTextareaTouchStart = (event: ReactTouchEvent<HTMLTextAreaElement>) => {
+    const touch = event.touches[0];
+    if (!touch || !focused) {
+      swipeStartRef.current = null;
+      return;
+    }
+    swipeStartRef.current = {
+      x: touch.clientX,
+      y: touch.clientY,
+      atTop: (textareaRef.current?.scrollTop ?? 0) <= 0,
+    };
+  };
+
+  const handleTextareaTouchMove = (event: ReactTouchEvent<HTMLTextAreaElement>) => {
+    const start = swipeStartRef.current;
+    const touch = event.touches[0];
+    if (!start || !touch || !start.atTop) return;
+
+    const dy = touch.clientY - start.y;
+    const dx = Math.abs(touch.clientX - start.x);
+
+    if (dy > SWIPE_DISMISS_THRESHOLD_PX && dy > dx * 1.5) {
+      swipeStartRef.current = null;
+      textareaRef.current?.blur();
+    }
+  };
+
+  const handleTextareaTouchEnd = () => {
+    swipeStartRef.current = null;
+  };
+
   const canSend = value.trim().length > 0 && !disabled && !isStreaming;
   const searchMode = searchModeProp ?? (deepSearchEnabled ? "deep" : "fast");
   const optionsActive = factCheckEnabled || searchMode !== "fast";
@@ -181,6 +221,10 @@ export function InputBar({
             onKeyDown={handleKeyDown}
             onFocus={() => setFocused(true)}
             onBlur={() => setFocused(false)}
+            onTouchStart={handleTextareaTouchStart}
+            onTouchMove={handleTextareaTouchMove}
+            onTouchEnd={handleTextareaTouchEnd}
+            onTouchCancel={handleTextareaTouchEnd}
             placeholder="Ask anything..."
             disabled={disabled}
             enterKeyHint="send"

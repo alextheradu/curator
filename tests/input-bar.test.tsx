@@ -139,4 +139,73 @@ describe("InputBar", () => {
 
     expect(textarea.value).toBe("already typing something new");
   });
+
+  it("blurs the textarea on a deliberate downward swipe, to dismiss the keyboard", () => {
+    render(<InputBar onSend={() => undefined} compact />);
+    const textarea = screen.getByPlaceholderText("Ask anything...") as HTMLTextAreaElement;
+    act(() => {
+      textarea.focus();
+    });
+    textarea.scrollTop = 0;
+    expect(document.activeElement).toBe(textarea);
+
+    fireEvent.touchStart(textarea, { touches: [{ clientX: 100, clientY: 20 }] });
+    fireEvent.touchMove(textarea, { touches: [{ clientX: 100, clientY: 80 }] });
+
+    expect(document.activeElement).not.toBe(textarea);
+  });
+
+  it("does not blur on a small drag below the swipe threshold", () => {
+    render(<InputBar onSend={() => undefined} compact />);
+    const textarea = screen.getByPlaceholderText("Ask anything...") as HTMLTextAreaElement;
+    act(() => {
+      textarea.focus();
+    });
+    textarea.scrollTop = 0;
+
+    fireEvent.touchStart(textarea, { touches: [{ clientX: 100, clientY: 20 }] });
+    fireEvent.touchMove(textarea, { touches: [{ clientX: 100, clientY: 35 }] });
+
+    expect(document.activeElement).toBe(textarea);
+  });
+
+  it("does not blur on a mostly-horizontal drag", () => {
+    render(<InputBar onSend={() => undefined} compact />);
+    const textarea = screen.getByPlaceholderText("Ask anything...") as HTMLTextAreaElement;
+    act(() => {
+      textarea.focus();
+    });
+    textarea.scrollTop = 0;
+
+    fireEvent.touchStart(textarea, { touches: [{ clientX: 20, clientY: 20 }] });
+    fireEvent.touchMove(textarea, { touches: [{ clientX: 100, clientY: 40 }] });
+
+    expect(document.activeElement).toBe(textarea);
+  });
+
+  it("does not blur a downward drag while a long draft is scrolled - lets the draft scroll instead", () => {
+    render(<InputBar onSend={() => undefined} compact />);
+    const textarea = screen.getByPlaceholderText("Ask anything...") as HTMLTextAreaElement;
+    act(() => {
+      textarea.focus();
+    });
+    Object.defineProperty(textarea, "scrollTop", { value: 40, configurable: true });
+
+    fireEvent.touchStart(textarea, { touches: [{ clientX: 100, clientY: 20 }] });
+    fireEvent.touchMove(textarea, { touches: [{ clientX: 100, clientY: 80 }] });
+
+    expect(document.activeElement).toBe(textarea);
+  });
+
+  it("does not blur an unfocused textarea on swipe (nothing to dismiss)", () => {
+    render(<InputBar onSend={() => undefined} compact />);
+    const textarea = screen.getByPlaceholderText("Ask anything...") as HTMLTextAreaElement;
+    textarea.blur();
+    expect(document.activeElement).not.toBe(textarea);
+
+    fireEvent.touchStart(textarea, { touches: [{ clientX: 100, clientY: 20 }] });
+    fireEvent.touchMove(textarea, { touches: [{ clientX: 100, clientY: 80 }] });
+
+    expect(document.activeElement).not.toBe(textarea);
+  });
 });
