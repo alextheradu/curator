@@ -74,6 +74,26 @@ describe("SettingsModal mobile layout", () => {
     expect(screen.getAllByText("Redo onboarding").length).toBeGreaterThan(0);
   });
 
+  it("explains what Temperature does and labels the slider ends", () => {
+    render(<SettingsModal />);
+
+    expect(
+      screen.getAllByText(
+        "Controls how focused or varied responses are. Lower values are more consistent and predictable. Higher values are more creative and varied."
+      ).length
+    ).toBeGreaterThan(0);
+    expect(screen.getAllByText("Focused").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("Creative").length).toBeGreaterThan(0);
+  });
+
+  it("gives the temperature slider an accessible name and value for VoiceOver", () => {
+    render(<SettingsModal />);
+
+    const sliders = screen.getAllByRole("slider", { name: "Temperature" });
+    expect(sliders.length).toBeGreaterThan(0);
+    expect(sliders[0].getAttribute("aria-valuetext")).toContain("focused");
+  });
+
   it("shows the admin panel row only for admin sessions", () => {
     useSessionMock.mockReturnValue({
       data: { user: { id: "u1", email: "admin@example.com", isAdmin: true } },
