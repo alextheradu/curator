@@ -652,7 +652,7 @@ export function AppSidebar({ latestNewsPublishedAt }: AppSidebarProps) {
 
                   <button
                     type="button"
-                    className="flex size-8 shrink-0 items-center justify-center rounded-lg text-sidebar-foreground/50 transition-colors duration-150 hover:bg-sidebar-accent hover:text-sidebar-foreground group-data-[collapsible=icon]:mx-auto max-md:hidden"
+                    className="flex size-8 shrink-0 items-center justify-center rounded-lg text-sidebar-foreground/50 transition-colors duration-150 hover:bg-sidebar-accent hover:text-sidebar-foreground group-data-[collapsible=icon]:mx-auto max-md:size-10 max-md:rounded-xl max-md:active:bg-sidebar-accent"
                     title="Settings"
                     aria-label="Settings"
                     onClick={openSettings}
