@@ -18,6 +18,12 @@ window.matchMedia = window.matchMedia ?? ((query: string) => ({
   dispatchEvent: () => false,
 } as unknown as MediaQueryList));
 
+// jsdom doesn't implement these; Radix's DropdownMenu (the options menu)
+// reads/calls them when it opens and positions itself.
+Element.prototype.hasPointerCapture = Element.prototype.hasPointerCapture ?? (() => false);
+Element.prototype.releasePointerCapture = Element.prototype.releasePointerCapture ?? (() => {});
+Element.prototype.scrollIntoView = Element.prototype.scrollIntoView ?? (() => {});
+
 afterEach(() => {
   cleanup();
 });
@@ -195,6 +201,42 @@ describe("InputBar", () => {
     fireEvent.touchMove(textarea, { touches: [{ clientX: 100, clientY: 80 }] });
 
     expect(document.activeElement).toBe(textarea);
+  });
+
+  it("keeps focus on the textarea when the options button is pressed, so opening the menu doesn't dismiss the keyboard", () => {
+    render(<InputBar onSend={() => undefined} compact />);
+    const textarea = screen.getByPlaceholderText("Ask anything...") as HTMLTextAreaElement;
+    textarea.focus();
+    expect(document.activeElement).toBe(textarea);
+
+    const optionsButton = screen.getByLabelText("More options: Fact check off, Search mode fast");
+    const event = new MouseEvent("mousedown", { bubbles: true, cancelable: true });
+    const prevented = !fireEvent(optionsButton, event);
+
+    expect(prevented).toBe(true);
+  });
+
+  it("opens the options menu on a single click and selects a search mode on the first tap", () => {
+    const onSearchModeChange = vi.fn();
+    render(
+      <InputBar
+        onSend={() => undefined}
+        compact
+        searchMode="fast"
+        onSearchModeChange={onSearchModeChange}
+      />
+    );
+
+    // Radix's DropdownMenuTrigger opens on pointerdown, not click - mirrors
+    // the real event sequence a tap produces.
+    fireEvent.pointerDown(
+      screen.getByLabelText("More options: Fact check off, Search mode fast"),
+      { button: 0 }
+    );
+    expect(screen.getByText("Balanced")).not.toBeNull();
+
+    fireEvent.click(screen.getByText("Balanced"));
+    expect(onSearchModeChange).toHaveBeenCalledWith("balanced");
   });
 
   it("does not blur an unfocused textarea on swipe (nothing to dismiss)", () => {

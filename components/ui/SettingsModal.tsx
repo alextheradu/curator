@@ -99,6 +99,15 @@ const SEARCH_MODE_OPTIONS: { value: SearchMode; title: string; description: stri
   { value: "deep", title: "Deep search", description: "Searches more broadly before answering." },
 ];
 
+const TEMPERATURE_DESCRIPTION =
+  "Controls how focused or varied responses are. Lower values are more consistent and predictable. Higher values are more creative and varied.";
+
+function temperatureValueText(value: number) {
+  if (value <= 0.3) return `${value.toFixed(1)}, focused`;
+  if (value >= 0.7) return `${value.toFixed(1)}, creative`;
+  return `${value.toFixed(1)}, balanced`;
+}
+
 function readConsent(): CookieConsentValue | null {
   const cookieValue = readBrowserCookie(COOKIE_CONSENT_NAME);
   return parseCookieConsent(cookieValue) ?? parseCookieConsent(localStorage.getItem(COOKIE_CONSENT_STORAGE_KEY));
@@ -750,21 +759,29 @@ export function SettingsModal() {
                     <SectionHeading>Response behavior</SectionHeading>
                     <SettingRow
                       label="Temperature"
-                      description="Lower is more precise. Higher is more exploratory."
+                      description={TEMPERATURE_DESCRIPTION}
                       fullWidth
                     >
-                      <div className="flex items-center gap-3">
-                        <Slider
-                          min={0}
-                          max={1}
-                          step={0.1}
-                          value={[temperature]}
-                          onValueChange={([value]) => setTemperature(value)}
-                          className="flex-1"
-                        />
-                        <span className="w-8 text-right font-mono text-xs text-muted-foreground">
-                          {temperature.toFixed(1)}
-                        </span>
+                      <div className="flex flex-col gap-1.5">
+                        <div className="flex items-center gap-3">
+                          <Slider
+                            min={0}
+                            max={1}
+                            step={0.1}
+                            value={[temperature]}
+                            onValueChange={([value]) => setTemperature(value)}
+                            thumbLabel="Temperature"
+                            valueText={temperatureValueText(temperature)}
+                            className="flex-1"
+                          />
+                          <span className="w-8 text-right font-mono text-xs text-muted-foreground">
+                            {temperature.toFixed(1)}
+                          </span>
+                        </div>
+                        <div className="flex items-center justify-between text-[11px] text-muted-foreground/70">
+                          <span>Focused</span>
+                          <span>Creative</span>
+                        </div>
                       </div>
                     </SettingRow>
                   </div>
@@ -1091,13 +1108,22 @@ export function SettingsModal() {
                       <span className="flex-1 text-[15px] text-foreground">Temperature</span>
                       <span className="shrink-0 font-mono text-xs text-muted-foreground">{temperature.toFixed(1)}</span>
                     </div>
+                    <p className="mb-2.5 text-xs leading-5 text-muted-foreground">
+                      {TEMPERATURE_DESCRIPTION}
+                    </p>
                     <Slider
                       min={0}
                       max={1}
                       step={0.1}
                       value={[temperature]}
                       onValueChange={([v]) => setTemperature(v)}
+                      thumbLabel="Temperature"
+                      valueText={temperatureValueText(temperature)}
                     />
+                    <div className="mt-1.5 flex items-center justify-between text-[11px] text-muted-foreground/70">
+                      <span>Focused</span>
+                      <span>Creative</span>
+                    </div>
                   </div>
                 </MobileGroup>
               </div>
