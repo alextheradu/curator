@@ -1,6 +1,7 @@
 "use client";
 
-import { CopyIcon, FileWarningIcon, SearchXIcon, ShieldAlertIcon, ShieldCheckIcon, ThumbsDownIcon, ThumbsUpIcon } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
+import { CheckIcon, CopyIcon, FileWarningIcon, Loader2Icon, SearchXIcon, ShieldAlertIcon, ShieldCheckIcon, ThumbsDownIcon, ThumbsUpIcon } from "lucide-react";
 import { AssistantMarkdown } from "@/components/chat/AssistantMarkdown";
 import { SearchActivityPanel } from "@/components/chat/SearchActivityPanel";
 import { CitationBadge } from "@/components/ui/CitationBadge";
@@ -10,6 +11,46 @@ import { cn, normalizeAssistantMarkdown } from "@/lib/utils";
 import type { Message } from "@/lib/store";
 import type { Citation } from "@/lib/db/schema";
 import { toast } from "sonner";
+
+type ReactionKind = "helpful" | "not_helpful";
+type FlagKind = "bad_citation" | "missed_source";
+type FeedbackKind = ReactionKind | FlagKind;
+
+interface StoredMessageFeedback {
+  reaction: ReactionKind | null;
+  flags: Partial<Record<FlagKind, boolean>>;
+}
+
+const EMPTY_FEEDBACK: StoredMessageFeedback = { reaction: null, flags: {} };
+
+function feedbackStorageKey(messageId: string) {
+  return `curator:feedback:${messageId}`;
+}
+
+// /api/feedback is a write-only analytics log with no per-user, per-message
+// record to read back - there's nothing server-side to hydrate "did I already
+// like this" from. This local record is what lets the selected state survive
+// a rerender or reopening the conversation on this device; it is not synced
+// across devices. See the Issue 2 write-up for the product decision this implies.
+function readStoredFeedback(messageId: string): StoredMessageFeedback {
+  if (typeof window === "undefined") return EMPTY_FEEDBACK;
+  try {
+    const raw = localStorage.getItem(feedbackStorageKey(messageId));
+    if (!raw) return EMPTY_FEEDBACK;
+    const parsed = JSON.parse(raw) as Partial<StoredMessageFeedback>;
+    return { reaction: parsed.reaction ?? null, flags: parsed.flags ?? {} };
+  } catch {
+    return EMPTY_FEEDBACK;
+  }
+}
+
+function writeStoredFeedback(messageId: string, value: StoredMessageFeedback) {
+  try {
+    localStorage.setItem(feedbackStorageKey(messageId), JSON.stringify(value));
+  } catch {
+    // Best-effort only - this is local reaction state, not the source of truth.
+  }
+}
 
 const SparklesIcon = ({ size = 13 }: { size?: number }) => (
   <svg
@@ -36,12 +77,35 @@ export function MessageBubble({ message, isStreaming, onOpenCitation }: Props) {
   const isUser = message.role === "user";
   const isAssistant = message.role === "assistant";
   const normalizedContent = isAssistant ? normalizeAssistantMarkdown(message.content) : message.content;
+  // relative + before:-inset-1 pads the tap target to ~44px without changing
+  // the button's visible size/padding - only the invisible hit area grows.
   const actionButtonClass =
-    "rounded-lg p-2.5 sm:p-1 text-muted-foreground/50 transition hover:bg-muted hover:text-muted-foreground opacity-100 md:opacity-0 md:group-hover/message:opacity-100";
+    "relative rounded-lg p-2.5 sm:p-1 text-muted-foreground/50 transition hover:bg-muted hover:text-muted-foreground opacity-100 md:opacity-0 md:group-hover/message:opacity-100 before:absolute before:-inset-1 before:content-['']";
+
+  const [reaction, setReaction] = useState<ReactionKind | null>(null);
+  const [flags, setFlags] = useState<Partial<Record<FlagKind, boolean>>>({});
+  const [pendingActions, setPendingActions] = useState<Set<FeedbackKind>>(new Set());
+  const [copiedKey, setCopiedKey] = useState<"prompt" | "response" | null>(null);
+  const copyResetRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => {
+    if (!message.id) return;
+    const stored = readStoredFeedback(message.id);
+    setReaction(stored.reaction);
+    setFlags(stored.flags);
+  }, [message.id]);
+
+  useEffect(() => () => {
+    if (copyResetRef.current) clearTimeout(copyResetRef.current);
+  }, []);
 
   const handleCopy = async (content: string, label: "Prompt" | "Response") => {
+    const key = label === "Prompt" ? "prompt" : "response";
     try {
       await navigator.clipboard.writeText(content);
+      setCopiedKey(key);
+      if (copyResetRef.current) clearTimeout(copyResetRef.current);
+      copyResetRef.current = setTimeout(() => setCopiedKey(null), 1500);
       toast.success(`${label} copied.`);
     } catch (error) {
       console.error(error);
@@ -49,24 +113,56 @@ export function MessageBubble({ message, isStreaming, onOpenCitation }: Props) {
     }
   };
 
-  const handleFeedback = async (kind: "helpful" | "not_helpful" | "bad_citation" | "missed_source") => {
+  const submitFeedback = async (kind: FeedbackKind) => {
+    if (!message.id || pendingActions.has(kind)) return;
+
+    const isReaction = kind === "helpful" || kind === "not_helpful";
+    const previousReaction = reaction;
+    const previousFlags = flags;
+    let nextReaction = reaction;
+    let nextFlags = flags;
+    let turningOn: boolean;
+
+    if (isReaction) {
+      nextReaction = reaction === kind ? null : (kind as ReactionKind);
+      turningOn = nextReaction !== null;
+      setReaction(nextReaction);
+    } else {
+      const flagKind = kind as FlagKind;
+      turningOn = !flags[flagKind];
+      nextFlags = { ...flags, [flagKind]: turningOn };
+      setFlags(nextFlags);
+    }
+
+    writeStoredFeedback(message.id, { reaction: nextReaction, flags: nextFlags });
+
+    // Turning a selection off is a local-only correction - /api/feedback only
+    // appends an event log, there is nothing server-side to retract.
+    if (!turningOn) return;
+
+    setPendingActions((prev) => new Set(prev).add(kind));
     try {
       const response = await fetch("/api/feedback", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          messageId: message.id,
-          kind,
-        }),
+        body: JSON.stringify({ messageId: message.id, kind }),
       });
       const payload = await response.json().catch(() => ({}));
       if (!response.ok) {
         throw new Error(payload.error ?? "Unable to save feedback.");
       }
-
-      toast.success("Feedback saved.");
     } catch (error) {
+      // Roll back the optimistic selection so the UI matches reality.
+      setReaction(previousReaction);
+      setFlags(previousFlags);
+      writeStoredFeedback(message.id, { reaction: previousReaction, flags: previousFlags });
       toast.error(error instanceof Error ? error.message : "Unable to save feedback.");
+    } finally {
+      setPendingActions((prev) => {
+        const next = new Set(prev);
+        next.delete(kind);
+        return next;
+      });
     }
   };
 
@@ -116,46 +212,74 @@ export function MessageBubble({ message, isStreaming, onOpenCitation }: Props) {
                   type="button"
                   onClick={() => void handleCopy(normalizedContent, "Response")}
                   className={actionButtonClass}
-                  title="Copy response"
-                  aria-label="Copy response"
+                  title={copiedKey === "response" ? "Copied" : "Copy response"}
+                  aria-label={copiedKey === "response" ? "Response copied" : "Copy response"}
                 >
-                  <CopyIcon className="size-4 sm:size-3" />
+                  {copiedKey === "response" ? (
+                    <CheckIcon className="size-4 text-emerald-500 sm:size-3" />
+                  ) : (
+                    <CopyIcon className="size-4 sm:size-3" />
+                  )}
                 </button>
                 <button
                   type="button"
-                  onClick={() => void handleFeedback("helpful")}
-                  className={actionButtonClass}
+                  onClick={() => void submitFeedback("helpful")}
+                  disabled={pendingActions.has("helpful")}
+                  className={cn(actionButtonClass, reaction === "helpful" && "text-emerald-500 opacity-100 md:opacity-100")}
                   title="Helpful"
-                  aria-label="Mark response helpful"
+                  aria-label={reaction === "helpful" ? "Marked helpful. Tap to remove." : "Mark response helpful"}
+                  aria-pressed={reaction === "helpful"}
                 >
-                  <ThumbsUpIcon className="size-4 sm:size-3" />
+                  {pendingActions.has("helpful") ? (
+                    <Loader2Icon className="size-4 animate-spin sm:size-3" />
+                  ) : (
+                    <ThumbsUpIcon className={cn("size-4 sm:size-3", reaction === "helpful" && "fill-current")} />
+                  )}
                 </button>
                 <button
                   type="button"
-                  onClick={() => void handleFeedback("not_helpful")}
-                  className={actionButtonClass}
+                  onClick={() => void submitFeedback("not_helpful")}
+                  disabled={pendingActions.has("not_helpful")}
+                  className={cn(actionButtonClass, reaction === "not_helpful" && "text-amber-500 opacity-100 md:opacity-100")}
                   title="Not helpful"
-                  aria-label="Mark response not helpful"
+                  aria-label={reaction === "not_helpful" ? "Marked not helpful. Tap to remove." : "Mark response not helpful"}
+                  aria-pressed={reaction === "not_helpful"}
                 >
-                  <ThumbsDownIcon className="size-4 sm:size-3" />
+                  {pendingActions.has("not_helpful") ? (
+                    <Loader2Icon className="size-4 animate-spin sm:size-3" />
+                  ) : (
+                    <ThumbsDownIcon className={cn("size-4 sm:size-3", reaction === "not_helpful" && "fill-current")} />
+                  )}
                 </button>
                 <button
                   type="button"
-                  onClick={() => void handleFeedback("bad_citation")}
-                  className={actionButtonClass}
-                  title="Bad citation"
-                  aria-label="Report a bad citation"
+                  onClick={() => void submitFeedback("bad_citation")}
+                  disabled={pendingActions.has("bad_citation")}
+                  className={cn(actionButtonClass, flags.bad_citation && "text-amber-500 opacity-100 md:opacity-100")}
+                  title={flags.bad_citation ? "Bad citation reported" : "Bad citation"}
+                  aria-label={flags.bad_citation ? "Reported a bad citation. Tap to undo." : "Report a bad citation"}
+                  aria-pressed={!!flags.bad_citation}
                 >
-                  <FileWarningIcon className="size-4 sm:size-3" />
+                  {pendingActions.has("bad_citation") ? (
+                    <Loader2Icon className="size-4 animate-spin sm:size-3" />
+                  ) : (
+                    <FileWarningIcon className="size-4 sm:size-3" />
+                  )}
                 </button>
                 <button
                   type="button"
-                  onClick={() => void handleFeedback("missed_source")}
-                  className={actionButtonClass}
-                  title="Missed source"
-                  aria-label="Report a missed source"
+                  onClick={() => void submitFeedback("missed_source")}
+                  disabled={pendingActions.has("missed_source")}
+                  className={cn(actionButtonClass, flags.missed_source && "text-amber-500 opacity-100 md:opacity-100")}
+                  title={flags.missed_source ? "Missed source reported" : "Missed source"}
+                  aria-label={flags.missed_source ? "Reported a missed source. Tap to undo." : "Report a missed source"}
+                  aria-pressed={!!flags.missed_source}
                 >
-                  <SearchXIcon className="size-4 sm:size-3" />
+                  {pendingActions.has("missed_source") ? (
+                    <Loader2Icon className="size-4 animate-spin sm:size-3" />
+                  ) : (
+                    <SearchXIcon className="size-4 sm:size-3" />
+                  )}
                 </button>
                 <ReportButton messageId={message.id} className={actionButtonClass} />
                 {message.factCheck && (
@@ -192,10 +316,14 @@ export function MessageBubble({ message, isStreaming, onOpenCitation }: Props) {
               type="button"
               onClick={() => void handleCopy(normalizedContent, "Prompt")}
               className={actionButtonClass}
-              title="Copy prompt"
-              aria-label="Copy prompt"
+              title={copiedKey === "prompt" ? "Copied" : "Copy prompt"}
+              aria-label={copiedKey === "prompt" ? "Prompt copied" : "Copy prompt"}
             >
-              <CopyIcon className="size-4 sm:size-3" />
+              {copiedKey === "prompt" ? (
+                <CheckIcon className="size-4 text-emerald-500 sm:size-3" />
+              ) : (
+                <CopyIcon className="size-4 sm:size-3" />
+              )}
             </button>
           </div>
         )}

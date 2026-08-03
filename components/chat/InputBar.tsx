@@ -14,6 +14,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { useKeyboardInset } from "@/hooks/useKeyboardInset";
 import type { SearchMode } from "@/lib/search-activity";
 
 const SWIPE_DISMISS_THRESHOLD_PX = 40;
@@ -50,6 +51,7 @@ export function InputBar({
   const [value, setValue] = useState(() => initialValue ?? "");
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const [focused, setFocused] = useState(false);
+  const keyboardInset = useKeyboardInset();
   // Guards against the same tap firing handleSend twice (e.g. a fast double
   // tap lands before React re-renders the disabled state onto the button).
   const sendingRef = useRef(false);
@@ -178,7 +180,13 @@ export function InputBar({
     onDeepSearchChange?.(mode === "deep");
   };
   const renderOptionsMenu = () => (
-    <DropdownMenuContent side="top" align="end" className="min-w-[13rem]">
+    <DropdownMenuContent
+      side="top"
+      align="end"
+      collisionPadding={{ top: 12, bottom: keyboardInset + 12, left: 8, right: 8 }}
+      updatePositionStrategy="always"
+      className="min-w-[13rem]"
+    >
       <DropdownMenuLabel>Options</DropdownMenuLabel>
       <DropdownMenuSeparator />
       <DropdownMenuLabel>Search mode</DropdownMenuLabel>
@@ -255,6 +263,14 @@ export function InputBar({
                   <DropdownMenuTrigger asChild>
                     <button
                       type="button"
+                      // Only mousedown, not pointerdown: Radix composes its own
+                      // open-on-pointerdown handler and skips it whenever our
+                      // handler calls preventDefault() first (composeEventHandlers
+                      // checks event.defaultPrevented), so guarding pointerdown
+                      // here would silently stop the menu from opening. mousedown
+                      // is the actual event whose default browser behavior blurs
+                      // the textarea, and Radix doesn't compose against it.
+                      onMouseDown={preventFocusLoss}
                       className={cn(
                         "flex h-8 w-8 items-center justify-center rounded-xl transition-all duration-200",
                         optionsActive
@@ -302,6 +318,7 @@ export function InputBar({
                     <DropdownMenuTrigger asChild>
                       <button
                         type="button"
+                        onMouseDown={preventFocusLoss}
                         className={cn(
                           "flex h-9 w-9 items-center justify-center rounded-xl transition-all duration-200 sm:h-7 sm:w-7",
                           optionsActive
