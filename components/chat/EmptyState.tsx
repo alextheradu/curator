@@ -135,7 +135,7 @@ function NativeEmptyState() {
         initial={{ opacity: 0, y: 14 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.1, duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
-        className="text-2xl font-medium tracking-tight text-white"
+        className="text-2xl font-medium tracking-tight text-foreground"
       >
         {greetingName ? `How can I help you, ${greetingName}?` : question}
       </motion.h1>
