@@ -20,10 +20,6 @@
   </p>
 
   <p>
-    <img src="https://hackatime-badge.hackclub.com/U0AFWJX9CP2/curator" alt="Hackatime project activity" />
-  </p>
-
-  <p>
     <img src="https://img.shields.io/github/last-commit/alextheradu/curator?style=for-the-badge&logo=github&color=0066B3" alt="Last commit" />
     <img src="https://img.shields.io/github/stars/alextheradu/curator?style=for-the-badge&logo=github&color=ED1C24" alt="GitHub stars" />
     <img src="https://img.shields.io/badge/Next.js-16.2.3-000000?style=for-the-badge&logo=nextdotjs" alt="Next.js 16.2.3" />
