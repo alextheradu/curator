@@ -17,6 +17,8 @@
     <a href="public/terms-of-service.md">Terms</a>
     |
     <a href="LICENSE">License</a>
+    |
+    <a href="CONTRIBUTING.md">Contributing</a>
   </p>
 
   <p>
@@ -49,7 +51,9 @@ Curator is not affiliated with FIRST. Official manuals, Q&A, awards guidance, ev
 - Captures answer-quality feedback, message reports, support requests, and moderation signals.
 - Publishes a `/news` feed backed by admin-managed blog posts.
 - Ships an admin workspace for stats, documents, news posts, users, chats, reports, feedback, and operational triage.
-- Runs as a PWA and includes a Capacitor iOS shell with native Google sign-in support, offline handling, and keyboard/runtime fixes.
+- Runs as a PWA and includes Capacitor iOS and Android shells with native Google and Apple sign-in, offline handling, and keyboard/runtime fixes.
+- Shows a native Safari smart app banner linking to the App Store when `NEXT_PUBLIC_APPLE_APP_ID` is set.
+- Lets users permanently delete their account, including guest conversation cleanup.
 
 ## Stack
 
@@ -57,14 +61,14 @@ Curator is not affiliated with FIRST. Official manuals, Q&A, awards guidance, ev
 | --- | --- |
 | App | Next.js 16 App Router, React 19, TypeScript |
 | UI | Tailwind CSS 4, Radix UI, Base UI, lucide-react, Framer Motion |
-| Auth | Auth.js / NextAuth with Google OAuth, Apple Sign In, and native iOS Google token sign-in |
+| Auth | Auth.js / NextAuth with Google OAuth, Apple Sign In, native iOS Google/Apple token sign-in, and Android Apple Sign-In via in-app WebView OAuth |
 | State | Zustand persisted client state for chat UI preferences and guest conversations |
 | Database | PostgreSQL with Drizzle ORM and SQL migrations |
 | Retrieval | Qdrant vector search plus MinIO-compatible object storage |
 | AI | OpenRouter chat, title, and document-description models |
 | Search | Indexed FRC docs, optional LangSearch web search, optional The Blue Alliance MCP bridge |
 | Observability | Sentry, app logs, client error ingestion, rate limiting |
-| Delivery | PWA assets, service worker, metadata, Open Graph, sitemap, robots, IndexNow, Capacitor iOS |
+| Delivery | PWA assets, service worker, metadata, Open Graph, sitemap, robots, IndexNow, Capacitor iOS and Android |
 | Tests | Vitest |
 
 ## Quick Start
@@ -143,11 +147,11 @@ The baseline template lives in [.env.example](.env.example). The app currently r
 | --- | --- |
 | Core | `NEXT_PUBLIC_SITE_URL`, `AUTH_URL`, `AUTH_SECRET`, `DATABASE_URL`, `PORT` |
 | Web auth | `AUTH_GOOGLE_ID`, `AUTH_GOOGLE_SECRET`, `NEXT_PUBLIC_AUTH_GOOGLE_ID`, `ADMIN_EMAILS` |
-| Native and Apple auth | `AUTH_GOOGLE_IOS_CLIENT_ID`, `AUTH_APPLE_ID`, `AUTH_APPLE_SECRET`, `NEXT_PUBLIC_APPLE_SIGNIN_ENABLED` |
+| Native and Apple auth | `AUTH_GOOGLE_IOS_CLIENT_ID`, `AUTH_APPLE_ID`, `AUTH_APPLE_SECRET`, `NEXT_PUBLIC_APPLE_SIGNIN_ENABLED`, `AUTH_APPLE_IOS_CLIENT_ID`, `NEXT_PUBLIC_AUTH_APPLE_ANDROID_CLIENT_ID` |
 | AI | `OPENROUTER_API_KEY`, `OPENROUTER_CHAT_MODELS`, `OPENROUTER_DESCRIPTION_MODELS`, `OPENROUTER_TITLE_MODEL` |
 | Retrieval | `QDRANT_URL`, `QDRANT_COLLECTION`, `MINIO_ENDPOINT`, `MINIO_USE_SSL`, `MINIO_ACCESS_KEY`, `MINIO_SECRET_KEY`, `MINIO_BUCKET` |
 | Optional live search | `LANGSEARCH_API_KEY`, `TBA_MCP_ENABLED`, `TBA_API_KEY` |
-| Site and analytics | `NEXT_PUBLIC_GOOGLE_ANALYTICS_ID`, `NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION`, `NEXT_PUBLIC_APP_BUILD_ID` |
+| Site and analytics | `NEXT_PUBLIC_GOOGLE_ANALYTICS_ID`, `NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION`, `NEXT_PUBLIC_APP_BUILD_ID`, `NEXT_PUBLIC_APPLE_APP_ID` |
 | Sentry | `NEXT_PUBLIC_SENTRY_DSN`, `SENTRY_DSN`, `SENTRY_ENVIRONMENT`, `SENTRY_TRACES_SAMPLE_RATE`, `NEXT_PUBLIC_SENTRY_TRACES_SAMPLE_RATE`, `NEXT_PUBLIC_SENTRY_REPLAY_SESSION_SAMPLE_RATE`, `NEXT_PUBLIC_SENTRY_REPLAY_ON_ERROR_SAMPLE_RATE`, `SENTRY_RELEASE_MANAGEMENT_ENABLED`, `SENTRY_AUTH_TOKEN`, `SENTRY_ORG`, `SENTRY_PROJECT` |
 | Indexing | `INDEXNOW_KEY`, `INDEXNOW_SITE_URL`, `INDEXNOW_SUBMIT_ON_START`, `INDEXNOW_SUBMIT_DELAY_MS` |
 | Runtime helpers | `PM2_PROCESS_NAME`, `EVAL_BASE_URL` |
@@ -180,9 +184,10 @@ node scripts/generate-apple-secret.mjs
 
 - Google sign-in on web.
 - Apple sign-in on web when Apple credentials are configured.
-- Native Google sign-in for Capacitor iOS using an ID-token credentials flow.
+- Native Google and Apple sign-in for Capacitor iOS using an ID-token credentials flow.
+- Apple sign-in for Capacitor Android via an in-app WebView OAuth flow.
 - Onboarding captures preferred name, team number, chat mode, and search mode.
-- Settings support theme selection, default chat mode, default search mode, cookie preferences, account export, and reset controls.
+- Settings support theme selection, default chat mode, default search mode, cookie preferences, account export, account deletion, and reset controls.
 
 ### Collaboration and support
 
@@ -219,8 +224,10 @@ node scripts/generate-apple-secret.mjs
 | `npm run site:check-assets` | Check public SEO and asset endpoints against a target URL. |
 | `npm run indexnow:submit` | Submit key site URLs to IndexNow. |
 | `npm run cap:assets` | Generate Capacitor iOS app icons from `resources`. |
+| `npm run cap:assets:android` | Generate Capacitor Android app icons from `resources`. |
 | `npm run cap:sync` | Sync web assets and plugins into the Capacitor project. |
 | `npm run cap:open:ios` | Open the iOS workspace in Xcode. |
+| `npm run cap:open:android` | Open the Android project in Android Studio. |
 
 ## Production Notes
 
@@ -305,6 +312,8 @@ public/                      Legal docs, PWA assets, logos, icons, and `llms.txt
 scripts/                     Build/runtime helpers, evals, asset checks, IndexNow, Apple secret
 tests/                       Vitest coverage
 docs/superpowers/            Internal design specs and implementation plans
+ios/                         Capacitor iOS native project
+android/                     Capacitor Android native project
 ```
 
 ## Legal Document Rule
