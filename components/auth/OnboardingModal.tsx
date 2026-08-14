@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useSession } from "next-auth/react";
 import { Button } from "@/components/ui/button";
 import {
@@ -96,6 +96,20 @@ function focusOnboardingField(step: number, selectedChatMode: ChatMode) {
   }
 }
 
+// Tapping empty space inside the scroll area (not a real input/button)
+// should dismiss the keyboard, same as tapping outside the sheet - but
+// without closing the dialog, since onInteractOutside is suppressed below.
+function dismissKeyboardOnEmptyTap(event: React.PointerEvent<HTMLDivElement>) {
+  if (event.target !== event.currentTarget) {
+    return;
+  }
+
+  const active = document.activeElement;
+  if (active instanceof HTMLElement && active !== document.body) {
+    active.blur();
+  }
+}
+
 export function OnboardingModal({
   open,
   initialName,
@@ -117,6 +131,10 @@ export function OnboardingModal({
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isComplete, setIsComplete] = useState(false);
+  const scrollRef = useRef<HTMLDivElement>(null);
+  // Guards a rapid double Enter (or a hardware-keyboard key-repeat) from
+  // advancing two steps off a single intended press.
+  const isNavigatingRef = useRef(false);
 
   useEffect(() => {
     if (!open) {
@@ -133,6 +151,22 @@ export function OnboardingModal({
     setError(null);
     setIsComplete(false);
   }, [initialChatMode, initialName, initialPreferredName, initialSearchMode, initialTeamNumber, open]);
+
+  // Each step should always open scrolled to its own top - the scroll area
+  // is one shared element reused across steps, so without this it keeps
+  // whichever offset the previous step's content left it at. Runs after the
+  // new step's content has painted (rAF) so scrollTo isn't racing layout.
+  useEffect(() => {
+    if (!open) {
+      return;
+    }
+
+    const handle = window.requestAnimationFrame(() => {
+      scrollRef.current?.scrollTo({ top: 0, behavior: "auto" });
+    });
+
+    return () => window.cancelAnimationFrame(handle);
+  }, [open, step]);
 
   useEffect(() => {
     if (!open || isComplete) {
@@ -184,11 +218,22 @@ export function OnboardingModal({
   };
 
   const handleNext = () => {
+    // A held Enter key (or a fast double tap on Next before the step
+    // re-renders) can otherwise fire this twice off one intended press and
+    // skip a step.
+    if (isNavigatingRef.current) {
+      return;
+    }
+
     if (!validateCurrentStep()) {
       return;
     }
 
+    isNavigatingRef.current = true;
     setStep((current) => Math.min(current + 1, STEP_COUNT));
+    queueMicrotask(() => {
+      isNavigatingRef.current = false;
+    });
   };
 
   const handleComplete = async () => {
@@ -215,6 +260,7 @@ export function OnboardingModal({
         throw new Error(payload.error ?? "Unable to finish onboarding.");
       }
 
+      console.info("[chat-mode] changed", { to: chatMode, source: "onboarding" });
       setDefaultChatMode(chatMode);
       setDefaultSearchMode(searchMode);
       localStorage.setItem("curator:searchMode", searchMode);
@@ -272,7 +318,18 @@ export function OnboardingModal({
   return (
     <Dialog open={open && !isComplete} onOpenChange={() => {}}>
       <DialogContent
-        className="max-w-lg rounded-2xl border-border/60 bg-card p-0 shadow-[var(--shadow-float)] [&>button]:hidden"
+        className={cn(
+          // Outer layer becomes a plain keyboard/safe-area-bounded centering
+          // box - the visible card is the inner div below. Radix portals this
+          // to <body>, outside [data-capacitor-root], so it can't rely on
+          // that container's own inset and reads --keyboard-height directly
+          // (see app/globals.css and Providers.tsx's CapacitorKeyboard).
+          "flex items-center justify-center gap-0 border-0 bg-transparent p-0 shadow-none",
+          "left-0 right-0 w-full max-w-none translate-x-0",
+          "top-[max(0.75rem,env(safe-area-inset-top))] bottom-[max(0.75rem,calc(env(safe-area-inset-bottom)+var(--keyboard-height,0px)))] translate-y-0 max-h-none",
+          "transition-[bottom] duration-250 ease-out",
+          "[&>button]:hidden"
+        )}
         onInteractOutside={(event) => event.preventDefault()}
         onEscapeKeyDown={(event) => event.preventDefault()}
         onOpenAutoFocus={(event) => {
@@ -281,8 +338,9 @@ export function OnboardingModal({
         }}
         onCloseAutoFocus={(event) => event.preventDefault()}
       >
-        <form className="contents" onSubmit={handleSubmit}>
-          <div className="border-b border-border/60 px-6 py-5">
+        <div className="flex max-h-full w-[calc(100%-2rem)] max-w-lg flex-col overflow-hidden rounded-2xl border border-border/60 bg-card shadow-[var(--shadow-float)]">
+          <form className="contents" onSubmit={handleSubmit}>
+          <div className="shrink-0 border-b border-border/60 px-6 py-5">
             <DialogHeader className="gap-2 text-left">
               <div className="text-[11px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
                 {step} of {STEP_COUNT}
@@ -296,7 +354,12 @@ export function OnboardingModal({
             </DialogHeader>
           </div>
 
-          <div className="space-y-5 px-6 py-5">
+          <div
+            ref={scrollRef}
+            data-testid="onboarding-scroll-area"
+            onPointerDown={dismissKeyboardOnEmptyTap}
+            className="min-h-0 flex-1 space-y-5 overflow-y-auto overscroll-contain px-6 py-5"
+          >
             {step === 1 ? (
               <div className="space-y-2">
                 <label htmlFor="preferred-name" className="text-sm font-medium text-foreground">
@@ -304,9 +367,12 @@ export function OnboardingModal({
                 </label>
                 <Input
                   id="preferred-name"
+                  type="text"
                   value={preferredName}
                   maxLength={30}
                   placeholder="First name or nickname"
+                  enterKeyHint="next"
+                  autoComplete="given-name"
                   onChange={(event) => setPreferredName(event.target.value)}
                 />
                 <p className="text-xs text-muted-foreground">
@@ -327,6 +393,8 @@ export function OnboardingModal({
                     min={1}
                     max={99_999}
                     inputMode="numeric"
+                    enterKeyHint="done"
+                    autoComplete="off"
                     value={teamNumberInput}
                     placeholder="254"
                     disabled={isNoTeam}
@@ -457,7 +525,7 @@ export function OnboardingModal({
             {error ? <p className="text-sm text-destructive">{error}</p> : null}
           </div>
 
-          <DialogFooter className="border-t border-border/60 px-6 py-4 sm:justify-between">
+          <DialogFooter className="shrink-0 border-t border-border/60 bg-card px-6 py-4 sm:justify-between">
             <Button
               type="button"
               variant="ghost"
@@ -471,6 +539,7 @@ export function OnboardingModal({
             </Button>
           </DialogFooter>
         </form>
+        </div>
       </DialogContent>
     </Dialog>
   );

@@ -290,7 +290,18 @@ export function SettingsModal() {
 
   const saveAccountChatMode = async (mode: ChatMode) => {
     const previousMode = defaultChatMode;
+    if (mode === previousMode) {
+      // Already selected - skip the redundant store write/network round trip
+      // so the active option never flashes on a repeat tap.
+      return;
+    }
+
+    // Optimistic, immediate local update. Conversations keep their messages -
+    // only the chatMode field changes (see useChatStore.setDefaultChatMode) -
+    // and nothing here remounts the chat window, so the active conversation
+    // and any unsent draft are untouched.
     setDefaultChatMode(mode);
+    console.info("[chat-mode] changed", { from: previousMode, to: mode, source: "settings" });
 
     if (!session?.user?.id) {
       toast.success(`Default chat style set to ${mode}.`);
@@ -305,11 +316,25 @@ export function SettingsModal() {
       });
       const payload = await response.json().catch(() => ({}));
       if (!response.ok) throw new Error(payload.error ?? "Unable to update the default chat style.");
-      await update();
-      toast.success(`Default chat style set to ${mode}.`);
     } catch (error) {
+      // The account write itself failed - roll back so the UI never claims a
+      // mode the backend doesn't have.
       setDefaultChatMode(previousMode);
+      console.error("[chat-mode] persistence failed, rolled back local selection");
       toast.error(error instanceof Error ? error.message : "Unable to update the default chat style.");
+      return;
+    }
+
+    toast.success(`Default chat style set to ${mode}.`);
+
+    try {
+      await update();
+    } catch (error) {
+      // The account write already succeeded - a failure here only means the
+      // local session token hasn't picked up the new value yet. Don't roll
+      // back a change that's already correct in the database; the next
+      // sign-in or session refresh will pick it up (see shouldSyncAccountChatMode).
+      console.error("[chat-mode] session refresh after save failed", error);
     }
   };
 
