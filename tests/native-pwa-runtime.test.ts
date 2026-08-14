@@ -81,4 +81,21 @@ describe("native and PWA runtime guards", () => {
     expect(stateCheckIndex).toBeGreaterThan(signInIndex);
     expect(appleFn).toContain('platform === "android" && result.state !== state');
   });
+
+  it("keeps the onboarding sheet keyboard-aware even though Radix portals it outside [data-capacitor-root]", () => {
+    const onboarding = readFileSync(path.join(root, "components/auth/OnboardingModal.tsx"), "utf8");
+
+    // Reads the same --keyboard-height signal the rest of the app uses,
+    // since Dialog content renders into a body-level portal and doesn't
+    // inherit [data-capacitor-root]'s own keyboard inset.
+    expect(onboarding).toContain("var(--keyboard-height,0px)");
+    expect(onboarding).toContain("transition-[bottom]");
+  });
+
+  it("gives the onboarding sheet a pinned header/footer with only the middle content scrolling", () => {
+    const onboarding = readFileSync(path.join(root, "components/auth/OnboardingModal.tsx"), "utf8");
+
+    expect(onboarding).toContain('data-testid="onboarding-scroll-area"');
+    expect(onboarding).toMatch(/min-h-0 flex-1[^"]*overflow-y-auto/);
+  });
 });
