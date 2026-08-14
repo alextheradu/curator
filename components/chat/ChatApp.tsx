@@ -19,6 +19,7 @@ import {
 import { normalizeConversation, normalizeMessage } from "@/lib/conversations";
 import { REOPEN_ONBOARDING_EVENT } from "@/lib/onboarding";
 import { normalizeProject } from "@/lib/projects";
+import { shouldSyncAccountChatMode } from "@/lib/chat-mode-sync";
 import type { Conversation } from "@/lib/store";
 import { useChatStore } from "@/lib/store";
 
@@ -104,17 +105,31 @@ export function ChatApp({ requestedConversationId, initialPrompt }: ChatAppProps
   const previousAuthRef = useRef(false);
   const hasResolvedAuthRef = useRef(false);
   const previousRequestedConversationIdRef = useRef(requestedConversationId);
+  const syncedChatModeUserIdRef = useRef<string | null>(null);
 
+  // Seed the local chat-mode default from the account once per signed-in
+  // user (see shouldSyncAccountChatMode for why this isn't a continuous
+  // sync). Settings and Onboarding own every write to defaultChatMode after
+  // that; this effect only handles "restore on sign-in".
   useEffect(() => {
-    if (!isAuthenticated) {
+    const userId = session?.user?.id ?? null;
+
+    if (!userId) {
+      syncedChatModeUserIdRef.current = null;
       return;
     }
 
+    if (!shouldSyncAccountChatMode(syncedChatModeUserIdRef.current, userId)) {
+      return;
+    }
+
+    syncedChatModeUserIdRef.current = userId;
     const accountChatMode = session?.user?.defaultChatMode ?? "veteran";
     if (useChatStore.getState().defaultChatMode !== accountChatMode) {
+      console.info("[chat-mode] restored from account on sign-in", { mode: accountChatMode });
       setDefaultChatMode(accountChatMode);
     }
-  }, [isAuthenticated, session?.user?.defaultChatMode, setDefaultChatMode]);
+  }, [session?.user?.id, session?.user?.defaultChatMode, setDefaultChatMode]);
 
   // One-time, one-way sync: if this browser passed the age gate before
   // signing in (cookie set by AgeGateDialog), record it on the account.
