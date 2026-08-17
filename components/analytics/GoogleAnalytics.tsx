@@ -35,6 +35,12 @@ export function GoogleAnalytics({ nonce }: { nonce?: string }) {
       const gtag = (window as Window & { gtag?: (...args: unknown[]) => void }).gtag;
       if (typeof gtag === "function") {
         gtag("consent", "update", {
+          // Advertising signals are never granted, regardless of the
+          // analytics choice - this tag is first-party product analytics
+          // only and must never be usable for ads or cross-context profiling.
+          ad_storage: "denied",
+          ad_user_data: "denied",
+          ad_personalization: "denied",
           analytics_storage: accepted ? "granted" : "denied",
         });
       }
@@ -66,8 +72,21 @@ export function GoogleAnalytics({ nonce }: { nonce?: string }) {
         {`window.dataLayer = window.dataLayer || [];
 function gtag(){dataLayer.push(arguments);}
 gtag('js', new Date());
-gtag('consent', 'default', { analytics_storage: 'granted' });
-gtag('config', '${GOOGLE_ANALYTICS_MEASUREMENT_ID}');`}
+// Advertising signals stay permanently denied. This tag is only ever
+// mounted after the visitor opts into first-party analytics, and even
+// then it must never be usable for ads, remarketing, or cross-context
+// profiling - only aggregate first-party product analytics.
+gtag('consent', 'default', {
+  ad_storage: 'denied',
+  ad_user_data: 'denied',
+  ad_personalization: 'denied',
+  analytics_storage: 'granted'
+});
+gtag('config', '${GOOGLE_ANALYTICS_MEASUREMENT_ID}', {
+  allow_google_signals: false,
+  allow_ad_personalization_signals: false,
+  anonymize_ip: true
+});`}
       </Script>
     </>
   );

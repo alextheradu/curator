@@ -28,6 +28,7 @@ import {
 import { toast } from "sonner";
 import { SupportForm } from "@/components/support/SupportForm";
 import { RecentlyDeletedDialog } from "@/components/sidebar/RecentlyDeletedDialog";
+import { CookiePreferencesDialog } from "@/components/analytics/CookiePreferencesDialog";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -269,6 +270,7 @@ export function SettingsModal() {
   const [isResetting, setIsResetting] = useState(false);
   const [isDeletingAccount, setIsDeletingAccount] = useState(false);
   const [recentlyDeletedOpen, setRecentlyDeletedOpen] = useState(false);
+  const [cookiePreferencesOpen, setCookiePreferencesOpen] = useState(false);
 
   const hydrated = useSyncExternalStore(
     () => () => {},
@@ -580,8 +582,8 @@ export function SettingsModal() {
                   <MobileRow
                     icon={CookieIcon}
                     label="Cookie preferences"
-                    description={selectedConsent === "accepted" ? "Analytics accepted" : "Necessary cookies only"}
-                    onClick={() => persistCookieConsent(selectedConsent === "accepted" ? "necessary" : "accepted")}
+                    description={selectedConsent === "accepted" ? "Analytics allowed - not used for tracking" : "Necessary cookies only"}
+                    onClick={() => setCookiePreferencesOpen(true)}
                     value={selectedConsent === "accepted" ? "On" : "Off"}
                   />
                   <MobileRow
@@ -759,6 +761,7 @@ export function SettingsModal() {
         </div>
       </DialogContent>
       <RecentlyDeletedDialog open={recentlyDeletedOpen} onOpenChange={setRecentlyDeletedOpen} />
+      <CookiePreferencesDialog open={cookiePreferencesOpen} onOpenChange={setCookiePreferencesOpen} />
     </Dialog>
   );
 }
