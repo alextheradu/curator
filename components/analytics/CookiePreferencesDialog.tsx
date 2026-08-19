@@ -52,7 +52,7 @@ export function CookiePreferencesDialog({ open, onOpenChange }: CookiePreference
           <DialogHeader className="gap-2 text-left">
             <DialogTitle className="text-xl font-semibold text-foreground">Cookie preferences</DialogTitle>
             <DialogDescription className="text-[13px] leading-6 text-muted-foreground">
-              Necessary cookies stay on so authentication, guest limits, and product settings keep working. Analytics is optional.
+              Curator uses necessary cookies for sign in, security, and core functionality. Optional analytics help us understand how Curator is used and improve the app. Analytics are not used for advertising or to track you across other companies&apos; apps or websites.
             </DialogDescription>
           </DialogHeader>
         </div>
@@ -69,7 +69,7 @@ export function CookiePreferencesDialog({ open, onOpenChange }: CookiePreference
           >
             <p className="text-sm font-semibold text-foreground">Necessary only</p>
             <p className="mt-1 text-[13px] leading-6 text-muted-foreground">
-              Keeps required cookies for sessions, guest limits, and UI preferences. Google Analytics stays off.
+              Keeps required cookies for sign-in, security, guest limits, and UI preferences. Analytics stays off.
             </p>
           </button>
 
@@ -82,9 +82,9 @@ export function CookiePreferencesDialog({ open, onOpenChange }: CookiePreference
                 : "border-border/60 bg-background/50 hover:bg-muted/40"
             }`}
           >
-            <p className="text-sm font-semibold text-foreground">Accept analytics</p>
+            <p className="text-sm font-semibold text-foreground">Allow analytics</p>
             <p className="mt-1 text-[13px] leading-6 text-muted-foreground">
-              Allows Google Analytics cookies so the operator can measure product usage and performance trends.
+              Lets us measure aggregate usage and performance trends with Google Analytics, configured to block cross-site signal sharing and ad personalization. Not used for advertising or to track you across other companies&apos; apps or websites.
             </p>
           </button>
 

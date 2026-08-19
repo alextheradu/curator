@@ -66,8 +66,11 @@ export function GoogleAnalytics({ nonce }: { nonce?: string }) {
         {`window.dataLayer = window.dataLayer || [];
 function gtag(){dataLayer.push(arguments);}
 gtag('js', new Date());
-gtag('consent', 'default', { analytics_storage: 'granted' });
-gtag('config', '${GOOGLE_ANALYTICS_MEASUREMENT_ID}');`}
+gtag('config', '${GOOGLE_ANALYTICS_MEASUREMENT_ID}', {
+  allow_google_signals: false,
+  allow_ad_personalization_signals: false,
+  anonymize_ip: true
+});`}
       </Script>
     </>
   );

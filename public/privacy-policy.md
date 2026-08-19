@@ -1,7 +1,7 @@
 # Privacy Policy
 
 **Curator - FRC AI Assistant**
-**Last updated: August 1, 2026**
+**Last updated: August 19, 2026**
 
 ---
 
@@ -10,6 +10,8 @@
 This Privacy Policy explains how Curator ("the Service", "we", "us") collects, uses, and protects information about you when you use our AI-powered FRC assistant. We are committed to being transparent and collecting only what is necessary to operate the Service.
 
 **We do not sell your personal information. We do not share your personal information with third parties for cross-context behavioral advertising or any advertising purpose.**
+
+**Curator does not track you.** Under Apple's definition of tracking, we do not link data collected in Curator with data collected by other companies' apps or websites for advertising or measurement purposes, and we do not share your data with data brokers. Optional analytics, described below, are configured to block cross-context signal sharing and ad personalization and are never active until you explicitly opt in.
 
 ---
 
@@ -52,7 +54,7 @@ This Privacy Policy explains how Curator ("the Service", "we", "us") collects, u
 - **Operational logs:** we store application logs for support, abuse prevention, debugging, security auditing, and reliability work. These logs can include request paths, IP address, account ID, admin actions, and error details. When admins view user chat transcripts through the admin panel, we log that access for accountability.
 - **Rate-limit metadata:** we store per-scope counters keyed to your account ID or network metadata so we can slow abusive traffic and protect the Service.
 - **Search indexing notifications:** when indexable public Curator pages are added or updated, we may send the affected page URLs to IndexNow-participating search engines so they can recrawl those pages faster. News/blog URLs are excluded from these submissions.
-- **Analytics usage data (consent required):** if you explicitly accept analytics cookies through the cookie consent banner, we use Google Analytics 4 to collect aggregated usage data - for example, page views, device/browser information, approximate region, and interaction events - to understand and improve the Service. Google Analytics does not load until you actively accept. If you decline or ignore the banner, no GA cookies are set and no GA data is collected. You can change this choice at any time from the in-app cookie preferences control.
+- **Analytics usage data (consent required):** if you explicitly allow analytics through the cookie consent banner, we use Google Analytics 4 to collect aggregated usage data - for example, page views, device/browser information, approximate region, and interaction events - to understand and improve the Service. Google Analytics does not load until you actively opt in. If you decline or ignore the banner, no GA script loads, no GA cookies are set, and no GA data is collected. When active, GA is configured with Google Signals and ad personalization signals disabled and IP anonymization enabled, so it is not used to link your activity with data from other companies' apps or websites and is not used for advertising. You can change this choice at any time from the in-app cookie preferences control.
 - **Server logs:** standard web server request logs (IP address, timestamp, user agent) retained for up to 30 days.
 
 ---
@@ -94,19 +96,21 @@ The following services receive data as part of operating the Service. None of th
 | LangSearch | Web search for grounding AI responses | Search query text | (see LangSearch docs) |
 | Sentry | Error monitoring and performance tracing | Error context, URLs, and device info. Session Replay is disabled by default and, if enabled, masks text and blocks media. Sentry processes this only on our behalf under a Data Processing Addendum and does not sell or share this data. | sentry.io/privacy/ |
 | Cloudflare Web Analytics | Cookie-free aggregate site analytics | Aggregate, non-identified performance metrics. No cookies or advertising identifiers used. | cloudflare.com/privacypolicy/ |
-| Google Analytics 4 | Aggregate usage analytics - **only loaded after you explicitly accept analytics cookies** | Page views, device/browser info, approximate region, interaction events. Only active with your consent. | policies.google.com/privacy |
+| Google Analytics 4 | Aggregate usage analytics - **only loaded after you explicitly allow analytics** | Page views, device/browser info, approximate region, interaction events. Only active with your consent. Google Signals and ad personalization signals are disabled; IP anonymization is enabled. | policies.google.com/privacy |
 | IndexNow | Notifies search engines when indexable public pages change | Indexable public page URLs only; news/blog URLs are excluded | indexnow.org/documentation |
 | MinIO (self-hosted) | Document storage | PDF documents uploaded by admins | Self-hosted, no third party |
 
-### A note on Google Analytics and data sharing
+### A note on Google Analytics, data sharing, and tracking
 
-Google Analytics 4 collects usage data and shares it with Google. Under broad interpretations of laws like the California Consumer Privacy Act (CCPA), sharing a visitor identifier with a third-party analytics provider could be considered "sharing" of personal data. We mitigate this risk by:
+Google Analytics 4 collects usage data and shares it with Google. Under broad interpretations of laws like the California Consumer Privacy Act (CCPA), sharing a visitor identifier with a third-party analytics provider could be considered "sharing" of personal data. It could also, if misconfigured, meet Apple's definition of "tracking" (linking data with other companies' apps/websites for advertising or measurement, or sharing with data brokers). We mitigate both risks by:
 
-- **Requiring explicit opt-in consent** before Google Analytics loads. GA is blocked by default and only activates if you click "Accept" on the cookie banner.
+- **Requiring explicit opt-in consent** before Google Analytics loads. GA is blocked by default and only activates if you click "Allow analytics" on the cookie banner or preferences dialog.
+- **Disabling Google Signals** (`allow_google_signals: false`), which prevents Google from using GA data for cross-device or cross-context advertising reporting.
+- **Disabling ad personalization signals** (`allow_ad_personalization_signals: false`) and **enabling IP anonymization**.
 - **Not linking Google Analytics to Google Ads** or any advertising product. We do not use GA data for behavioral advertising.
 - **Not selling or sharing your data** with Google or anyone else for advertising purposes.
 
-If you do not consent to analytics cookies, Google Analytics never loads and no data is sent to Google from your session.
+If you do not consent to analytics, Google Analytics never loads and no data is sent to Google from your session. Because of these restrictions, Curator's use of Google Analytics does not constitute tracking under Apple's App Tracking Transparency framework, and Curator does not request ATT permission.
 
 ---
 
@@ -163,11 +167,11 @@ If you do not consent to analytics cookies, Google Analytics never loads and no 
 - `authjs.csrf-token` - protects the sign-in flow from cross-site request forgery
 - `authjs.callback-url` - remembers where to return you after sign-in (if set by Auth.js)
 
-**Analytics cookies (only set after you explicitly accept):**
+**Analytics cookies (only set after you explicitly allow them):**
 
-- `_ga`, `_ga_*` - Google Analytics cookies used to distinguish sessions and measure aggregate site usage. These are only set if you explicitly accept analytics cookies through the cookie banner.
+- `_ga`, `_ga_*` - Google Analytics cookies used to distinguish sessions and measure aggregate site usage. These are only set if you explicitly allow analytics through the cookie banner or preferences dialog, and are configured with Google Signals and ad personalization signals disabled (see §4).
 
-We do not use advertising cookies. We do not use cookies for cross-site tracking.
+We do not use advertising cookies. We do not use cookies for cross-site or cross-app tracking. We do not use any cookie, SDK, or identifier to link your activity in Curator with your activity in other companies' apps or websites, and we do not request Apple's App Tracking Transparency permission because Curator does not perform tracking as Apple defines it.
 
 Curator also stores local browser values for app preferences and guest UI state, including `curator:cookie-consent`, `curator:guest-message-count`, `curator:factCheck`, `curator:searchMode`, and the legacy `curator:deepSearch` value. These are stored in `localStorage`, not cookies, and are never shared with any third party.
 
