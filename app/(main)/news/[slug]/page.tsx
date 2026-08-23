@@ -55,7 +55,7 @@ export default async function NewsArticlePage({
     <SidebarInset className="overflow-y-auto">
       <div className="pointer-events-none absolute inset-x-0 top-0 h-72 bg-[radial-gradient(circle_at_top,rgba(255,255,255,0.05),transparent_55%)]" />
 
-      <div className="relative mx-auto flex w-full max-w-3xl flex-col gap-6 px-4 py-6 sm:px-6 sm:py-10">
+      <div className="relative mx-auto flex w-full max-w-3xl flex-col gap-6 px-4 pb-6 pt-[calc(1.5rem+env(safe-area-inset-top))] sm:px-6 sm:pb-10 sm:pt-[calc(2.5rem+env(safe-area-inset-top))]">
 
         {/* Top nav */}
         <div className="flex items-center justify-between gap-3">
