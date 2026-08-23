@@ -14,7 +14,7 @@
     |
     <a href="public/privacy-policy.md">Privacy Policy</a>
     |
-    <a href="public/terms-of-service.md">Terms</a>
+    <a href="public/terms-of-service.md">Terms of Service</a>
     |
     <a href="LICENSE">License</a>
     |
