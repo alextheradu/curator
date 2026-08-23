@@ -1,7 +1,7 @@
 # Privacy Policy
 
 **Curator - FRC AI Assistant**
-**Last updated: August 19, 2026**
+**Last updated: August 23, 2026**
 
 ---
 
@@ -20,7 +20,7 @@ This Privacy Policy explains how Curator ("the Service", "we", "us") collects, u
 ### 2a. Guests (unauthenticated users)
 
 - A session cookie tracking whether you have accepted the Terms of Service for the current browser session
-- Server-side counters used to enforce the guest message limit
+- Server-side counters used to enforce the guest message limit (a recurring daily quota that resets every 24 hours - no account is ever required to keep using the Service)
 - A persistent `guest_session_id` cookie that links your browser to your guest conversations stored in our database (see §7)
 - A cookie recording your cookie-consent choice (`necessary` or `accepted`)
 - Optional sidebar preference cookies recording whether the sidebar is open and what width you chose

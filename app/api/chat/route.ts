@@ -22,7 +22,7 @@ import { isTbaMcpEnabled } from "@/lib/tba";
 import { callTbaTool, TBA_TOOLS, type TbaToolName, type OpenAiTool } from "@/lib/tba-mcp-client";
 import { conversations, projects, type Citation } from "@/lib/db/schema";
 import { buildProjectMemoryContext, compactProjectSummaryInput } from "@/lib/project-memory";
-import { GUEST_MESSAGE_LIMIT, GUEST_SESSION_MAX_AGE } from "@/lib/app-cookies";
+import { GUEST_MESSAGE_LIMIT, GUEST_MESSAGE_QUOTA_WINDOW_MS } from "@/lib/app-cookies";
 import { readGuestSessionId } from "@/lib/guest-session";
 import { captureException, logAppEvent } from "@/lib/logging";
 import { applyRateLimitHeaders, enforceRateLimit } from "@/lib/rate-limit";
@@ -850,7 +850,7 @@ export async function POST(request: NextRequest) {
       scope: "guest-message-quota",
       key: guestId ? `guest:${guestId}` : `ip:${ip}`,
       limit: GUEST_MESSAGE_LIMIT,
-      windowMs: GUEST_SESSION_MAX_AGE * 1000,
+      windowMs: GUEST_MESSAGE_QUOTA_WINDOW_MS,
     });
 
     if (!guestQuota.ok) {

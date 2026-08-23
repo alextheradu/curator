@@ -1,7 +1,7 @@
 # Terms of Service
 
 **Curator - FRC AI Assistant**
-**Last updated: August 19, 2026**
+**Last updated: August 23, 2026**
 
 ---
 
@@ -56,7 +56,7 @@ The Service uses automated moderation to detect violations of these rules. Messa
 
 ## 5. User Accounts
 
-You may use the Service as a guest for a limited number of messages, with no age requirement. Guest conversations are saved to our servers during your session and transferred to your account if you sign in (see Privacy Policy §2a and §6 for details). A `guest_session_id` cookie is used to link your browser to your guest conversations. Creating an account via Google or Apple sign-in is required for continued use beyond the guest limit, to persist conversation history across devices, to save account-level defaults such as your preferred name, optional team number, preferred chat style, and accepted-terms status, to create projects, and to use public chat sharing.
+You may use the Service as a guest, with no age requirement and no account required. Guest chatting is limited to a recurring daily number of messages that resets on a rolling 24-hour basis - once you hit it you can keep chatting for free as soon as it resets, with no obligation to ever create an account. Guest conversations are saved to our servers during your session and transferred to your account if you sign in (see Privacy Policy §2a and §6 for details). A `guest_session_id` cookie is used to link your browser to your guest conversations. Creating an account via Google or Apple sign-in is optional: it raises your daily message limit and is required only for persisting conversation history across devices, saving account-level defaults such as your preferred name, optional team number, preferred chat style, and accepted-terms status, creating projects, and using public chat sharing.
 
 **You must be at least 13 years old to create an account.** We show an age-confirmation step before any sign-in attempt, in compliance with COPPA (see Privacy Policy §9). If you are under 13, you may still use the Service as a guest, but you may not create an account.
 
