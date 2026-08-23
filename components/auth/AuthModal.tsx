@@ -24,10 +24,11 @@ export function AuthModal({ open, onOpenChange }: Props) {
       <DialogContent className="max-w-sm border-white/[0.08] bg-[#17191f]">
         <DialogHeader>
           <DialogTitle className="text-center text-lg font-semibold text-[var(--foreground)]">
-            Create a free account
+            You&apos;ve hit today&apos;s guest limit
           </DialogTitle>
           <DialogDescription className="text-center text-sm text-[var(--muted-foreground)]">
-            Sign in to keep chatting once the guest limit is used.
+            Your guest limit resets in 24 hours and you can keep chatting for free - no account needed.
+            Sign in now if you&apos;d like a higher daily limit and saved chat history.
           </DialogDescription>
         </DialogHeader>
         <div className="flex flex-col gap-2 py-2">
