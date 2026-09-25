@@ -1,7 +1,7 @@
 # Terms of Service
 
 **Curator - FRC AI Assistant**
-**Last updated: August 23, 2026**
+**Last updated: September 24, 2026**
 
 ---
 
@@ -83,7 +83,7 @@ Key points:
 - We do not sell your personal information.
 - We do not share your personal information with third parties for advertising purposes.
 - Curator does not track you across other companies' apps or websites, and does not request Apple's App Tracking Transparency permission.
-- Analytics (Google Analytics) are only activated if you explicitly allow them through the cookie consent banner, and are configured to block cross-context signal sharing and ad personalization. You may change this choice at any time from the in-app cookie preferences control.
+- Analytics (Google Analytics) are only activated on the website if you explicitly allow them through the cookie consent banner, and are configured to block cross-context signal sharing and ad personalization. You may change this choice at any time from the cookie preferences control in Settings. The Curator iOS and Android apps never load Google Analytics and do not show a cookie consent prompt.
 - Sentry is used for error monitoring and performance tracing. Session Replay is disabled by default and, if enabled for debugging, masks text and blocks media. Sentry processes data on our behalf and does not sell or share it.
 - Admin actions and admin transcript views may be logged for security, accountability, and abuse investigation.
 - Chat messages are sent to OpenRouter for AI processing. Depending on the model selected, upstream providers may retain prompt and response data under their own terms.

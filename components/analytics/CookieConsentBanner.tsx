@@ -11,8 +11,12 @@ import {
   persistCookieConsent,
 } from "@/lib/cookie-consent";
 import { readBrowserCookie } from "@/lib/cookies";
+import { useIsNativeApp } from "@/hooks/useIsNativeApp";
 
 export function CookieConsentBanner() {
+  // The native apps never load Google Analytics, so there's nothing to consent
+  // to there (App Store Guideline 5.1.2(i)).
+  const isNativeApp = useIsNativeApp();
   const hydrated = useSyncExternalStore(
     () => () => {},
     () => true,
@@ -31,7 +35,7 @@ export function CookieConsentBanner() {
     () => null,
   );
 
-  if (!hydrated || consent) {
+  if (!hydrated || isNativeApp || consent) {
     return null;
   }
 

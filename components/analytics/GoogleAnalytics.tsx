@@ -2,6 +2,7 @@
 
 import Script from "next/script";
 import { useEffect, useState } from "react";
+import { Capacitor } from "@capacitor/core";
 import {
   COOKIE_CONSENT_EVENT,
   COOKIE_CONSENT_NAME,
@@ -23,6 +24,13 @@ export function GoogleAnalytics({ nonce }: { nonce?: string }) {
   const [enabled, setEnabled] = useState(false);
 
   useEffect(() => {
+    // Never load GA inside the native apps, regardless of any consent stored
+    // by an older build - clear leftover GA cookies instead.
+    if (Capacitor.isNativePlatform()) {
+      clearAnalyticsCookies();
+      return;
+    }
+
     if (!GOOGLE_ANALYTICS_MEASUREMENT_ID) {
       return;
     }
