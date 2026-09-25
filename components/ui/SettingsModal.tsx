@@ -55,6 +55,7 @@ import {
   type CookieConsentValue,
 } from "@/lib/cookie-consent";
 import { readBrowserCookie } from "@/lib/cookies";
+import { useIsNativeApp } from "@/hooks/useIsNativeApp";
 import { REOPEN_ONBOARDING_EVENT } from "@/lib/onboarding";
 import { cn } from "@/lib/utils";
 import { useChatStore, type ChatMode } from "@/lib/store";
@@ -285,6 +286,8 @@ export function SettingsModal() {
   );
 
   const selectedConsent = cookieConsent ?? "necessary";
+  // Native apps never load analytics, so the cookie toggle only exists on the web.
+  const isNativeApp = useIsNativeApp();
 
   if (!hydrated) return null;
 
@@ -577,13 +580,15 @@ export function SettingsModal() {
               <div>
                 <MobileGroupLabel>Data &amp; privacy</MobileGroupLabel>
                 <MobileGroup>
-                  <MobileRow
-                    icon={CookieIcon}
-                    label="Cookie preferences"
-                    description={selectedConsent === "accepted" ? "Analytics accepted" : "Necessary cookies only"}
-                    onClick={() => persistCookieConsent(selectedConsent === "accepted" ? "necessary" : "accepted")}
-                    value={selectedConsent === "accepted" ? "On" : "Off"}
-                  />
+                  {!isNativeApp && (
+                    <MobileRow
+                      icon={CookieIcon}
+                      label="Cookie preferences"
+                      description={selectedConsent === "accepted" ? "Analytics accepted" : "Necessary cookies only"}
+                      onClick={() => persistCookieConsent(selectedConsent === "accepted" ? "necessary" : "accepted")}
+                      value={selectedConsent === "accepted" ? "On" : "Off"}
+                    />
+                  )}
                   <MobileRow
                     icon={DownloadIcon}
                     label="Download your data"
@@ -601,7 +606,7 @@ export function SettingsModal() {
                   <MobileRow
                     icon={RefreshCcwIcon}
                     label="Reset settings"
-                    description="Restores theme, cookies, temperature, and chat style."
+                    description={isNativeApp ? "Restores theme, temperature, and chat style." : "Restores theme, cookies, temperature, and chat style."}
                     onClick={() => void handleResetSettings()}
                     disabled={isResetting}
                     value={isResetting ? "Resetting…" : undefined}
