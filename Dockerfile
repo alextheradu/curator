@@ -40,8 +40,7 @@ ENV NEXT_PUBLIC_SITE_URL=$NEXT_PUBLIC_SITE_URL \
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 # build:ci = next build only (build/build:next restart PM2 / read .env for the host deploy)
-RUN --mount=type=cache,target=/app/.next/cache \
-    npm run build:ci
+RUN npm run build:ci
 
 FROM node:22-slim AS runtime
 WORKDIR /app
