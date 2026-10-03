@@ -38,9 +38,20 @@ function parseEnv(contents) {
 }
 
 const envPath = path.resolve(process.cwd(), envFile);
+
+// Hosted platforms (Dokploy, etc.) inject env vars directly and ship no .env file.
+function readEnvFile() {
+  try {
+    return parseEnv(readFileSync(envPath, "utf8"));
+  } catch (error) {
+    if (error?.code === "ENOENT") return {};
+    throw error;
+  }
+}
+
 const env = {
   ...process.env,
-  ...parseEnv(readFileSync(envPath, "utf8")),
+  ...readEnvFile(),
 };
 
 env.PATH = `${path.resolve(process.cwd(), "node_modules/.bin")}${path.delimiter}${env.PATH ?? ""}`;
