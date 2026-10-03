@@ -72,7 +72,6 @@ function assertProductionSecrets() {
     "DATABASE_URL",
     "POSTGRES_PASSWORD",
     "OPENROUTER_API_KEY",
-    "QDRANT_API_KEY",
     "MINIO_ACCESS_KEY",
     "MINIO_SECRET_KEY",
   ];
