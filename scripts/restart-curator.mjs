@@ -39,6 +39,12 @@ function getCuratorPort() {
   }
 }
 
+// Container builds (Dokploy/Railpack) have no PM2; the platform restarts the app itself.
+if (run("pm2", ["--version"], { stdio: "pipe", allowFailure: true }).error?.code === "ENOENT") {
+  console.log("pm2 not found; skipping restart.");
+  process.exit(0);
+}
+
 const port = getCuratorPort();
 
 run("pm2", ["stop", PROCESS_NAME], { allowFailure: true });
