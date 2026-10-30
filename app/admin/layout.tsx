@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
-import { redirect } from "next/navigation";
-import { auth } from "@/auth";
-import { withSessionDbAccess } from "@/lib/db/access";
+import { requireAdminPage } from "@/lib/admin-page-auth";
+import { withAdminDbAccess } from "@/lib/db/access";
 import { reports } from "@/lib/db/schema";
 import { NO_INDEX_ROBOTS } from "@/lib/seo";
 import { eq } from "drizzle-orm";
@@ -13,10 +12,11 @@ export const metadata: Metadata = {
 };
 
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {
-  const session = await auth();
-  if (!session?.user?.isAdmin) redirect("/");
+  // Database-backed: a demoted or deleted admin's JWT still says isAdmin
+  // until it expires, so the claim alone must not open the admin area.
+  const admin = await requireAdminPage();
 
-  const pending = await withSessionDbAccess(session, (tx) => tx
+  const pending = await withAdminDbAccess(admin.userId, (tx) => tx
     .select({ id: reports.id })
     .from(reports)
     .where(eq(reports.status, "pending")));

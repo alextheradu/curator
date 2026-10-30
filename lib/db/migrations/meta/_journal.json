@@ -134,6 +134,13 @@
       "when": 1780000060000,
       "tag": "0018_user_age_confirmed",
       "breakpoints": true
+    },
+    {
+      "idx": 19,
+      "version": "7",
+      "when": 1780000120000,
+      "tag": "0019_public_conversation_soft_delete_rls",
+      "breakpoints": true
     }
   ]
 }

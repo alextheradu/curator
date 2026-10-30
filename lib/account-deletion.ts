@@ -2,10 +2,12 @@ import { eq } from "drizzle-orm";
 import type { NextRequest } from "next/server";
 import {
   appLogs,
+  conversations,
   supportRequests,
   users,
 } from "@/lib/db/schema";
 import { withSystemDbAccess } from "@/lib/db/access";
+import { revalidatePublicConversation } from "@/lib/public-conversations";
 import {
   revalidateConversationDerivedCaches,
   revalidateReportDerivedCaches,
@@ -14,7 +16,12 @@ import {
 import { writeAdminAuditLog } from "@/lib/admin-audit";
 
 export async function deleteUserAccountData(userId: string) {
-  await withSystemDbAccess(async (tx) => {
+  const ownedConversationIds = await withSystemDbAccess(async (tx) => {
+    const rows = await tx
+      .select({ id: conversations.id })
+      .from(conversations)
+      .where(eq(conversations.userId, userId));
+
     await tx
       .update(supportRequests)
       .set({
@@ -40,7 +47,15 @@ export async function deleteUserAccountData(userId: string) {
       .where(eq(appLogs.userId, userId));
 
     await tx.delete(users).where(eq(users.id, userId));
+
+    return rows.map((row) => row.id);
   });
+
+  // Deleting the account cascades away its conversations; expire any public
+  // transcript entries so a shared link stops serving the cached copy.
+  for (const conversationId of ownedConversationIds) {
+    revalidatePublicConversation(conversationId);
+  }
 
   revalidateUserDerivedCaches();
   revalidateConversationDerivedCaches();

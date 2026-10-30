@@ -8,12 +8,24 @@ export const SUPPORT_LIMITS = {
 
 export const REPORT_REASON_MAX_LENGTH = 2_000;
 
+// Raw (pre-sanitization) input may legitimately exceed the stored limit
+// because markup is stripped before the limit is applied, but it must still
+// be bounded before any regex work happens so an unauthenticated caller can't
+// hand the sanitizer megabytes of nested tags.
+const RAW_INPUT_MULTIPLIER = 4;
+
+// Upper bound on sanitizer passes. Realistic nested/split constructs
+// ("<scr<script>ipt>") stabilise in two or three passes; anything that is
+// still changing after this many is adversarial, and the remaining angle
+// brackets are stripped outright instead of looping further.
+const MAX_SANITIZE_PASSES = 8;
+
 type SupportInput = {
-  name?: string | null;
-  email?: string | null;
-  subject?: string | null;
-  message?: string | null;
-  pagePath?: string | null;
+  name?: unknown;
+  email?: unknown;
+  subject?: unknown;
+  message?: unknown;
+  pagePath?: unknown;
 };
 
 type SupportResult =
@@ -36,21 +48,43 @@ const HTML_TAG = /<\/?[a-zA-Z][^<>]*>/g;
 const CONTROL_CHARS = /[\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F]/g;
 
 export function sanitizePlainTextInput(value: string) {
-  let previous = value;
   let sanitized = value.replace(CONTROL_CHARS, "");
 
   // Repeat until stable so nested or split constructs ("<scr<script>ipt>")
-  // cannot reassemble into a tag once the inner match is removed.
-  do {
-    previous = sanitized;
-    sanitized = sanitized.replace(HTML_COMMENT, "").replace(HTML_TAG, "");
-  } while (sanitized !== previous);
+  // cannot reassemble into a tag once the inner match is removed. The pass
+  // count is bounded: each pass is linear, so total work stays linear in the
+  // input size instead of quadratic.
+  let stable = false;
+  for (let pass = 0; pass < MAX_SANITIZE_PASSES; pass += 1) {
+    const next = sanitized.replace(HTML_COMMENT, "").replace(HTML_TAG, "");
+    if (next === sanitized) {
+      stable = true;
+      break;
+    }
+    sanitized = next;
+  }
+
+  if (!stable) {
+    sanitized = sanitized.replace(/[<>]/g, "");
+  }
 
   return sanitized.trim();
 }
 
-function trimString(value: string | null | undefined) {
-  return sanitizePlainTextInput(value ?? "");
+type FieldCheck = { ok: true; value: string } | { ok: false; error: string };
+
+function readField(value: unknown, max: number, label: string): FieldCheck {
+  if (value === undefined || value === null) return { ok: true, value: "" };
+  if (typeof value !== "string") {
+    return { ok: false, error: `${label} must be text.` };
+  }
+
+  // Bound the raw string before any sanitization runs.
+  if (value.length > max * RAW_INPUT_MULTIPLIER) {
+    return { ok: false, error: `${label} must be ${max} characters or fewer.` };
+  }
+
+  return { ok: true, value: sanitizePlainTextInput(value) };
 }
 
 function maxLength(value: string, max: number, label: string): { ok: true } | { ok: false; error: string } {
@@ -59,12 +93,24 @@ function maxLength(value: string, max: number, label: string): { ok: true } | { 
 }
 
 export function validateSupportRequestInput(input: SupportInput): SupportResult {
+  const fields = {
+    name: readField(input.name, SUPPORT_LIMITS.name, "Name"),
+    email: readField(input.email, SUPPORT_LIMITS.email, "Email"),
+    subject: readField(input.subject, SUPPORT_LIMITS.subject, "Subject"),
+    message: readField(input.message, SUPPORT_LIMITS.message, "Message"),
+    pagePath: readField(input.pagePath, SUPPORT_LIMITS.pagePath, "Page path"),
+  };
+
+  for (const field of Object.values(fields)) {
+    if (!field.ok) return field;
+  }
+
   const value = {
-    name: trimString(input.name),
-    email: trimString(input.email),
-    subject: trimString(input.subject),
-    message: trimString(input.message),
-    pagePath: trimString(input.pagePath),
+    name: fields.name.ok ? fields.name.value : "",
+    email: fields.email.ok ? fields.email.value : "",
+    subject: fields.subject.ok ? fields.subject.value : "",
+    message: fields.message.ok ? fields.message.value : "",
+    pagePath: fields.pagePath.ok ? fields.pagePath.value : "",
   };
 
   if (!value.subject || !value.message) {

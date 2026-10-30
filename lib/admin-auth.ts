@@ -1,10 +1,6 @@
 import { auth } from "@/auth";
-import { isEmailBanned } from "@/lib/ban-check";
-import { withSystemDbAccess } from "@/lib/db/access";
-import { isAdminEmail } from "@/lib/admin-emails";
-import { users } from "@/lib/db/schema";
+import { verifyAdminSession } from "@/lib/admin-page-auth";
 import { hasValidMutationOrigin } from "@/lib/request-security";
-import { eq } from "drizzle-orm";
 import { NextRequest, NextResponse } from "next/server";
 
 export async function requireAdmin(_req: NextRequest): Promise<
@@ -14,35 +10,18 @@ export async function requireAdmin(_req: NextRequest): Promise<
     return { ok: false, response: NextResponse.json({ error: "Forbidden" }, { status: 403 }) };
   }
 
-  const session = await auth();
-  const email = session?.user?.email?.toLowerCase();
-
-  if (email && await isEmailBanned(email)) {
+  // Always database-backed: the ban list, users.isAdmin and users.emailBanned
+  // are re-read on every call so revoking access takes effect immediately
+  // regardless of what the caller's JWT still claims.
+  const admin = await verifyAdminSession();
+  if (!admin) {
     return { ok: false, response: NextResponse.json({ error: "Forbidden" }, { status: 403 }) };
-  }
-
-  if (!session?.user?.isAdmin) {
-    return { ok: false, response: NextResponse.json({ error: "Forbidden" }, { status: 403 }) };
-  }
-
-  const userId = session.user.id;
-  const isSuperAdmin = isAdminEmail(email);
-  if (!isSuperAdmin) {
-    const [dbUser] = await withSystemDbAccess((tx) => tx
-      .select({ isAdmin: users.isAdmin })
-      .from(users)
-      .where(eq(users.id, userId))
-      .limit(1));
-
-    if (!dbUser?.isAdmin) {
-      return { ok: false, response: NextResponse.json({ error: "Forbidden" }, { status: 403 }) };
-    }
   }
 
   return {
     ok: true,
-    userId,
-    isSuperAdmin,
+    userId: admin.userId,
+    isSuperAdmin: admin.isSuperAdmin,
   };
 }
 

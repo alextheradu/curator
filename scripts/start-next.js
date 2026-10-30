@@ -66,7 +66,15 @@ let indexNowTimeout;
 function assertProductionSecrets() {
   if (process.env.NODE_ENV !== "production") return;
 
-  const forbiddenValues = new Set(["curatordevpw", "minioadmin"]);
+  const forbiddenValues = new Set([
+    "curatordevpw",
+    "minioadmin",
+    // Historical .env.example placeholder for AUTH_SECRET.
+    "replace-with-openssl-rand-base64-32",
+  ]);
+  // AUTH_SECRET signs every session JWT; a short value is brute-forceable
+  // and a known placeholder lets anyone forge admin sessions.
+  const MIN_AUTH_SECRET_LENGTH = 32;
   const requiredSecrets = [
     "AUTH_SECRET",
     "DATABASE_URL",
@@ -78,7 +86,10 @@ function assertProductionSecrets() {
 
   const unsafe = requiredSecrets.filter((key) => {
     const value = process.env[key]?.trim() ?? "";
-    return !value || value.startsWith("CHANGEME_") || forbiddenValues.has(value) || [...forbiddenValues].some((item) => value.includes(item));
+    if (!value || value.startsWith("CHANGEME_") || forbiddenValues.has(value) || [...forbiddenValues].some((item) => value.includes(item))) {
+      return true;
+    }
+    return key === "AUTH_SECRET" && value.length < MIN_AUTH_SECRET_LENGTH;
   });
 
   if (unsafe.length > 0) {

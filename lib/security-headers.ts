@@ -11,6 +11,18 @@ export function buildCsp(nonce?: string): string {
   }
 
   const frameSrc = ["'self'", minioOrigin].filter(Boolean).join(" ");
+  // Only the hosts the app itself loads images from: its own origin, inline
+  // data/blob URIs, Google account avatars, and the MinIO document store. A
+  // blanket `https:` would let model output or injected web content load an
+  // image from any host, which is a data-exfiltration and tracking channel.
+  const imgSrc = [
+    "'self'",
+    "data:",
+    "blob:",
+    "https://*.googleusercontent.com",
+    minioOrigin,
+    "capacitor://localhost",
+  ].filter(Boolean).join(" ");
   const scriptNonce = nonce ? ` 'nonce-${nonce}'` : "";
   const styleNonce = nonce ? ` 'nonce-${nonce}'` : "";
   const scriptSrcExtras = isDev ? " 'unsafe-eval'" : "";
@@ -21,7 +33,7 @@ export function buildCsp(nonce?: string): string {
     "worker-src 'self' blob:",
     `style-src 'self'${styleNonce}`,
     "style-src-attr 'unsafe-inline'",
-    "img-src 'self' data: https: capacitor://localhost",
+    `img-src ${imgSrc}`,
     "font-src 'self' capacitor://localhost",
     "connect-src 'self' capacitor://localhost https://www.google-analytics.com https://region1.google-analytics.com https://cloudflareinsights.com https://static.cloudflareinsights.com",
     `frame-src ${frameSrc}`,

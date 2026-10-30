@@ -51,9 +51,11 @@ export async function PATCH(req: NextRequest, { params }: Params) {
       break;
     case "ban": {
       const email = target.email.toLowerCase();
+      // Banning also revokes admin rights, so an unban later restores a
+      // regular account rather than silently reinstating an administrator.
       await withAdminDbAccess(adminAuth.userId, (tx) => tx
         .update(users)
-        .set({ emailBanned: true, bannedEmail: email })
+        .set({ emailBanned: true, bannedEmail: email, isAdmin: false })
         .where(eq(users.id, id)));
       await withAdminDbAccess(adminAuth.userId, (tx) => tx
         .insert(bannedEmails)

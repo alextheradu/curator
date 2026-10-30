@@ -26,62 +26,55 @@ export function getPublicConversationMessagesCacheTag(id: string) {
 }
 
 export function revalidatePublicConversation(id: string) {
-  revalidateTag(getPublicConversationCacheTag(id), "max");
-  revalidateTag(getPublicConversationMessagesCacheTag(id), "max");
+  // Expire immediately rather than marking stale: with the "max" profile the
+  // stale transcript is still served once more while a background refresh
+  // runs, which would disclose a chat the owner just unshared or deleted.
+  revalidateTag(getPublicConversationCacheTag(id), { expire: 0 });
+  revalidateTag(getPublicConversationMessagesCacheTag(id), { expire: 0 });
+}
+
+/**
+ * Uncached access check. The isPublic/deletedAt decision must never come from
+ * a cache entry: revocation has to take effect on the very next request, so
+ * only the (immutable-once-public) message payload below is cached.
+ */
+async function loadPublicConversationRow(id: string) {
+  return withDbAccessContext({}, async (tx) => {
+    const [conversation] = await tx
+      .select()
+      .from(conversations)
+      .where(eq(conversations.id, id))
+      .limit(1);
+
+    // A soft-deleted conversation must stop being publicly reachable
+    // immediately, not just drop out of the owner's own history list.
+    if (!conversation?.isPublic || conversation.deletedAt) {
+      return null;
+    }
+
+    return conversation;
+  });
 }
 
 export async function getCachedPublicConversation(id: string) {
   if (!isUuid(id)) return null;
 
-  const load = unstable_cache(
-    async () => withDbAccessContext({}, async (tx) => {
-      const [conversation] = await tx
-        .select()
-        .from(conversations)
-        .where(eq(conversations.id, id))
-        .limit(1);
-
-      // A soft-deleted conversation must stop being publicly reachable
-      // immediately, not just drop out of the owner's own history list.
-      if (!conversation?.isPublic || conversation.deletedAt) {
-        return null;
-      }
-
-      return toPublicConversationDTO(conversation);
-    }),
-    ["public-conversation", id],
-    {
-      revalidate: 300,
-      tags: [getPublicConversationCacheTag(id)],
-    },
-  );
-
-  return load();
+  const conversation = await loadPublicConversationRow(id);
+  return conversation ? toPublicConversationDTO(conversation) : null;
 }
 
 export async function getCachedPublicConversationMessages(id: string) {
   if (!isUuid(id)) return null;
 
+  const conversation = await loadPublicConversationRow(id);
+  if (!conversation) return null;
+
   const load = unstable_cache(
-    async () => withDbAccessContext({}, async (tx) => {
-      const [conversation] = await tx
-        .select({ isPublic: conversations.isPublic, deletedAt: conversations.deletedAt })
-        .from(conversations)
-        .where(eq(conversations.id, id))
-        .limit(1);
-
-      // This only guards messages for genuinely public, non-deleted
-      // conversations - callers must not skip the isPublic check upstream.
-      if (!conversation?.isPublic || conversation.deletedAt) {
-        return null;
-      }
-
-      return tx
-        .select()
-        .from(messages)
-        .where(eq(messages.conversationId, id))
-        .orderBy(asc(messages.createdAt));
-    }),
+    async () => withDbAccessContext({}, (tx) => tx
+      .select()
+      .from(messages)
+      .where(eq(messages.conversationId, id))
+      .orderBy(asc(messages.createdAt))),
     ["public-conversation-messages", id],
     {
       revalidate: 300,

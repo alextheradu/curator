@@ -1,8 +1,7 @@
 import { desc } from "drizzle-orm";
 import { Bug, Database, FileText, Inbox, ShieldAlert } from "lucide-react";
-import { auth } from "@/auth";
-import { redirect } from "next/navigation";
-import { withDbAccessContext } from "@/lib/db/access";
+import { requireAdminPage } from "@/lib/admin-page-auth";
+import { withAdminDbAccess } from "@/lib/db/access";
 import { appLogs, supportRequests } from "@/lib/db/schema";
 import { getAdminStats } from "@/lib/admin-stats";
 import { AdminCard, AdminPageContainer, AdminPageHeader } from "@/components/admin/AdminShell";
@@ -16,13 +15,12 @@ function formatTime(value: Date | null) {
 }
 
 export default async function AdminOpsPage() {
-  const session = await auth();
-  if (!session?.user?.isAdmin) redirect("/");
+  const admin = await requireAdminPage();
 
   const [stats, [recentSupport, recentLogs]] = await Promise.all([
     getAdminStats(),
-    withDbAccessContext(
-    { userId: session.user.id, isAdmin: true },
+    withAdminDbAccess(
+    admin.userId,
     async (tx) => Promise.all([
       tx.select().from(supportRequests).orderBy(desc(supportRequests.createdAt)).limit(25),
       tx.select().from(appLogs).orderBy(desc(appLogs.createdAt)).limit(50),

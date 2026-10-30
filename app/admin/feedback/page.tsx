@@ -1,7 +1,6 @@
 import { desc, eq } from "drizzle-orm";
-import { auth } from "@/auth";
-import { redirect } from "next/navigation";
-import { withDbAccessContext } from "@/lib/db/access";
+import { requireAdminPage } from "@/lib/admin-page-auth";
+import { withAdminDbAccess } from "@/lib/db/access";
 import { appLogs } from "@/lib/db/schema";
 import { ThumbsDown, ThumbsUp } from "lucide-react";
 import { AdminCard, AdminPageContainer, AdminPageHeader, AdminStatGrid } from "@/components/admin/AdminShell";
@@ -24,11 +23,10 @@ function getMessageId(details: unknown) {
 }
 
 export default async function AdminFeedbackPage() {
-  const session = await auth();
-  if (!session?.user?.isAdmin) redirect("/");
+  const admin = await requireAdminPage();
 
-  const rows = await withDbAccessContext(
-    { userId: session.user.id, isAdmin: true },
+  const rows = await withAdminDbAccess(
+    admin.userId,
     (tx) => tx
       .select()
       .from(appLogs)

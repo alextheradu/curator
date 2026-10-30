@@ -28,6 +28,17 @@ export function sanitizeReturnHref(value: unknown, fallback = "/") {
   try {
     const url = new URL(decoded, "https://curator.local");
     if (url.origin !== "https://curator.local") return fallback;
+
+    // Validate the *normalized* path as well as the raw input. Dot-segment
+    // removal can turn "/.//evil.example" or "/x/..//evil.example" into a
+    // pathname of "//evil.example", which browsers and the Next router treat
+    // as a protocol-relative URL to another host. Backslashes are also
+    // normalized to slashes for special schemes, so "/\evil.example" ends up
+    // the same way.
+    if (url.pathname.startsWith("//") || url.pathname.startsWith("/\\")) {
+      return fallback;
+    }
+
     return `${url.pathname}${url.search}${url.hash}`;
   } catch {
     return fallback;

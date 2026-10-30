@@ -24,7 +24,8 @@ export async function GET(_: Request, { params }: { params: Promise<{ id: string
     if (!conversation) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
     const isOwner = session.user.id === conversation.userId;
-    if (!isOwner && !conversation.isPublic) {
+    // Non-owners only see conversations that are public and not soft-deleted.
+    if (!isOwner && (!conversation.isPublic || conversation.deletedAt)) {
       return NextResponse.json({ error: "Not found" }, { status: 404 });
     }
 

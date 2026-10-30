@@ -35,6 +35,7 @@ export const RATE_LIMIT_POLICIES = {
   support: { scope: "support", limit: 5, windowMs: 60 * 60 * 1000 },
   report: { scope: "report", limit: 10, windowMs: 60 * 60 * 1000 },
   conversationCreate: { scope: "conversation-create", limit: 30, windowMs: 60 * 1000 },
+  conversationList: { scope: "conversation-list", limit: 120, windowMs: 60 * 1000 },
   conversationMessageWrite: { scope: "conversation-message-write", limit: 120, windowMs: 60 * 1000 },
   conversationMutate: { scope: "conversation-mutate", limit: 60, windowMs: 60 * 1000 },
   conversationTitle: { scope: "conversation-title", limit: 30, windowMs: 60 * 60 * 1000 },

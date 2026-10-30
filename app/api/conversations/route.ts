@@ -12,19 +12,9 @@ import {
   readGuestSessionId,
   serializeGuestSessionCookie,
 } from "@/lib/guest-session";
+import { buildConversationDescription } from "@/lib/conversation-description";
 import { and, asc, desc, eq, inArray, isNull, isNotNull } from "drizzle-orm";
 import { NextRequest, NextResponse } from "next/server";
-
-function buildSearchDescription(content: string) {
-  return content
-    .replace(/```[\s\S]*?```/g, " ")
-    .replace(/`([^`]+)`/g, "$1")
-    .replace(/\[(.*?)\]\((.*?)\)/g, "$1")
-    .replace(/[#>*_\-]+/g, " ")
-    .replace(/\s+/g, " ")
-    .trim()
-    .slice(0, 120);
-}
 
 export async function GET(req: NextRequest) {
   const session = await auth();
@@ -42,6 +32,13 @@ export async function GET(req: NextRequest) {
       .orderBy(desc(conversations.updatedAt)));
 
     return NextResponse.json(rows);
+  }
+
+  const listLimit = await enforceRequestRateLimit(req, "conversationList", session.user.id);
+  if (!listLimit.ok) {
+    const headers = new Headers();
+    applyRateLimitHeaders(headers, listLimit);
+    return NextResponse.json({ error: "Too many requests. Please slow down." }, { status: 429, headers });
   }
 
   const rows = await withSessionDbAccess(session, (tx) => tx
@@ -72,7 +69,7 @@ export async function GET(req: NextRequest) {
       continue;
     }
 
-    const snippet = buildSearchDescription(message.content);
+    const snippet = buildConversationDescription(message.content);
     if (snippet) {
       descriptions.set(message.conversationId, snippet);
     }
