@@ -20,6 +20,10 @@ export const GUEST_MESSAGE_COUNT_COOKIE_NAME = "guest_message_count";
 // app/api/chat/route.ts), it's never required to use the feature at all.
 export const GUEST_MESSAGE_LIMIT = 15;
 export const GUEST_MESSAGE_QUOTA_WINDOW_MS = 60 * 60 * 24 * 1000; // 24h, rolling
+// Per-IP daily ceiling that applies to guests regardless of their cookie, so
+// minting fresh guest ids cannot multiply the per-guest quota without bound.
+// Deliberately generous (a school NAT shares one IP across many students).
+export const GUEST_IP_MESSAGE_LIMIT = GUEST_MESSAGE_LIMIT * 10;
 
 export const GUEST_SESSION_ID_COOKIE_NAME = "guest_session_id";
 export const GUEST_SESSION_MAX_AGE = 60 * 60 * 24 * 90; // 90 days

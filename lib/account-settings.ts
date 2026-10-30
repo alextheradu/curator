@@ -7,6 +7,9 @@ import type { ChatMode } from "@/lib/store";
 export const DEFAULT_CHAT_MODE: ChatMode = "veteran";
 
 type UserAccountSettings = {
+  // False when the users row no longer exists (account deleted); callers
+  // holding a session for such an id must treat it as signed out.
+  exists: boolean;
   isAdmin: boolean;
   defaultChatMode: ChatMode;
   preferredName: string | null;
@@ -53,6 +56,7 @@ export async function readUserAccountSettings(userId: string): Promise<UserAccou
       .limit(1);
 
     return {
+      exists: Boolean(row),
       isAdmin: row?.isAdmin ?? false,
       defaultChatMode: row?.defaultChatMode ?? DEFAULT_CHAT_MODE,
       preferredName: row?.preferredName ?? null,
@@ -75,6 +79,7 @@ export async function readUserAccountSettings(userId: string): Promise<UserAccou
       .limit(1);
 
     return {
+      exists: Boolean(row),
       isAdmin: row?.isAdmin ?? false,
       defaultChatMode: DEFAULT_CHAT_MODE,
       preferredName: null,

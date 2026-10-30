@@ -59,6 +59,7 @@ import {
 import { ConversationItem } from "./ConversationItem";
 import { ProjectDialog } from "./ProjectDialog";
 import { ProjectRow } from "./ProjectRow";
+import { buildConversationDescription } from "@/lib/conversation-description";
 import { deriveProjectSidebar } from "@/lib/sidebar-projects";
 import { useChatStore } from "@/lib/store";
 import type { Conversation } from "@/lib/store";
@@ -74,14 +75,7 @@ function getConversationDescription(conversation: Conversation) {
     return "No messages yet";
   }
 
-  return firstRealMessage.content
-    .replace(/```[\s\S]*?```/g, " ")
-    .replace(/`([^`]+)`/g, "$1")
-    .replace(/\[(.*?)\]\((.*?)\)/g, "$1")
-    .replace(/[#>*_\-]+/g, " ")
-    .replace(/\s+/g, " ")
-    .trim()
-    .slice(0, 120);
+  return buildConversationDescription(firstRealMessage.content);
 }
 
 function groupConversationsByDate(conversations: Conversation[]) {

@@ -25,10 +25,15 @@ export async function withDbAccessContext<T>(
   });
 }
 
+// User-facing routes never get the RLS admin bypass from the session. The JWT
+// isAdmin claim can outlive a demotion, and most of these routes have no
+// ownership check of their own beyond RLS, so a stale claim would open every
+// private conversation. Admin code paths must go through a database-backed
+// check (requireAdmin / requireAdminPage) and then use withAdminDbAccess.
 export function getSessionDbAccessContext(session: { user?: { id?: string | null; isAdmin?: boolean | null } } | null | undefined): DbAccessContext {
   return {
     userId: session?.user?.id ?? null,
-    isAdmin: Boolean(session?.user?.isAdmin),
+    isAdmin: false,
     isSystem: false,
   };
 }

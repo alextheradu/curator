@@ -28,6 +28,40 @@ type AppleProfile = {
   name?: { firstName?: string; lastName?: string };
 };
 
+// The JWT is sliding (re-signed with a fresh expiry on every session read), so
+// without a periodic re-read a revoked isAdmin claim would live forever. Admin
+// claims are re-checked often; ordinary account settings less so.
+const ADMIN_CLAIM_REFRESH_MS = 60 * 1000;
+const ACCOUNT_CLAIM_REFRESH_MS = 5 * 60 * 1000;
+
+/**
+ * Native (id-token) sign-in resolves the account by the provider's stable
+ * `sub`, so the email in the incoming token may differ from the email stored
+ * on the user row. Bans are enforced against the stored account - and the
+ * stored email becomes the session email - so changing the provider-side
+ * address cannot route around a ban.
+ */
+async function resolveNativeSignInUser(userId: string, tokenEmail: string) {
+  const [user] = await db
+    .select({
+      email: users.email,
+      emailBanned: users.emailBanned,
+      name: users.name,
+      image: users.image,
+    })
+    .from(users)
+    .where(eq(users.id, userId))
+    .limit(1);
+
+  if (!user || user.emailBanned) return null;
+
+  const storedEmail = user.email.toLowerCase();
+  if (await isEmailBanned(storedEmail)) return null;
+  if (storedEmail !== tokenEmail && await isEmailBanned(tokenEmail)) return null;
+
+  return { id: userId, email: storedEmail, name: user.name ?? null, image: user.image ?? null };
+}
+
 // Keep Auth.js compatible with live databases that have not applied newer
 // app-specific columns on `users` yet.
 const authAdapterUsers = pgTable("users", {
@@ -182,7 +216,14 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
           });
         }
 
-        return { id: userId, email, name: payload.name ?? null, image: payload.picture ?? null };
+        const resolved = await resolveNativeSignInUser(userId, email);
+        if (!resolved) return null;
+
+        return {
+          ...resolved,
+          name: resolved.name ?? payload.name ?? null,
+          image: resolved.image ?? payload.picture ?? null,
+        };
       },
     }),
     // Native iOS Sign in with Apple: receives an idToken from the device,
@@ -286,13 +327,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
           });
         }
 
-        const [user] = await db
-          .select({ name: users.name, image: users.image })
-          .from(users)
-          .where(eq(users.id, userId))
-          .limit(1);
-
-        return { id: userId, email, name: user?.name ?? null, image: user?.image ?? null };
+        return resolveNativeSignInUser(userId, email);
       },
     }),
     ...(process.env.AUTH_APPLE_ID && process.env.AUTH_APPLE_SECRET
@@ -353,6 +388,9 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         }
       }
 
+      const now = Date.now();
+      const checkedAt = typeof token.settingsCheckedAt === "number" ? token.settingsCheckedAt : 0;
+      const refreshAfterMs = token.isAdmin ? ADMIN_CLAIM_REFRESH_MS : ACCOUNT_CLAIM_REFRESH_MS;
       const shouldRefreshAccountSettings = Boolean(
         token.id
         && (
@@ -361,17 +399,23 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
           || token.onboardedAt == null
           || token.tosAcceptedAt === undefined
           || token.defaultChatMode == null
+          || now - checkedAt > refreshAfterMs
         )
       );
 
       if (shouldRefreshAccountSettings && token.id) {
         const settings = await readUserAccountSettings(token.id as string);
+        // The account was deleted (by the user or an admin) while this token
+        // was still valid: returning null ends the session.
+        if (!settings.exists) return null;
+
         token.isAdmin = settings.isAdmin;
         token.defaultChatMode = settings.defaultChatMode;
         token.preferredName = settings.preferredName;
         token.teamNumber = settings.teamNumber;
         token.onboardedAt = settings.onboardedAt;
         token.tosAcceptedAt = settings.tosAcceptedAt;
+        token.settingsCheckedAt = now;
       }
 
       if (isAdminEmail(email)) {

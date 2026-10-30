@@ -28,5 +28,8 @@ declare module "next-auth/jwt" {
     teamNumber?: number | null;
     onboardedAt?: Date | null;
     tosAcceptedAt?: Date | null;
+    // Epoch ms of the last time the claims above were re-read from the
+    // database; drives the periodic refresh in the jwt callback.
+    settingsCheckedAt?: number;
   }
 }

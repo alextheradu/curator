@@ -37,7 +37,10 @@ export function validateAdminUserMutation({
     return { ok: false, status: 403, error: "Only superadmins can promote admins" };
   }
 
-  if (targetUser.isAdmin && ["ban", "demote", "delete"].includes(action) && !actorIsSuperAdmin) {
+  // Every action against an admin target is superadmin-only, including
+  // "unban": otherwise a regular admin could reverse a superadmin's sanction
+  // of another admin and hand their privileges straight back.
+  if (targetUser.isAdmin && action !== "promote" && !actorIsSuperAdmin) {
     return { ok: false, status: 403, error: "Only superadmins can modify admins" };
   }
 

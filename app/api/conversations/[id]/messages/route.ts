@@ -70,21 +70,28 @@ export async function GET(_: Request, { params }: { params: Promise<{ id: string
     return NextResponse.json(publicMessages);
   }
 
+  // Explicit application-level access check rather than relying on RLS alone:
+  // a signed-in non-owner may only read a conversation that is currently
+  // public AND not soft-deleted. Deleting a shared chat must revoke access
+  // immediately, not after the 30-day trash window.
+  const [conversation] = await withSessionDbAccess(session, (tx) => tx
+    .select({ userId: conversations.userId, isPublic: conversations.isPublic, deletedAt: conversations.deletedAt })
+    .from(conversations)
+    .where(eq(conversations.id, id))
+    .limit(1));
+
+  if (!conversation) {
+    return NextResponse.json({ error: "Not found" }, { status: 404 });
+  }
+
+  const isOwner = conversation.userId === session.user.id;
+  if (!isOwner && (!conversation.isPublic || conversation.deletedAt)) {
+    return NextResponse.json({ error: "Not found" }, { status: 404 });
+  }
+
   const rows = await withSessionDbAccess(session, (tx) => tx.select().from(messages)
     .where(eq(messages.conversationId, id))
     .orderBy(asc(messages.createdAt)));
-
-  if (rows.length === 0) {
-    const [conversation] = await withSessionDbAccess(session, (tx) => tx
-      .select({ id: conversations.id })
-      .from(conversations)
-      .where(eq(conversations.id, id))
-      .limit(1));
-
-    if (!conversation) {
-      return NextResponse.json({ error: "Not found" }, { status: 404 });
-    }
-  }
 
   return NextResponse.json(rows);
 }
